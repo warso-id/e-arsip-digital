@@ -1,8 +1,0 @@
-# Menggunakan Inkscape
-inkscape -w 144 -h 144 icon-144x144.svg -o icon-144x144.png
-
-# Menggunakan ImageMagick
-convert -background none -size icon-144x144 icon-icon-144x144.svg icon-192x192.png
-
-# Menggunakan rsvg-convert
-rsvg-convert -w 144 -h 144 icon-icon-144x144.svg -o icon-icon-144x144.png
