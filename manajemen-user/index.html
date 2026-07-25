@@ -1,0 +1,727 @@
+<!-- manajemen-user/index.html - Manajemen User 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Manajemen User - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .page-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-bar .form-input,
+        .filter-bar .form-select {
+            max-width: 200px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .role-admin { background: #fef3c7; color: #d97706; }
+        .role-user { background: #dbeafe; color: #2563eb; }
+        .role-kaprodi { background: #dcfce7; color: #16a34a; }
+        .role-dekan { background: #fae8ff; color: #a21caf; }
+        .role-staf { background: #e0f2fe; color: #0284c7; }
+        
+        .status-active { color: #16a34a; }
+        .status-inactive { color: #dc2626; }
+        .status-pending { color: #d97706; }
+        
+        .modal-body .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+        
+        .permission-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .permission-item:hover {
+            background: #f8fafc;
+        }
+        
+        .permission-item input[type="checkbox"] {
+            accent-color: #2563eb;
+        }
+        
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+            }
+            
+            .filter-bar .form-input,
+            .filter-bar .form-select {
+                max-width: none;
+            }
+            
+            .modal-body .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/manajemen-user/" class="nav-item active"><i class="fas fa-users"></i> Manajemen User</a>
+            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h2>Manajemen User</h2>
+                <p style="color:#64748b;font-size:14px;">Kelola pengguna sistem</p>
+            </div>
+            <button class="btn btn-primary" id="add-user-btn">
+                <i class="fas fa-user-plus"></i> Tambah User
+            </button>
+        </div>
+        
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <input type="text" class="form-input" id="search-user" placeholder="Cari user...">
+            <select class="form-select" id="filter-role">
+                <option value="">Semua Role</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+                <option value="kaprodi">Kaprodi</option>
+                <option value="wadek">Wadek</option>
+                <option value="dekan">Dekan</option>
+                <option value="staf">Staf</option>
+                <option value="dosen">Dosen</option>
+                <option value="mahasiswa">Mahasiswa</option>
+            </select>
+            <select class="form-select" id="filter-status">
+                <option value="">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+                <option value="pending">Pending</option>
+            </select>
+            <button class="btn btn-outline" id="export-users-btn">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+        
+        <!-- Users Table -->
+        <div class="card">
+            <div class="card-body" style="padding:0;">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50px;">#</th>
+                                <th>User</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Unit</th>
+                                <th>Status</th>
+                                <th style="width:120px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr>
+                                <td colspan="8" style="text-align:center;padding:30px;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Pagination -->
+            <div class="table-footer">
+                <div class="table-info" id="table-info">Menampilkan 0 data</div>
+                <div class="table-pagination" id="table-pagination"></div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Add/Edit User Modal -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-header">
+                <h3 id="modal-title">Tambah User Baru</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="user-form" novalidate>
+                    <input type="hidden" id="user-id">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Nama Lengkap</label>
+                            <input type="text" class="form-input" id="fullname" required>
+                            <div class="form-error" id="fullname-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Username</label>
+                            <input type="text" class="form-input" id="username" required autocomplete="off">
+                            <div class="form-error" id="username-error"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Email</label>
+                            <input type="email" class="form-input" id="email" required>
+                            <div class="form-error" id="email-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">No. Telepon</label>
+                            <input type="tel" class="form-input" id="phone">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Role</label>
+                            <select class="form-select" id="role" required>
+                                <option value="">Pilih Role</option>
+                                <option value="super_admin">Super Admin</option>
+                                <option value="admin">Admin</option>
+                                <option value="kaprodi">Kaprodi</option>
+                                <option value="wadek">Wadek</option>
+                                <option value="dekan">Dekan</option>
+                                <option value="staf">Staf</option>
+                                <option value="dosen">Dosen</option>
+                                <option value="mahasiswa">Mahasiswa</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Unit/Departemen</label>
+                            <select class="form-select" id="unit">
+                                <option value="">Pilih Unit</option>
+                                <option value="dekanat">Dekanat</option>
+                                <option value="prodi_ti">Prodi Teknik Informatika</option>
+                                <option value="prodi_si">Prodi Sistem Informasi</option>
+                                <option value="baak">BAAK</option>
+                                <option value="bauk">BAUK</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="password-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label form-label-required" id="password-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-input" id="password" 
+                                        placeholder="Minimal 8 karakter" autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline password-toggle" 
+                                        onclick="togglePassword('password')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-help">Minimal 8 karakter, harus mengandung huruf besar dan angka</div>
+                                <div class="form-error" id="password-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Konfirmasi Password</label>
+                                <input type="password" class="form-input" id="password-confirm" 
+                                    placeholder="Ulangi password" autocomplete="new-password">
+                                <div class="form-error" id="password-confirm-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Hak Akses Khusus</label>
+                        <div class="permission-grid">
+                            <label class="permission-item">
+                                <input type="checkbox" value="manage_users"> Manajemen User
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="manage_surat"> Manajemen Surat
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="approve_surat"> Approval Surat
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="view_reports"> Lihat Laporan
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="export_data"> Export Data
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="manage_settings"> Pengaturan Sistem
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="view_logs"> Lihat Log
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="backup_restore"> Backup & Restore
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Status Akun</label>
+                        <div style="display:flex;gap:20px;">
+                            <label class="form-check">
+                                <input type="radio" name="status" value="active" class="form-check-input" checked>
+                                <span>Aktif</span>
+                            </label>
+                            <label class="form-check">
+                                <input type="radio" name="status" value="inactive" class="form-check-input">
+                                <span>Nonaktif</span>
+                            </label>
+                            <label class="form-check">
+                                <input type="radio" name="status" value="pending" class="form-check-input">
+                                <span>Pending</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Batal</button>
+                <button class="btn btn-primary" id="save-user-btn">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import FormValidator from '/js/validator.js';
+        import notifications from '/js/notifications.js';
+        import exportHandler from '/js/export.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        // Check auth & role
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        if (!authService.hasRole(['super_admin', 'admin'])) window.location.href = '/403.html';
+        
+        // State
+        let users = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let editingUserId = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEventListeners();
+            await loadUsers();
+            logger.info('Manajemen user loaded');
+        });
+        
+        function initEventListeners() {
+            // Add user
+            document.getElementById('add-user-btn')?.addEventListener('click', () => openModal());
+            
+            // Save user
+            document.getElementById('save-user-btn')?.addEventListener('click', saveUser);
+            
+            // Search
+            document.getElementById('search-user')?.addEventListener('input', 
+                utils.debounce(() => loadUsers(), 300));
+            
+            // Filters
+            document.getElementById('filter-role')?.addEventListener('change', () => loadUsers());
+            document.getElementById('filter-status')?.addEventListener('change', () => loadUsers());
+            
+            // Export
+            document.getElementById('export-users-btn')?.addEventListener('click', exportUsers);
+            
+            // Close modal on overlay click
+            document.getElementById('user-modal')?.addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) closeModal();
+            });
+            
+            // Form validation
+            window.userFormValidator = new FormValidator(document.getElementById('user-form'));
+        }
+        
+        async function loadUsers(page = 1) {
+            try {
+                const search = document.getElementById('search-user').value;
+                const role = document.getElementById('filter-role').value;
+                const status = document.getElementById('filter-status').value;
+                
+                const response = await apiService.get('/api/users', {
+                    page,
+                    limit: 10,
+                    search,
+                    role,
+                    status
+                });
+                
+                users = response.data?.users || [];
+                totalPages = response.data?.totalPages || 1;
+                currentPage = page;
+                
+                renderTable();
+                renderPagination();
+                
+            } catch (error) {
+                logger.error('Failed to load users', error);
+                notifications.error('Gagal memuat data user');
+            }
+        }
+        
+        function renderTable() {
+            const tbody = document.getElementById('users-table-body');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center;padding:30px;color:#94a3b8;">
+                            <i class="fas fa-users" style="font-size:32px;margin-bottom:8px;display:block;"></i>
+                            Tidak ada data user
+                        </td>
+                    </tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = users.map((user, index) => `
+                <tr>
+                    <td>${(currentPage - 1) * 10 + index + 1}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div class="user-avatar">${getInitials(user.fullname)}</div>
+                            <div>
+                                <div style="font-weight:500;">${user.fullname}</div>
+                                <div style="font-size:12px;color:#64748b;">NIP: ${user.nip || '-'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.username}</td>
+                    <td>${user.email || '-'}</td>
+                    <td><span class="role-badge role-${user.role}">${formatRole(user.role)}</span></td>
+                    <td>${user.unit || '-'}</td>
+                    <td>
+                        <span class="status-${user.status}">
+                            <i class="fas fa-circle" style="font-size:8px;"></i>
+                            ${formatStatus(user.status)}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action" onclick="editUser('${user.id}')" title="Edit">
+                                <i class="fas fa-edit" style="color:#2563eb;"></i>
+                            </button>
+                            <button class="btn-action" onclick="resetPassword('${user.id}')" title="Reset Password">
+                                <i class="fas fa-key" style="color:#d97706;"></i>
+                            </button>
+                            <button class="btn-action" onclick="toggleUserStatus('${user.id}')" 
+                                title="${user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
+                                <i class="fas fa-power-off" style="color:${user.status === 'active' ? '#dc2626' : '#16a34a'};"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderPagination() {
+            const container = document.getElementById('table-pagination');
+            const info = document.getElementById('table-info');
+            
+            info.textContent = `Menampilkan ${users.length} dari ${users.length * totalPages} user`;
+            
+            let html = '';
+            
+            html += `<button class="btn-page" ${currentPage === 1 ? 'disabled' : ''} 
+                onclick="goToPage(${currentPage - 1})">
+                <i class="fas fa-chevron-left"></i></button>`;
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="btn-page ${i === currentPage ? 'active' : ''}" 
+                        onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += '<span class="page-ellipsis">...</span>';
+                }
+            }
+            
+            html += `<button class="btn-page" ${currentPage === totalPages ? 'disabled' : ''} 
+                onclick="goToPage(${currentPage + 1})">
+                <i class="fas fa-chevron-right"></i></button>`;
+            
+            container.innerHTML = html;
+        }
+        
+        function openModal(userId = null) {
+            editingUserId = userId;
+            const modal = document.getElementById('user-modal');
+            const title = document.getElementById('modal-title');
+            const passwordSection = document.getElementById('password-section');
+            
+            // Reset form
+            document.getElementById('user-form').reset();
+            document.getElementById('user-id').value = '';
+            
+            if (userId) {
+                title.textContent = 'Edit User';
+                passwordSection.style.display = 'none';
+                document.getElementById('password-label').classList.remove('form-label-required');
+                
+                // Load user data
+                const user = users.find(u => u.id === userId);
+                if (user) {
+                    document.getElementById('user-id').value = user.id;
+                    document.getElementById('fullname').value = user.fullname || '';
+                    document.getElementById('username').value = user.username || '';
+                    document.getElementById('email').value = user.email || '';
+                    document.getElementById('phone').value = user.phone || '';
+                    document.getElementById('role').value = user.role || '';
+                    document.getElementById('unit').value = user.unit || '';
+                    
+                    // Set permissions
+                    if (user.permissions) {
+                        document.querySelectorAll('.permission-item input[type="checkbox"]').forEach(cb => {
+                            cb.checked = user.permissions.includes(cb.value);
+                        });
+                    }
+                    
+                    // Set status
+                    const statusRadio = document.querySelector(`input[name="status"][value="${user.status}"]`);
+                    if (statusRadio) statusRadio.checked = true;
+                }
+            } else {
+                title.textContent = 'Tambah User Baru';
+                passwordSection.style.display = 'block';
+                document.getElementById('password-label').classList.add('form-label-required');
+                document.querySelectorAll('.permission-item input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+            
+            modal.classList.add('visible');
+        }
+        
+        function closeModal() {
+            document.getElementById('user-modal').classList.remove('visible');
+            editingUserId = null;
+        }
+        
+        async function saveUser() {
+            const form = document.getElementById('user-form');
+            
+            if (!window.userFormValidator?.validate()) return;
+            
+            const userData = {
+                fullname: document.getElementById('fullname').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                role: document.getElementById('role').value,
+                unit: document.getElementById('unit').value,
+                status: document.querySelector('input[name="status"]:checked')?.value || 'active',
+                permissions: Array.from(document.querySelectorAll('.permission-item input:checked'))
+                    .map(cb => cb.value)
+            };
+            
+            if (!editingUserId) {
+                userData.password = document.getElementById('password').value;
+                userData.passwordConfirm = document.getElementById('password-confirm').value;
+                
+                if (userData.password !== userData.passwordConfirm) {
+                    notifications.error('Password dan konfirmasi tidak cocok');
+                    return;
+                }
+            }
+            
+            try {
+                const saveBtn = document.getElementById('save-user-btn');
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+                
+                if (editingUserId) {
+                    await apiService.put(`/api/users/${editingUserId}`, userData);
+                    notifications.success('User berhasil diperbarui');
+                } else {
+                    await apiService.post('/api/users', userData);
+                    notifications.success('User baru berhasil ditambahkan');
+                }
+                
+                closeModal();
+                await loadUsers(currentPage);
+                
+            } catch (error) {
+                logger.error('Failed to save user', error);
+                notifications.error(error.message || 'Gagal menyimpan user');
+            } finally {
+                const saveBtn = document.getElementById('save-user-btn');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+            }
+        }
+        
+        async function resetPassword(userId) {
+            if (!confirm('Apakah Anda yakin ingin mereset password user ini?')) return;
+            
+            try {
+                await apiService.post(`/api/users/${userId}/reset-password`);
+                notifications.success('Password berhasil direset. Password baru akan dikirim ke email user.');
+            } catch (error) {
+                notifications.error('Gagal mereset password');
+            }
+        }
+        
+        async function toggleUserStatus(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const newStatus = user.status === 'active' ? 'inactive' : 'active';
+            const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+            
+            if (!confirm(`Apakah Anda yakin ingin ${action} user ini?`)) return;
+            
+            try {
+                await apiService.patch(`/api/users/${userId}/status`, { status: newStatus });
+                notifications.success(`User berhasil ${action === 'mengaktifkan' ? 'diaktifkan' : 'dinonaktifkan'}`);
+                await loadUsers(currentPage);
+            } catch (error) {
+                notifications.error('Gagal mengubah status user');
+            }
+        }
+        
+        async function exportUsers() {
+            try {
+                const allUsers = await apiService.get('/api/users', { limit: 1000 });
+                const format = prompt('Pilih format export (csv/excel):', 'excel');
+                
+                if (format === 'csv') {
+                    await exportHandler.exportCSV(allUsers.data?.users || [], {
+                        filename: `users-${Date.now()}.csv`
+                    });
+                } else {
+                    await exportHandler.exportExcel(allUsers.data?.users || [], {
+                        filename: `users-${Date.now()}.xlsx`,
+                        sheetName: 'Users'
+                    });
+                }
+                
+                notifications.success('Data user berhasil diexport');
+            } catch (error) {
+                notifications.error('Gagal mengexport data');
+            }
+        }
+        
+        // Helper functions
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        }
+        
+        function formatRole(role) {
+            const roles = {
+                super_admin: 'Super Admin',
+                admin: 'Admin',
+                kaprodi: 'Kaprodi',
+                wadek: 'Wadek',
+                dekan: 'Dekan',
+                staf: 'Staf',
+                dosen: 'Dosen',
+                mahasiswa: 'Mahasiswa',
+                user: 'User'
+            };
+            return roles[role] || role;
+        }
+        
+        function formatStatus(status) {
+            const statuses = {
+                active: 'Aktif',
+                inactive: 'Nonaktif',
+                pending: 'Pending'
+            };
+            return statuses[status] || status;
+        }
+        
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            field.type = field.type === 'password' ? 'text' : 'password';
+        }
+        
+        // Global functions for onclick handlers
+        window.editUser = (id) => openModal(id);
+        window.resetPassword = (id) => resetPassword(id);
+        window.toggleUserStatus = (id) => toggleUserStatus(id);
+        window.goToPage = (page) => loadUsers(page);
+        window.closeModal = closeModal;
+        window.togglePassword = togglePassword;
+    </script>
+</body>
+</html>
