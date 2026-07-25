@@ -1,0 +1,439 @@
+<!-- surat-masuk/disposisi.html - Form Disposisi 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Disposisi Surat - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .disposisi-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .surat-info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .surat-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 24px;
+        }
+        
+        .surat-info-item {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .surat-info-label {
+            font-size: 13px;
+            color: #64748b;
+            min-width: 100px;
+        }
+        
+        .surat-info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        
+        .disposisi-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .disposisi-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        
+        .disposisi-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .disposisi-item.status-proses::before { background: #f59e0b; }
+        .disposisi-item.status-selesai::before { background: #16a34a; }
+        .disposisi-item.status-pending::before { background: #94a3b8; }
+        
+        .disposisi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .disposisi-dari-ke {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        
+        .disposisi-dari-ke i {
+            color: #2563eb;
+        }
+        
+        .disposisi-isi {
+            background: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .disposisi-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .batas-waktu-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .batas-waktu-badge.overdue {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .batas-waktu-badge.soon {
+            background: #fffbeb;
+            color: #d97706;
+        }
+        
+        .batas-waktu-badge.ok {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+        
+        @media (max-width: 768px) {
+            .surat-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="disposisi-container">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb" style="margin-bottom:16px;">
+                <a href="/dashboard/">Dashboard</a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="/surat-masuk/list.html">Surat Masuk</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Disposisi</span>
+            </div>
+            
+            <h2 style="margin-bottom:20px;">Disposisi Surat Masuk</h2>
+            
+            <!-- Surat Info -->
+            <div class="surat-info-card" id="surat-info">
+                <div class="surat-info-grid">
+                    <div class="surat-info-item">
+                        <span class="surat-info-label">No. Surat:</span>
+                        <span class="surat-info-value" id="info-nomor">-</span>
+                    </div>
+                    <div class="surat-info-item">
+                        <span class="surat-info-label">Tanggal:</span>
+                        <span class="surat-info-value" id="info-tanggal">-</span>
+                    </div>
+                    <div class="surat-info-item">
+                        <span class="surat-info-label">Perihal:</span>
+                        <span class="surat-info-value" id="info-perihal">-</span>
+                    </div>
+                    <div class="surat-info-item">
+                        <span class="surat-info-label">Pengirim:</span>
+                        <span class="surat-info-value" id="info-pengirim">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Existing Disposisi -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header">
+                    <h3>Riwayat Disposisi</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="disposisi-list" id="disposisi-list">
+                        <li style="text-align:center;padding:20px;color:#94a3b8;">
+                            Belum ada disposisi untuk surat ini
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- New Disposisi Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Buat Disposisi Baru</h3>
+                </div>
+                <div class="card-body">
+                    <form id="disposisi-form" novalidate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Ditujukan Kepada</label>
+                                <select class="form-select" name="kepada" id="disposisi-kepada" required>
+                                    <option value="">Pilih Penerima</option>
+                                    <option value="wadek1">Wakil Dekan I</option>
+                                    <option value="wadek2">Wakil Dekan II</option>
+                                    <option value="kaprodi_ti">Kaprodi TI</option>
+                                    <option value="kaprodi_si">Kaprodi SI</option>
+                                    <option value="kabag_tu">Kabag TU</option>
+                                    <option value="kasubag_akademik">Kasubag Akademik</option>
+                                    <option value="kasubag_keuangan">Kasubag Keuangan</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Batas Waktu</label>
+                                <input type="date" class="form-input" name="batas_waktu" id="batas-waktu" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Isi Disposisi</label>
+                            <textarea class="form-textarea" name="isi_disposisi" id="isi-disposisi" 
+                                rows="3" placeholder="Tulis instruksi atau catatan disposisi..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Sifat Disposisi</label>
+                            <div style="display:flex;gap:16px;">
+                                <label class="form-check">
+                                    <input type="radio" name="sifat" value="biasa" class="form-check-input" checked>
+                                    Biasa
+                                </label>
+                                <label class="form-check">
+                                    <input type="radio" name="sifat" value="segera" class="form-check-input">
+                                    Segera
+                                </label>
+                                <label class="form-check">
+                                    <input type="radio" name="sifat" value="rahasia" class="form-check-input">
+                                    Rahasia
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex;gap:12px;margin-top:16px;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Kirim Disposisi
+                            </button>
+                            <button type="button" class="btn btn-outline" onclick="window.print()">
+                                <i class="fas fa-print"></i> Cetak Disposisi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import FormValidator from '/js/validator.js';
+        import notifications from '/js/notifications.js';
+        import apiService from '/js/api.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        // Check auth
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        let suratId = null;
+        let suratData = null;
+        let formValidator;
+        
+        // Get surat ID from URL
+        const params = new URLSearchParams(window.location.search);
+        suratId = params.get('id');
+        
+        if (!suratId) {
+            notifications.error('ID surat tidak ditemukan');
+            setTimeout(() => window.location.href = '/surat-masuk/list.html', 2000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            
+            formValidator = new FormValidator(document.getElementById('disposisi-form'));
+            
+            await loadSuratData();
+            await loadDisposisiHistory();
+            
+            // Set default batas waktu (3 hari dari sekarang)
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 3);
+            document.getElementById('batas-waktu').value = defaultDate.toISOString().split('T')[0];
+            
+            // Submit handler
+            document.getElementById('disposisi-form')?.addEventListener('submit', handleSubmit);
+            
+            logger.info('Disposisi page loaded', { suratId });
+        });
+        
+        async function loadSuratData() {
+            try {
+                const response = await apiService.get(`/api/surat-masuk/${suratId}`);
+                suratData = response.data;
+                
+                document.getElementById('info-nomor').textContent = suratData.nomor_surat || '-';
+                document.getElementById('info-tanggal').textContent = utils.formatDate(suratData.tanggal_surat, 'medium');
+                document.getElementById('info-perihal').textContent = suratData.perihal || '-';
+                document.getElementById('info-pengirim').textContent = suratData.instansi || suratData.pengirim_internal || '-';
+                
+            } catch (error) {
+                logger.error('Failed to load surat data', error);
+                notifications.error('Gagal memuat data surat');
+            }
+        }
+        
+        async function loadDisposisiHistory() {
+            try {
+                const response = await apiService.get(`/api/surat-masuk/${suratId}/disposisi`);
+                const disposisiList = response.data || [];
+                
+                const container = document.getElementById('disposisi-list');
+                
+                if (disposisiList.length === 0) {
+                    container.innerHTML = `
+                        <li style="text-align:center;padding:20px;color:#94a3b8;">
+                            <i class="fas fa-inbox" style="font-size:24px;margin-bottom:8px;display:block;"></i>
+                            Belum ada disposisi untuk surat ini
+                        </li>`;
+                    return;
+                }
+                
+                container.innerHTML = disposisiList.map(d => `
+                    <li class="disposisi-item status-${d.status || 'proses'}">
+                        <div class="disposisi-header">
+                            <strong>${d.dari_nama || 'Dekan'}</strong>
+                            <span class="batas-waktu-badge ${getBatasWaktuClass(d.batas_waktu)}">
+                                <i class="fas fa-clock"></i>
+                                ${utils.formatDate(d.batas_waktu, 'medium')}
+                                ${isOverdue(d.batas_waktu) ? ' (Terlambat)' : ''}
+                            </span>
+                        </div>
+                        <div class="disposisi-dari-ke">
+                            <span>Dari: ${d.dari_nama || '-'}</span>
+                            <i class="fas fa-arrow-right"></i>
+                            <span>Kepada: ${d.kepada_nama || '-'}</span>
+                        </div>
+                        <div class="disposisi-isi">${d.isi_disposisi}</div>
+                        <div class="disposisi-footer">
+                            <span>${utils.timeAgo(d.createdAt)}</span>
+                            <span>Sifat: <strong>${d.sifat || 'Biasa'}</strong></span>
+                        </div>
+                    </li>
+                `).join('');
+                
+            } catch (error) {
+                logger.error('Failed to load disposisi history', error);
+            }
+        }
+        
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            if (!formValidator?.validate()) return;
+            
+            const formData = new FormData(event.target);
+            const data = {
+                surat_id: suratId,
+                kepada: formData.get('kepada'),
+                batas_waktu: formData.get('batas_waktu'),
+                isi_disposisi: formData.get('isi_disposisi'),
+                sifat: formData.get('sifat')
+            };
+            
+            try {
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Mengirim...';
+                
+                await apiService.post(`/api/surat-masuk/${suratId}/disposisi`, data);
+                
+                notifications.success('Disposisi berhasil dikirim');
+                
+                // Reset form and reload history
+                event.target.reset();
+                await loadDisposisiHistory();
+                
+            } catch (error) {
+                notifications.error('Gagal mengirim disposisi');
+            } finally {
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Disposisi';
+            }
+        }
+        
+        function getBatasWaktuClass(date) {
+            if (!date) return 'ok';
+            const now = new Date();
+            const batas = new Date(date);
+            const diffDays = Math.ceil((batas - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return 'overdue';
+            if (diffDays <= 1) return 'soon';
+            return 'ok';
+        }
+        
+        function isOverdue(date) {
+            if (!date) return false;
+            return new Date(date) < new Date();
+        }
+    </script>
+</body>
+</html>
