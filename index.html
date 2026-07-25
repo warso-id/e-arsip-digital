@@ -1,4 +1,4 @@
-<!-- index.html - Landing Page 2026 (FIXED) -->
+<!-- index.html - Landing Page 2026 (FINAL SYNCHRONIZED) -->
 <!DOCTYPE html>
 <html lang="id" dir="ltr">
 <head>
@@ -17,26 +17,29 @@
     <meta property="og:url" content="https://warso-id.github.io/arsip-surat-digital-enterprise/">
     <meta property="og:site_name" content="E-Arsip Digital">
     
-    <!-- PWA -->
-    <link rel="manifest" href="/arsip-surat-digital-enterprise/manifest.json">
+    <!-- PWA - Sync dengan manifest.json -->
+    <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="E-Arsip">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><text x='50' y='65' text-anchor='middle' fill='white' font-size='50' font-weight='bold'>A</text></svg>">
     
-    <!-- ⬇️ FIX: CSP tanpa frame-ancestors (tidak didukung di meta tag) -->
+    <!-- Favicon inline SVG - no external file needed -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='55' font-weight='bold' font-family='Arial'>A</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%232563eb'/><text x='96' y='128' text-anchor='middle' fill='white' font-size='110' font-weight='bold' font-family='Arial'>A</text></svg>">
+    
+    <!-- CSP tanpa directive yang tidak didukung meta tag -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net https://script.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'self'; form-action 'self';">
     
     <title>E-Arsip Digital - Sistem Manajemen Arsip Modern</title>
     
-    <!-- Stylesheets -->
+    <!-- Stylesheets - path relatif konsisten -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
         /* ============================================ */
-        /* CRITICAL CSS INLINE                          */
+        /* CRITICAL CSS INLINE - NO EXTERNAL DEPENDENCY */
         /* ============================================ */
         :root {
             --primary: #2563eb;
@@ -65,22 +68,17 @@
             -webkit-font-smoothing: antialiased;
         }
         
+        /* Loading Screen */
         .loading-screen {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
             background: var(--white);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
             z-index: 9999;
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
-        .loading-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        
         .spinner {
             width: 48px; height: 48px;
             border: 3px solid var(--border);
@@ -92,102 +90,62 @@
         
         /* Header */
         .main-header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
+            position: fixed; top: 0; left: 0; right: 0;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
             z-index: 100;
-            transition: var(--transition);
         }
         .main-header.scrolled { box-shadow: var(--shadow-md); }
         
         .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
             height: 68px;
         }
-        
         .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: var(--text);
+            display: flex; align-items: center; gap: 12px;
+            text-decoration: none; color: var(--text);
         }
         .nav-brand .brand-icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
+            width: 42px; height: 42px; border-radius: 10px;
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px; flex-shrink: 0;
         }
         .nav-brand h1 { font-size: 20px; font-weight: 700; margin: 0; }
         
         .nav-menu { display: flex; align-items: center; gap: 8px; }
         .nav-link {
-            padding: 8px 16px;
-            color: var(--text-light);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 8px;
-            transition: var(--transition);
+            padding: 8px 16px; color: var(--text-light); text-decoration: none;
+            font-size: 14px; font-weight: 500; border-radius: 8px; transition: var(--transition);
         }
         .nav-link:hover { color: var(--primary); background: rgba(37, 99, 235, 0.06); }
         
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: var(--transition);
-            font-family: inherit;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 22px; font-size: 14px; font-weight: 600;
+            border: none; border-radius: 10px; cursor: pointer;
+            text-decoration: none; transition: var(--transition); font-family: inherit;
         }
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+            color: white; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-        }
-        .btn-outline {
-            background: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
         .btn-outline:hover { background: var(--primary); color: white; }
         .btn-lg { padding: 14px 30px; font-size: 16px; border-radius: 12px; }
         
         /* Hero */
         .hero-section {
-            padding: 140px 24px 100px;
-            text-align: center;
+            padding: 140px 24px 80px; text-align: center;
             background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 50%, #ffffff 100%);
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
         .hero-content {
-            max-width: 700px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
+            max-width: 700px; margin: 0 auto; position: relative; z-index: 1;
             animation: fadeInUp 0.8s ease;
         }
         @keyframes fadeInUp {
@@ -196,98 +154,44 @@
         }
         
         .hero-content .hero-icon {
-            width: 80px; height: 80px;
-            border-radius: 20px;
+            width: 80px; height: 80px; border-radius: 20px;
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 36px;
-            color: white;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; font-size: 36px; color: white;
             box-shadow: 0 8px 30px rgba(37, 99, 235, 0.3);
         }
-        .hero-content h2 {
-            font-size: 42px;
-            font-weight: 800;
-            color: var(--text);
-            margin-bottom: 16px;
-            line-height: 1.2;
-        }
+        .hero-content h2 { font-size: 42px; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
         .hero-content h2 span {
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .hero-content p {
-            font-size: 18px;
-            color: var(--text-light);
-            margin-bottom: 32px;
-            line-height: 1.7;
-        }
+        .hero-content p { font-size: 18px; color: var(--text-light); margin-bottom: 32px; line-height: 1.7; }
         .hero-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
         
         /* Features */
-        .features-section {
-            padding: 80px 24px;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .features-section .section-header {
-            text-align: center;
-            margin-bottom: 48px;
-        }
-        .features-section .section-header h3 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-        .features-section .section-header p {
-            font-size: 16px;
-            color: var(--text-light);
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        .features-section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 48px; }
+        .section-header h3 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+        .section-header p { font-size: 16px; color: var(--text-light); max-width: 500px; margin: 0 auto; }
         
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
-        }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; }
         .feature-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 32px 28px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
+            background: var(--white); border-radius: var(--radius); padding: 32px 28px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            transition: var(--transition); position: relative; overflow: hidden;
         }
         .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
             background: linear-gradient(90deg, var(--primary), var(--accent));
-            opacity: 0;
-            transition: opacity 0.3s;
+            opacity: 0; transition: opacity 0.3s;
         }
-        .feature-card:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-lg);
-        }
+        .feature-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
         .feature-card:hover::before { opacity: 1; }
         
         .feature-icon {
-            width: 56px; height: 56px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 18px;
+            width: 56px; height: 56px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 18px;
         }
         .feature-icon.blue { background: #eff6ff; color: #2563eb; }
         .feature-icon.green { background: #f0fdf4; color: #16a34a; }
@@ -299,44 +203,17 @@
         .feature-card h4 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
         .feature-card p { font-size: 14px; color: var(--text-light); line-height: 1.6; margin: 0; }
         
-        /* Stats */
-        .stats-section {
-            padding: 60px 24px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            display: flex;
-            justify-content: center;
-            gap: 60px;
-            flex-wrap: wrap;
-            color: white;
-        }
-        .stat-item { text-align: center; }
-        .stat-number { font-size: 42px; font-weight: 800; display: block; line-height: 1; margin-bottom: 8px; }
-        .stat-label { font-size: 14px; opacity: 0.85; font-weight: 500; }
-        
         /* CTA */
-        .cta-section {
-            padding: 80px 24px;
-            text-align: center;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        .cta-section { padding: 80px 24px; text-align: center; max-width: 600px; margin: 0 auto; }
         .cta-section h3 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
         .cta-section p { font-size: 16px; color: var(--text-light); margin-bottom: 28px; }
         
         /* Footer */
-        .main-footer {
-            background: #1e293b;
-            color: #94a3b8;
-            padding: 40px 24px;
-        }
+        .main-footer { background: #1e293b; color: #94a3b8; padding: 40px 24px; }
         .footer-content {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
+            max-width: 1100px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 20px;
         }
         .footer-brand h4 { color: white; font-size: 16px; margin-bottom: 4px; }
         .footer-brand p { font-size: 13px; margin: 0; }
@@ -348,8 +225,6 @@
         @media (max-width: 768px) {
             .hero-content h2 { font-size: 30px; }
             .features-grid { grid-template-columns: 1fr; }
-            .stats-section { gap: 30px; padding: 40px 24px; }
-            .stat-number { font-size: 32px; }
             .footer-content { flex-direction: column; text-align: center; }
         }
         @media (max-width: 480px) {
@@ -363,7 +238,7 @@
     </style>
 </head>
 <body>
-    <!-- ⬇️ FIX: Loading screen langsung hidden jika JS gagal -->
+    <!-- Loading Screen -->
     <div class="loading-screen" id="loading-screen">
         <div class="spinner"></div>
     </div>
@@ -371,7 +246,7 @@
     <!-- Header -->
     <header class="main-header" id="main-header">
         <nav class="nav-container">
-            <a href="/arsip-surat-digital-enterprise/" class="nav-brand">
+            <a href="index.html" class="nav-brand">
                 <div class="brand-icon">📁</div>
                 <h1>E-Arsip Digital</h1>
             </a>
@@ -467,58 +342,66 @@
         </div>
     </footer>
     
-    <!-- ⬇️ FIX: Minimal script - tidak ada import yang bisa gagal -->
+    <!-- Minimal Script - No ES Module Imports -->
     <script>
-        // Hide loading screen
-        window.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                var loader = document.getElementById('loading-screen');
-                if (loader) {
-                    loader.classList.add('hidden');
-                }
-            }, 300);
-        });
-        
-        // Header scroll effect
-        var header = document.getElementById('main-header');
-        var ticking = false;
-        
-        window.addEventListener('scroll', function() {
-            if (!ticking) {
-                requestAnimationFrame(function() {
-                    if (window.scrollY > 50) {
-                        header.classList.add('scrolled');
-                    } else {
-                        header.classList.remove('scrolled');
-                    }
-                    ticking = false;
+        (function() {
+            'use strict';
+            
+            // Hide loading screen
+            var loader = document.getElementById('loading-screen');
+            if (loader) {
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        loader.classList.add('hidden');
+                    }, 300);
                 });
-                ticking = true;
+                // Fallback: hide after 3 seconds even if load event doesn't fire
+                setTimeout(function() {
+                    loader.classList.add('hidden');
+                }, 3000);
             }
-        });
-        
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
-            anchor.addEventListener('click', function(e) {
-                var target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    e.preventDefault();
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-        
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/arsip-surat-digital-enterprise/sw.js')
-                    .catch(function() {
-                        // Silently fail - not critical
+            
+            // Header scroll effect
+            var header = document.getElementById('main-header');
+            var ticking = false;
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    requestAnimationFrame(function() {
+                        if (header) {
+                            header.classList.toggle('scrolled', window.scrollY > 50);
+                        }
+                        ticking = false;
                     });
+                    ticking = true;
+                }
+            }, { passive: true });
+            
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
+                    var target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        e.preventDefault();
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
             });
-        }
-        
-        console.log('E-Arsip Digital v2026.1.0 - Landing Page Loaded');
+            
+            // Register Service Worker - Sync dengan sw.js di root proyek
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('sw.js', { scope: '/' })
+                        .then(function(reg) {
+                            console.log('SW registered:', reg.scope);
+                        })
+                        .catch(function(err) {
+                            console.warn('SW failed:', err.message);
+                        });
+                });
+            }
+            
+            console.log('E-Arsip Digital v2026.1.0 - Landing Page');
+        })();
     </script>
 </body>
 </html>
