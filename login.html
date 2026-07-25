@@ -1,0 +1,975 @@
+<!-- login.html - Login Page 2026 -->
+<!DOCTYPE html>
+<html lang="id" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Login ke Sistem E-Arsip Digital">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://script.google.com; form-action 'self'; frame-ancestors 'none';">
+    <meta name="csrf-token" id="csrf-token" content="">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <title>Login - E-Arsip Digital</title>
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="/css/style.css" as="style">
+    <link rel="preload" href="/js/auth.js" as="script">
+    <link rel="preload" href="/js/api.js" as="script">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        /* Critical CSS - Login Page */
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), #764ba2);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--primary-color), #764ba2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            padding-left: 44px;
+            font-size: 14px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: var(--transition);
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .form-input.error {
+            border-color: var(--error-color);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        
+        .form-input.success {
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 16px;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+        
+        .form-input:focus ~ .input-icon,
+        .form-input:focus + .input-icon {
+            color: var(--primary-color);
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            transition: var(--transition);
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+        
+        .error-message {
+            font-size: 12px;
+            color: var(--error-color);
+            margin-top: 6px;
+            display: none;
+            animation: shake 0.3s ease;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .forgot-password {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .forgot-password:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+        
+        .login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+        
+        .login-button:active {
+            transform: translateY(0);
+        }
+        
+        .login-button:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .login-button .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .login-button.loading .spinner {
+            display: block;
+        }
+        
+        .login-button.loading .button-text {
+            opacity: 0.5;
+        }
+        
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .alert.show {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            color: var(--error-color);
+            border: 1px solid #fecaca;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            color: var(--success-color);
+            border: 1px solid #bbf7d0;
+        }
+        
+        .alert-warning {
+            background: #fffbeb;
+            color: var(--warning-color);
+            border: 1px solid #fde68a;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .mfa-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .mfa-section.show {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .footer-text {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .footer-text a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 24px;
+            }
+            
+            .login-title {
+                font-size: 20px;
+            }
+            
+            .form-options {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1e293b;
+                --bg-secondary: #0f172a;
+                --text-primary: #f1f5f9;
+                --text-secondary: #94a3b8;
+                --border-color: #334155;
+            }
+            
+            .form-input {
+                background: var(--bg-secondary);
+            }
+            
+            .form-input:focus {
+                background: var(--bg-primary);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display:none;">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <div class="login-logo">
+                    <i class="fas fa-archive"></i>
+                </div>
+                <h1 class="login-title">E-Arsip Digital</h1>
+                <p class="login-subtitle">Masuk ke sistem manajemen arsip digital</p>
+            </div>
+            
+            <!-- Alert Messages -->
+            <div class="alert alert-error" id="alert-error" role="alert">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="alert-error-message"></span>
+            </div>
+            
+            <div class="alert alert-success" id="alert-success" role="alert">
+                <i class="fas fa-check-circle"></i>
+                <span id="alert-success-message"></span>
+            </div>
+            
+            <div class="alert alert-warning" id="alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="alert-warning-message"></span>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" novalidate>
+                <!-- Hidden CSRF Token -->
+                <input type="hidden" id="csrf-token-input" value="">
+                
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="username" class="form-label">Username / Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            class="form-input" 
+                            placeholder="Masukkan username atau email"
+                            autocomplete="username"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    <div class="error-message" id="username-error"></div>
+                </div>
+                
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            class="form-input" 
+                            placeholder="Masukkan password"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button type="button" class="password-toggle" id="password-toggle" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="error-message" id="password-error"></div>
+                </div>
+                
+                <!-- Options -->
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="remember-me">
+                        <span>Ingat saya</span>
+                    </label>
+                    <a href="#" class="forgot-password" id="forgot-password-link">Lupa password?</a>
+                </div>
+                
+                <!-- Login Button -->
+                <button type="submit" class="login-button" id="login-button">
+                    <span class="button-text">Masuk</span>
+                    <span class="spinner"></span>
+                </button>
+                
+                <!-- MFA Section -->
+                <div class="mfa-section" id="mfa-section">
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="mfa-code" class="form-label">Kode Verifikasi (MFA)</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-shield-alt input-icon"></i>
+                            <input 
+                                type="text" 
+                                id="mfa-code" 
+                                class="form-input" 
+                                placeholder="Masukkan kode 6 digit"
+                                maxlength="6"
+                                inputmode="numeric"
+                                pattern="[0-9]{6}"
+                                autocomplete="one-time-code"
+                            >
+                        </div>
+                        <div class="error-message" id="mfa-error"></div>
+                    </div>
+                    
+                    <button type="button" class="login-button" id="mfa-verify-button">
+                        <span class="button-text">Verifikasi</span>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Footer -->
+            <div class="footer-text">
+                <p>Belum punya akun? <a href="#">Hubungi Administrator</a></p>
+                <p style="margin-top: 4px; font-size: 11px;">v2026.1.0</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script type="module">
+        import authService from './js/auth.js';
+        import apiService from './js/api.js';
+        import logger from './js/logger.js';
+        
+        // DOM Elements
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('login-button');
+        const mfaSection = document.getElementById('mfa-section');
+        const mfaCodeInput = document.getElementById('mfa-code');
+        const mfaVerifyButton = document.getElementById('mfa-verify-button');
+        const passwordToggle = document.getElementById('password-toggle');
+        const alertError = document.getElementById('alert-error');
+        const alertSuccess = document.getElementById('alert-success');
+        const alertWarning = document.getElementById('alert-warning');
+        
+        // State
+        let loginAttempts = 0;
+        let maxAttempts = 5;
+        let lockoutTimer = null;
+        
+        // Initialize
+        init();
+        
+        function init() {
+            // Check if already authenticated
+            if (authService.isAuthenticated) {
+                redirectToDashboard();
+            }
+            
+            // Load saved username if remember me was checked
+            loadSavedCredentials();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Focus first input
+            setTimeout(() => usernameInput.focus(), 500);
+            
+            // Check for session expiration message
+            checkSessionMessage();
+            
+            logger.info('Login page initialized');
+        }
+        
+        function setupEventListeners() {
+            // Form submission
+            loginForm.addEventListener('submit', handleLogin);
+            
+            // Password toggle
+            passwordToggle.addEventListener('click', togglePasswordVisibility);
+            
+            // MFA verification
+            mfaVerifyButton?.addEventListener('click', handleMfaVerification);
+            
+            // Real-time validation
+            usernameInput.addEventListener('input', () => validateField(usernameInput, 'username-error'));
+            passwordInput.addEventListener('input', () => validateField(passwordInput, 'password-error'));
+            
+            // Forgot password
+            document.getElementById('forgot-password-link')?.addEventListener('click', handleForgotPassword);
+            
+            // Clear errors on input
+            [usernameInput, passwordInput].forEach(input => {
+                input.addEventListener('input', () => {
+                    hideAlert('error');
+                    input.classList.remove('error');
+                });
+            });
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            // Validate form
+            if (!validateForm()) {
+                return;
+            }
+            
+            // Check if locked out
+            if (loginAttempts >= maxAttempts) {
+                showAlert('error', 'Terlalu banyak percobaan login. Silakan coba lagi nanti.');
+                return;
+            }
+            
+            // Show loading state
+            setLoading(true);
+            
+            try {
+                const credentials = {
+                    username: usernameInput.value.trim(),
+                    password: passwordInput.value
+                };
+                
+                // Attempt login
+                const result = await authService.login(credentials);
+                
+                if (result.requiresMfa) {
+                    // Show MFA section
+                    showMfaSection(result.mfaToken);
+                    setLoading(false);
+                } else {
+                    // Login successful
+                    handleLoginSuccess(result);
+                }
+                
+            } catch (error) {
+                handleLoginError(error);
+            } finally {
+                if (!mfaSection.classList.contains('show')) {
+                    setLoading(false);
+                }
+            }
+        }
+        
+        async function handleMfaVerification() {
+            const mfaCode = mfaCodeInput.value.trim();
+            
+            if (mfaCode.length !== 6) {
+                showFieldError(mfaCodeInput, 'mfa-error', 'Kode MFA harus 6 digit');
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                await authService.verifyMfa(mfaCode);
+                handleLoginSuccess({ user: authService.currentUser });
+            } catch (error) {
+                showAlert('error', error.message || 'Kode MFA tidak valid');
+                mfaCodeInput.value = '';
+                setLoading(false);
+            }
+        }
+        
+        function handleLoginSuccess(result) {
+            logger.info('Login successful', { username: result.user?.username });
+            
+            // Save credentials if remember me is checked
+            if (document.getElementById('remember-me')?.checked) {
+                saveCredentials();
+            }
+            
+            showAlert('success', 'Login berhasil! Mengalihkan...');
+            
+            // Redirect after short delay
+            setTimeout(() => {
+                redirectToDashboard();
+            }, 1000);
+        }
+        
+        function handleLoginError(error) {
+            loginAttempts++;
+            
+            const remainingAttempts = maxAttempts - loginAttempts;
+            
+            if (remainingAttempts <= 0) {
+                showAlert('error', 'Akun terkunci karena terlalu banyak percobaan. Silakan coba lagi dalam 15 menit.');
+                setLockout(900000); // 15 minutes
+            } else if (remainingAttempts <= 2) {
+                showAlert('warning', `Login gagal. Percobaan tersisa: ${remainingAttempts}`);
+            } else {
+                showAlert('error', error.message || 'Login gagal. Silakan coba lagi.');
+            }
+            
+            // Clear password field
+            passwordInput.value = '';
+            passwordInput.focus();
+            
+            // Shake animation
+            loginButton.classList.add('shake');
+            setTimeout(() => loginButton.classList.remove('shake'), 300);
+            
+            logger.warn('Login failed', {
+                username: usernameInput.value,
+                attempts: loginAttempts,
+                error: error.message
+            });
+        }
+        
+        // Validation functions
+        function validateForm() {
+            let isValid = true;
+            
+            if (!validateField(usernameInput, 'username-error')) {
+                isValid = false;
+            }
+            
+            if (!validateField(passwordInput, 'password-error')) {
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        function validateField(input, errorId) {
+            const errorElement = document.getElementById(errorId);
+            const value = input.value.trim();
+            
+            // Clear previous errors
+            errorElement.classList.remove('show');
+            input.classList.remove('error', 'success');
+            
+            if (!value) {
+                showFieldError(input, errorId, 'Field ini wajib diisi');
+                return false;
+            }
+            
+            // Specific validations
+            if (input.id === 'username' && value.length < 3) {
+                showFieldError(input, errorId, 'Username minimal 3 karakter');
+                return false;
+            }
+            
+            if (input.id === 'password' && value.length < 8) {
+                showFieldError(input, errorId, 'Password minimal 8 karakter');
+                return false;
+            }
+            
+            // Valid
+            input.classList.add('success');
+            return true;
+        }
+        
+        function showFieldError(input, errorId, message) {
+            const errorElement = document.getElementById(errorId);
+            input.classList.add('error');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+        
+        // UI functions
+        function setLoading(isLoading) {
+            loginButton.disabled = isLoading;
+            if (isLoading) {
+                loginButton.classList.add('loading');
+            } else {
+                loginButton.classList.remove('loading');
+            }
+        }
+        
+        function showMfaSection(mfaToken) {
+            mfaSection.classList.add('show');
+            mfaCodeInput.focus();
+            
+            // Store MFA token temporarily
+            mfaSection.dataset.mfaToken = mfaToken;
+        }
+        
+        function showAlert(type, message) {
+            // Hide all alerts first
+            [alertError, alertSuccess, alertWarning].forEach(alert => {
+                alert.classList.remove('show');
+            });
+            
+            let alertElement;
+            let messageElement;
+            
+            switch (type) {
+                case 'error':
+                    alertElement = alertError;
+                    messageElement = document.getElementById('alert-error-message');
+                    break;
+                case 'success':
+                    alertElement = alertSuccess;
+                    messageElement = document.getElementById('alert-success-message');
+                    break;
+                case 'warning':
+                    alertElement = alertWarning;
+                    messageElement = document.getElementById('alert-warning-message');
+                    break;
+            }
+            
+            if (alertElement && messageElement) {
+                messageElement.textContent = message;
+                alertElement.classList.add('show');
+                
+                // Auto-hide success messages
+                if (type === 'success') {
+                    setTimeout(() => alertElement.classList.remove('show'), 5000);
+                }
+            }
+        }
+        
+        function hideAlert(type) {
+            const alertMap = {
+                'error': alertError,
+                'success': alertSuccess,
+                'warning': alertWarning
+            };
+            
+            const alert = alertMap[type];
+            if (alert) {
+                alert.classList.remove('show');
+            }
+        }
+        
+        function togglePasswordVisibility() {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            
+            const icon = passwordToggle.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        }
+        
+        // Credential management
+        function saveCredentials() {
+            try {
+                localStorage.setItem('saved_username', usernameInput.value);
+            } catch (error) {
+                logger.warn('Failed to save credentials', error);
+            }
+        }
+        
+        function loadSavedCredentials() {
+            try {
+                const savedUsername = localStorage.getItem('saved_username');
+                if (savedUsername) {
+                    usernameInput.value = savedUsername;
+                    document.getElementById('remember-me').checked = true;
+                }
+            } catch (error) {
+                logger.warn('Failed to load saved credentials', error);
+            }
+        }
+        
+        // Lockout handling
+        function setLockout(duration) {
+            loginButton.disabled = true;
+            
+            clearTimeout(lockoutTimer);
+            lockoutTimer = setTimeout(() => {
+                loginAttempts = 0;
+                loginButton.disabled = false;
+                hideAlert('error');
+            }, duration);
+        }
+        
+        // Session handling
+        function checkSessionMessage() {
+            const params = new URLSearchParams(window.location.search);
+            const message = params.get('message');
+            
+            if (message === 'session_expired') {
+                showAlert('warning', 'Sesi Anda telah berakhir. Silakan login kembali.');
+            } else if (message === 'logged_out') {
+                showAlert('success', 'Anda telah berhasil logout.');
+            } else if (message === 'password_changed') {
+                showAlert('success', 'Password berhasil diubah. Silakan login dengan password baru.');
+            }
+        }
+        
+        // Password reset
+        function handleForgotPassword(event) {
+            event.preventDefault();
+            
+            const username = usernameInput.value.trim();
+            
+            if (!username) {
+                showAlert('warning', 'Masukkan username terlebih dahulu');
+                usernameInput.focus();
+                return;
+            }
+            
+            if (confirm('Apakah Anda yakin ingin mereset password? Instruksi akan dikirim ke email Anda.')) {
+                authService.requestPasswordReset(username)
+                    .then(() => {
+                        showAlert('success', 'Instruksi reset password telah dikirim ke email Anda.');
+                    })
+                    .catch(error => {
+                        showAlert('error', error.message || 'Gagal mengirim instruksi reset password.');
+                    });
+            }
+        }
+        
+        // Navigation
+        function redirectToDashboard() {
+            const roleRoutes = {
+                'super_admin': '/dashboard/super-admin/index.html',
+                'admin': '/dashboard/admin/index.html',
+                'kaprodi': '/dashboard/kaprodi/index.html',
+                'wadek': '/dashboard/wadek/index.html',
+                'dekan': '/dashboard/dekan/index.html',
+                'user': '/dashboard/user/index.html'
+            };
+            
+            const userRole = authService.currentUser?.role;
+            const redirectUrl = roleRoutes[userRole] || '/dashboard/index.html';
+            
+            window.location.href = redirectUrl;
+        }
+        
+        // Cleanup
+        window.addEventListener('unload', () => {
+            clearTimeout(lockoutTimer);
+        });
+        
+        // Service worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    logger.debug('Service Worker registered');
+                })
+                .catch(error => {
+                    logger.warn('Service Worker registration failed', error);
+                });
+        }
+    </script>
+</body>
+</html>

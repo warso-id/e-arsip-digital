@@ -1,0 +1,38 @@
+# robots.txt - E-Arsip Digital 2026
+# Allow search engines to index the landing page only
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /login.html
+Allow: /sitemap.xml
+
+# Disallow sensitive paths
+Disallow: /config/
+Disallow: /js/
+Disallow: /css/
+Disallow: /components/
+Disallow: /dashboard/
+Disallow: /surat-keluar/
+Disallow: /surat-masuk/
+Disallow: /profile/
+Disallow: /manajemen-user/
+Disallow: /laporan/
+Disallow: /log-aktivitas/
+Disallow: /notifikasi/
+Disallow: /pengaturan/
+Disallow: /help/
+Disallow: /error/
+Disallow: /tests/
+Disallow: /scripts/
+Disallow: /Google-Apps-Script/
+Disallow: /backups/
+Disallow: /.env
+Disallow: /.git/
+Disallow: /node_modules/
+
+# Crawl delay
+Crawl-delay: 10
+
+# Sitemap location
+Sitemap: https://e-arsip.example.com/sitemap.xml

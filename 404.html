@@ -1,0 +1,316 @@
+<!-- 404.html - Error 404 Page 2026 -->
+<!DOCTYPE html>
+<html lang="id" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#2563eb">
+    <title>404 - Halaman Tidak Ditemukan | E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .error-container {
+            text-align: center;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .error-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .error-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .error-code {
+            font-size: 120px;
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-outline {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .suggestions {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        
+        .suggestions h4 {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        
+        .suggestions ul {
+            list-style: none;
+        }
+        
+        .suggestions li {
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        
+        .suggestions a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .suggestions a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .suggestions i {
+            margin-right: 8px;
+            color: #94a3b8;
+        }
+        
+        .version {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        @media (max-width: 480px) {
+            .error-card {
+                padding: 32px 24px;
+            }
+            
+            .error-code {
+                font-size: 80px;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <div class="error-icon">
+                <i class="fas fa-map-signs"></i>
+            </div>
+            <div class="error-code">404</div>
+            <h1 class="error-title">Halaman Tidak Ditemukan</h1>
+            <p class="error-message">
+                Maaf, halaman yang Anda cari tidak dapat ditemukan. 
+                Mungkin telah dipindahkan, dihapus, atau URL yang dimasukkan salah.
+            </p>
+            
+            <div class="error-actions">
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Kembali ke Beranda
+                </a>
+                <a href="/login.html" class="btn btn-outline">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+            
+            <div class="suggestions">
+                <h4>Mungkin Anda mencari:</h4>
+                <ul>
+                    <li>
+                        <a href="/">
+                            <i class="fas fa-home"></i> Halaman Utama
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/login.html">
+                            <i class="fas fa-sign-in-alt"></i> Login ke Sistem
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/surat-keluar/form.html">
+                            <i class="fas fa-pen"></i> Buat Surat Keluar
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/surat-masuk/list.html">
+                            <i class="fas fa-inbox"></i> Daftar Surat Masuk
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/help/index.html">
+                            <i class="fas fa-question-circle"></i> Pusat Bantuan
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="version">
+                E-Arsip Digital v2026.1.0
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Track 404 error
+        (function() {
+            const errorInfo = {
+                url: window.location.href,
+                referrer: document.referrer,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent
+            };
+            
+            console.warn('404 Error:', errorInfo);
+            
+            // Log to service worker if available
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'LOG_ERROR',
+                    payload: {
+                        type: '404',
+                        ...errorInfo
+                    }
+                });
+            }
+            
+            // Auto-redirect to home after 30 seconds
+            let countdown = 30;
+            const messageEl = document.querySelector('.error-message');
+            
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    window.location.href = '/';
+                }
+            }, 1000);
+            
+            // Try to fix common URL typos
+            const path = window.location.pathname;
+            const commonFixes = {
+                '/dashbord': '/dashboard',
+                '/dashborad': '/dashboard',
+                '/dasboard': '/dashboard',
+                '/surat-kelaur': '/surat-keluar',
+                '/surat-masauk': '/surat-masuk',
+                '/pengaturaan': '/pengaturan',
+                '/manajemen-userr': '/manajemen-user',
+                '/lapooran': '/laporan'
+            };
+            
+            const fixedPath = commonFixes[path.toLowerCase()];
+            if (fixedPath) {
+                setTimeout(() => {
+                    if (confirm(`Apakah Anda mencari "${fixedPath}"?`)) {
+                        window.location.href = fixedPath;
+                    }
+                }, 2000);
+            }
+        })();
+    </script>
+</body>
+</html>

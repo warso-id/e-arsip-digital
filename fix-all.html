@@ -1,0 +1,240 @@
+<!-- fix-all.html - Fix Dashboard ONE-CLICK 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Fix Dashboard - E-Arsip Digital</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #f1f5f9;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .card {
+            background: #334155;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .icon { font-size: 48px; margin-bottom: 16px; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        p { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: white;
+        }
+        .btn-fix { background: #16a34a; }
+        .btn-fix:hover { background: #15803d; }
+        .btn-reset { background: #dc2626; }
+        .btn-reset:hover { background: #b91c1c; }
+        .btn-cache { background: #d97706; }
+        .btn-cache:hover { background: #b45309; }
+        .btn-home { background: #2563eb; }
+        .btn-home:hover { background: #1d4ed8; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .log {
+            text-align: left;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .log.show { display: block; }
+        .log-entry { padding: 2px 0; }
+        .log-entry.success { color: #4ade80; }
+        .log-entry.error { color: #f87171; }
+        .log-entry.info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="icon">🔧</div>
+            <h1>Fix Dashboard</h1>
+            <p>Perbaiki masalah umum pada aplikasi E-Arsip Digital dengan satu klik</p>
+            
+            <button class="btn btn-fix" onclick="fixAll()" id="fix-btn">
+                🔧 Fix All Issues
+            </button>
+            <button class="btn btn-cache" onclick="clearCache()">
+                🗑️ Clear Cache & Reload
+            </button>
+            <button class="btn btn-reset" onclick="resetApp()">
+                ⚠️ Reset Aplikasi
+            </button>
+            <button class="btn btn-home" onclick="goHome()">
+                🏠 Kembali ke Beranda
+            </button>
+            
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            logEl.classList.add('show');
+            logEl.innerHTML += `<div class="log-entry ${type}">[${new Date().toLocaleTimeString()}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        async function fixAll() {
+            const btn = document.getElementById('fix-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Fixing...';
+            
+            log('Starting diagnostics...', 'info');
+            
+            // 1. Check localStorage
+            try {
+                const test = localStorage.setItem('test', '1');
+                localStorage.removeItem('test');
+                log('✅ localStorage OK', 'success');
+            } catch (e) {
+                log('❌ localStorage error - clearing...', 'error');
+                try { localStorage.clear(); } catch {}
+            }
+            
+            // 2. Check session
+            try {
+                const auth = localStorage.getItem('auth_session');
+                if (auth) {
+                    const parsed = JSON.parse(auth);
+                    log(`✅ Session found for: ${parsed.user?.username || 'unknown'}`, 'success');
+                } else {
+                    log('⚠️ No active session', 'info');
+                }
+            } catch (e) {
+                log('❌ Corrupted session - removing...', 'error');
+                localStorage.removeItem('auth_session');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_refresh_token');
+            }
+            
+            // 3. Clear expired cache
+            const prefix = 'cache_';
+            let cleared = 0;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key?.startsWith(prefix)) {
+                    try {
+                        const entry = JSON.parse(localStorage.getItem(key));
+                        if (entry.expiresAt && Date.now() > entry.expiresAt) {
+                            localStorage.removeItem(key);
+                            cleared++;
+                        }
+                    } catch { localStorage.removeItem(key); cleared++; }
+                }
+            }
+            log(`✅ Cleared ${cleared} expired cache entries`, 'success');
+            
+            // 4. Check IndexedDB
+            if (window.indexedDB) {
+                try {
+                    const databases = await indexedDB.databases?.() || [];
+                    log(`✅ IndexedDB OK (${databases.length} databases)`, 'success');
+                } catch {
+                    log('⚠️ IndexedDB not accessible', 'info');
+                }
+            }
+            
+            // 5. Check service worker
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length > 0) {
+                    await Promise.all(registrations.map(r => r.update()));
+                    log('✅ Service Worker updated', 'success');
+                }
+            }
+            
+            // 6. Check connectivity
+            log(`✅ Network: ${navigator.onLine ? 'Online' : 'Offline'}`, navigator.onLine ? 'success' : 'error');
+            
+            log('✅ Fix completed! Reloading in 2 seconds...', 'success');
+            
+            setTimeout(() => {
+                window.location.href = '/dashboard/';
+            }, 2000);
+        }
+        
+        function clearCache() {
+            // Clear all cache
+            const cachePrefixes = ['cache_', 'api-cache_', 'offline_'];
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (cachePrefixes.some(p => key?.startsWith(p))) {
+                    localStorage.removeItem(key);
+                }
+            }
+            
+            // Clear session storage
+            sessionStorage.clear();
+            
+            // Clear IndexedDB caches
+            if (window.indexedDB) {
+                ['EArsipCache_app', 'EArsipCache_offline', 'EArsipSW'].forEach(name => {
+                    indexedDB.deleteDatabase(name).catch(() => {});
+                });
+            }
+            
+            // Clear service worker caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            
+            alert('Cache cleared! Page will reload.');
+            window.location.reload(true);
+        }
+        
+        function resetApp() {
+            if (confirm('⚠️ Ini akan menghapus SEMUA data lokal (session, cache, settings). Lanjutkan?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                if (window.indexedDB) {
+                    indexedDB.databases?.().then(dbs => {
+                        dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+                    }).catch(() => {});
+                }
+                
+                alert('Aplikasi direset. Anda akan diarahkan ke halaman login.');
+                window.location.href = '/login.html';
+            }
+        }
+        
+        function goHome() {
+            window.location.href = '/dashboard/';
+        }
+    </script>
+</body>
+</html>
