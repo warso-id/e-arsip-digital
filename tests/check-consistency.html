@@ -1,0 +1,169 @@
+<!-- FILE: tests/check-consistency.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Consistency Checker - E-Arsip Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f5f6fa; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .pass { color: #28a745; }
+        .fail { color: #dc3545; }
+        .warn { color: #ffc107; }
+        pre { background: #1a1a2e; color: #00ff00; padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="mb-4">🔍 Project Consistency Checker</h2>
+        
+        <div class="card">
+            <h5>Run Validation</h5>
+            <button class="btn btn-primary" onclick="runValidation()">
+                <i class="fas fa-play me-2"></i>Run All Checks
+            </button>
+            <button class="btn btn-success ms-2" onclick="checkAllFiles()">
+                <i class="fas fa-file me-2"></i>Check All Files
+            </button>
+            <button class="btn btn-info ms-2" onclick="checkLinks()">
+                <i class="fas fa-link me-2"></i>Check Links
+            </button>
+        </div>
+        
+        <div class="card">
+            <h5>Results</h5>
+            <pre id="results">Click "Run All Checks" to start validation...</pre>
+        </div>
+        
+        <div class="card">
+            <h5>Summary</h5>
+            <div id="summary"></div>
+        </div>
+    </div>
+
+    <script src="../config/config.js"></script>
+    <script src="../js/validator-checker.js"></script>
+    <script>
+        async function runValidation() {
+            document.getElementById('results').textContent = 'Running validation...';
+            await projectValidator.runAllChecks();
+            
+            const results = projectValidator.results;
+            document.getElementById('results').textContent = 
+                `✅ PASSED (${results.passed.length}):\n` + results.passed.join('\n') + '\n\n' +
+                `❌ FAILED (${results.failed.length}):\n` + results.failed.join('\n') + '\n\n' +
+                `⚠️ WARNINGS (${results.warnings.length}):\n` + results.warnings.join('\n');
+            
+            updateSummary();
+        }
+        
+        async function checkAllFiles() {
+            document.getElementById('results').textContent = 'Checking all project files...';
+            
+            const files = [
+                'index.html', 'login.html', '404.html',
+                'config/config.js', 'config/app-config.js', 'config/routes-config.js',
+                'config/menu-config.js', 'config/security-config.js',
+                'js/api.js', 'js/auth.js', 'js/utils.js', 'js/validator.js',
+                'js/navigation.js', 'js/security.js', 'js/encryption.js',
+                'js/session.js', 'js/upload.js', 'js/notifications.js',
+                'css/style.css', 'css/print.css',
+                'css/themes/dark.css', 'css/themes/blue.css',
+                'css/themes/green.css', 'css/themes/purple.css',
+                'dashboard/admin/index.html', 'dashboard/user/index.html',
+                'dashboard/dekan/index.html', 'dashboard/kaprodi/index.html',
+                'dashboard/wadek/index.html', 'dashboard/staf/index.html',
+                'dashboard/dosen/index.html', 'dashboard/mahasiswa/index.html',
+                'surat-keluar/form.html', 'surat-keluar/list.html',
+                'surat-keluar/draft.html', 'surat-keluar/approval.html',
+                'surat-masuk/form.html', 'surat-masuk/list.html',
+                'surat-masuk/disposisi.html', 'surat-masuk/agenda.html',
+                'profile/index.html', 'manajemen-user/index.html',
+                'laporan/index.html', 'notifikasi/index.html',
+                'pengaturan/index.html', 'help/index.html'
+            ];
+            
+            let found = 0, missing = 0;
+            const results = [];
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.push(`✅ ${file}`);
+                        found++;
+                    } else {
+                        results.push(`❌ ${file} (Status: ${response.status})`);
+                        missing++;
+                    }
+                } catch (error) {
+                    results.push(`⚠️ ${file} - Cannot check`);
+                }
+            }
+            
+            document.getElementById('results').textContent = 
+                `Files checked: ${files.length}\nFound: ${found}\nMissing: ${missing}\n\n` + 
+                results.join('\n');
+            
+            updateSummary();
+        }
+        
+        async function checkLinks() {
+            document.getElementById('results').textContent = 'Checking internal links...';
+            
+            const links = document.querySelectorAll('a[href]');
+            const scripts = document.querySelectorAll('script[src]');
+            const styles = document.querySelectorAll('link[rel="stylesheet"]');
+            
+            const allLinks = [
+                ...Array.from(links).map(l => l.href),
+                ...Array.from(scripts).map(s => s.src),
+                ...Array.from(styles).map(s => s.href)
+            ].filter(href => href && !href.startsWith('http') && !href.startsWith('//'));
+            
+            let valid = 0, invalid = 0;
+            const results = [];
+            
+            for (const link of allLinks) {
+                try {
+                    const response = await fetch(link, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.push(`✅ ${link}`);
+                        valid++;
+                    } else {
+                        results.push(`❌ ${link} (${response.status})`);
+                        invalid++;
+                    }
+                } catch {
+                    results.push(`⚠️ ${link} - Cannot verify`);
+                }
+            }
+            
+            document.getElementById('results').textContent = 
+                `Links checked: ${allLinks.length}\nValid: ${valid}\nInvalid: ${invalid}\n\n` + 
+                results.join('\n');
+            
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            document.getElementById('summary').innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Gunakan checker ini untuk memvalidasi project sebelum deployment.
+                    File yang ditandai ❌ perlu diperbaiki.
+                    File dengan ⚠️ mungkin berada di path yang berbeda.
+                </div>
+            `;
+        }
+        
+        // Auto-run on load
+        window.addEventListener('DOMContentLoaded', () => {
+            runValidation();
+        });
+    </script>
+</body>
+</html>
