@@ -1,0 +1,901 @@
+<!-- surat-keluar/form.html - Form Surat Keluar 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Buat Surat Keluar - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .form-wizard {
+            display: flex;
+            margin-bottom: 32px;
+            position: relative;
+        }
+        
+        .wizard-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .wizard-step .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .wizard-step.active .step-number {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .wizard-step.completed .step-number {
+            background: #16a34a;
+            color: white;
+        }
+        
+        .wizard-step .step-label {
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .wizard-step.active .step-label {
+            color: #2563eb;
+            font-weight: 600;
+        }
+        
+        .wizard-step.completed .step-label {
+            color: #16a34a;
+        }
+        
+        .wizard-line {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e2e8f0;
+            z-index: 0;
+        }
+        
+        .wizard-line-progress {
+            height: 100%;
+            background: #2563eb;
+            transition: width 0.3s ease;
+        }
+        
+        .form-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .attachment-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        
+        .attachment-item .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .attachment-item .file-size {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .recipient-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 16px;
+            font-size: 13px;
+            margin: 2px;
+        }
+        
+        .recipient-tag .remove-tag {
+            cursor: pointer;
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        
+        .recipient-tag .remove-tag:hover {
+            opacity: 1;
+        }
+        
+        .signature-preview {
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .signature-preview:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+        
+        .signature-preview img {
+            max-width: 200px;
+            max-height: 100px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row,
+            .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .wizard-step .step-label {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="form-container">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="/dashboard/">Dashboard</a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="/surat-keluar/list.html">Surat Keluar</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Buat Surat Baru</span>
+            </div>
+            
+            <!-- Header -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-body">
+                    <h2 style="margin:0;">Buat Surat Keluar Baru</h2>
+                    <p style="color:#64748b;margin:4px 0 0;">Lengkapi form berikut untuk membuat surat keluar</p>
+                </div>
+            </div>
+            
+            <!-- Wizard Steps -->
+            <div class="form-wizard">
+                <div class="wizard-line">
+                    <div class="wizard-line-progress" id="wizard-progress" style="width:0%;"></div>
+                </div>
+                <div class="wizard-step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Informasi Surat</div>
+                </div>
+                <div class="wizard-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Penerima & Lampiran</div>
+                </div>
+                <div class="wizard-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Tanda Tangan & Review</div>
+                </div>
+            </div>
+            
+            <!-- Form -->
+            <form id="surat-form" novalidate>
+                <!-- Step 1: Informasi Surat -->
+                <div class="form-section active" data-section="1">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Informasi Surat</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Jenis Surat</label>
+                                    <select class="form-select" name="jenis_surat" id="jenis-surat" required>
+                                        <option value="">Pilih Jenis Surat</option>
+                                        <option value="biasa">Surat Biasa</option>
+                                        <option value="penting">Surat Penting</option>
+                                        <option value="rahasia">Surat Rahasia</option>
+                                        <option value="segera">Surat Segera</option>
+                                        <option value="undangan">Surat Undangan</option>
+                                        <option value="pemberitahuan">Surat Pemberitahuan</option>
+                                        <option value="keputusan">Surat Keputusan</option>
+                                        <option value="edaran">Surat Edaran</option>
+                                    </select>
+                                    <div class="form-error" id="jenis-surat-error"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Sifat Surat</label>
+                                    <select class="form-select" name="sifat_surat" id="sifat-surat" required>
+                                        <option value="">Pilih Sifat Surat</option>
+                                        <option value="biasa">Biasa</option>
+                                        <option value="segera">Segera</option>
+                                        <option value="sangat_segera">Sangat Segera</option>
+                                        <option value="rahasia">Rahasia</option>
+                                    </select>
+                                    <div class="form-error" id="sifat-surat-error"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Perihal Surat</label>
+                                <input type="text" class="form-input" name="perihal" id="perihal" 
+                                    placeholder="Masukkan perihal surat" required maxlength="200">
+                                <div class="form-help">Maksimal 200 karakter. Sisa: <span id="perihal-count">200</span></div>
+                                <div class="form-error" id="perihal-error"></div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Tanggal Surat</label>
+                                    <input type="date" class="form-input" name="tanggal_surat" id="tanggal-surat" required>
+                                    <div class="form-error" id="tanggal-surat-error"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Nomor Agenda</label>
+                                    <input type="text" class="form-input" name="nomor_agenda" id="nomor-agenda" 
+                                        placeholder="Otomatis atau manual">
+                                    <div class="form-help">Kosongkan untuk penomoran otomatis</div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Klasifikasi</label>
+                                <select class="form-select" name="klasifikasi" id="klasifikasi">
+                                    <option value="">Pilih Klasifikasi</option>
+                                    <option value="umum">Umum</option>
+                                    <option value="keuangan">Keuangan</option>
+                                    <option value="kepegawaian">Kepegawaian</option>
+                                    <option value="akademik">Akademik</option>
+                                    <option value="kemahasiswaan">Kemahasiswaan</option>
+                                    <option value="kerjasama">Kerjasama</option>
+                                    <option value="aset">Aset</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Penerima & Lampiran -->
+                <div class="form-section" data-section="2">
+                    <div class="card" style="margin-bottom:20px;">
+                        <div class="card-header">
+                            <h3>Penerima Surat</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Tujuan Surat</label>
+                                <select class="form-select" name="tujuan_tipe" id="tujuan-tipe" required>
+                                    <option value="">Pilih Tipe Tujuan</option>
+                                    <option value="internal">Internal</option>
+                                    <option value="eksternal">Eksternal</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="tujuan-internal-group" style="display:none;">
+                                <label class="form-label">Pilih Unit/Departemen</label>
+                                <select class="form-select" name="tujuan_internal" id="tujuan-internal">
+                                    <option value="">Pilih Unit</option>
+                                    <option value="dekanat">Dekanat</option>
+                                    <option value="prodi_ti">Prodi Teknik Informatika</option>
+                                    <option value="prodi_si">Prodi Sistem Informasi</option>
+                                    <option value="prodi_manajemen">Prodi Manajemen</option>
+                                    <option value="baak">BAAK</option>
+                                    <option value="bauk">BAUK</option>
+                                    <option value="upt">UPT</option>
+                                </select>
+                            </div>
+                            
+                            <div id="tujuan-eksternal-group" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Nama Instansi/Perusahaan</label>
+                                    <input type="text" class="form-input" name="tujuan_eksternal" 
+                                        id="tujuan-eksternal" placeholder="Nama instansi atau perusahaan">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Alamat</label>
+                                    <textarea class="form-textarea" name="alamat_tujuan" id="alamat-tujuan" 
+                                        rows="2" placeholder="Alamat lengkap penerima"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Tembusan (CC)</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-input" id="tembusan-input" 
+                                        placeholder="Ketik dan tekan Enter untuk menambah">
+                                    <button type="button" class="btn btn-outline" id="add-tembusan">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="tembusan-tags" style="margin-top:8px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Isi Surat & Lampiran</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Isi Ringkas Surat</label>
+                                <textarea class="form-textarea" name="isi_ringkas" id="isi-ringkas" 
+                                    rows="4" placeholder="Masukkan isi ringkas atau poin-poin penting surat"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Upload Dokumen Surat</label>
+                                <div class="upload-container" id="dokumen-upload"></div>
+                                <div class="form-help">Format: PDF, DOC, DOCX (Maks. 10MB)</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Lampiran Pendukung</label>
+                                <div class="upload-container" id="lampiran-upload"></div>
+                                <div class="form-help">Format: PDF, JPG, PNG (Maks. 5MB per file)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Tanda Tangan & Review -->
+                <div class="form-section" data-section="3">
+                    <div class="card" style="margin-bottom:20px;">
+                        <div class="card-header">
+                            <h3>Tanda Tangan</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Penandatangan</label>
+                                    <select class="form-select" name="penandatangan" id="penandatangan" required>
+                                        <option value="">Pilih Penandatangan</option>
+                                        <option value="dekan">Dekan</option>
+                                        <option value="wadek1">Wakil Dekan I</option>
+                                        <option value="wadek2">Wakil Dekan II</option>
+                                        <option value="kaprodi_ti">Kaprodi Teknik Informatika</option>
+                                        <option value="kaprodi_si">Kaprodi Sistem Informasi</option>
+                                        <option value="kabag">Kepala Bagian</option>
+                                    </select>
+                                    <div class="form-error" id="penandatangan-error"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Posisi Tanda Tangan</label>
+                                    <select class="form-select" name="posisi_ttd">
+                                        <option value="kanan">Kanan</option>
+                                        <option value="kiri">Kiri</option>
+                                        <option value="tengah">Tengah</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Preview Tanda Tangan</label>
+                                <div class="signature-preview" id="signature-preview">
+                                    <i class="fas fa-signature" style="font-size:48px;color:#cbd5e1;"></i>
+                                    <p style="color:#94a3b8;margin-top:8px;">Pilih penandatangan untuk melihat tanda tangan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Review -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Review Surat</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="review-content" id="review-content">
+                                <p style="color:#94a3b8;">Lengkapi langkah sebelumnya untuk melihat review</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <div>
+                        <button type="button" class="btn btn-outline" id="prev-btn" style="display:none;">
+                            <i class="fas fa-arrow-left"></i> Sebelumnya
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:12px;">
+                        <button type="button" class="btn btn-outline" id="draft-btn">
+                            <i class="fas fa-save"></i> Simpan Draft
+                        </button>
+                        <button type="button" class="btn btn-primary" id="next-btn">
+                            Selanjutnya <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="submit-btn" style="display:none;">
+                            <i class="fas fa-paper-plane"></i> Kirim Surat
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import FormValidator from '/js/validator.js';
+        import FileUploader from '/js/upload.js';
+        import notifications from '/js/notifications.js';
+        import apiService from '/js/api.js';
+        import logger from '/js/logger.js';
+        
+        // Check auth
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        // State
+        let currentStep = 1;
+        const totalSteps = 3;
+        const formData = {
+            tembusan: [],
+            dokumen: [],
+            lampiran: []
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initWizard();
+            initFormValidation();
+            initFileUploaders();
+            initEventListeners();
+            logger.info('Surat keluar form initialized');
+        });
+        
+        function initWizard() {
+            updateWizardUI();
+        }
+        
+        function updateWizardUI() {
+            // Update steps
+            document.querySelectorAll('.wizard-step').forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+                
+                if (stepNum < currentStep) step.classList.add('completed');
+                if (stepNum === currentStep) step.classList.add('active');
+            });
+            
+            // Update progress line
+            const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            document.getElementById('wizard-progress').style.width = `${progress}%`;
+            
+            // Show/hide sections
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+                if (parseInt(section.dataset.section) === currentStep) {
+                    section.classList.add('active');
+                }
+            });
+            
+            // Update buttons
+            document.getElementById('prev-btn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
+            document.getElementById('next-btn').style.display = currentStep < totalSteps ? 'inline-flex' : 'none';
+            document.getElementById('submit-btn').style.display = currentStep === totalSteps ? 'inline-flex' : 'none';
+            
+            // Update review if on last step
+            if (currentStep === 3) {
+                updateReview();
+            }
+        }
+        
+        function initFormValidation() {
+            const form = document.getElementById('surat-form');
+            window.formValidator = new FormValidator(form, {
+                validateOnInput: true,
+                validateOnBlur: true
+            });
+        }
+        
+        function initFileUploaders() {
+            // Dokumen upload
+            const dokumenUploader = new FileUploader({
+                maxFiles: 1,
+                maxFileSize: 10485760,
+                allowedTypes: ['application/pdf', 'application/msword', 
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                autoUpload: false
+            });
+            dokumenUploader.mount('#dokumen-upload');
+            
+            dokumenUploader.onFileAdded = (fileData) => {
+                formData.dokumen = [fileData];
+            };
+            
+            dokumenUploader.onFileRemoved = () => {
+                formData.dokumen = [];
+            };
+            
+            // Lampiran upload
+            const lampiranUploader = new FileUploader({
+                maxFiles: 5,
+                maxFileSize: 5242880,
+                allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+                multiple: true,
+                autoUpload: false
+            });
+            lampiranUploader.mount('#lampiran-upload');
+            
+            lampiranUploader.onFileAdded = (fileData) => {
+                formData.lampiran.push(fileData);
+            };
+            
+            lampiranUploader.onFileRemoved = (fileData) => {
+                formData.lampiran = formData.lampiran.filter(f => f.id !== fileData.id);
+            };
+        }
+        
+        function initEventListeners() {
+            // Navigation buttons
+            document.getElementById('next-btn')?.addEventListener('click', () => {
+                if (validateCurrentStep()) {
+                    collectStepData();
+                    if (currentStep < totalSteps) {
+                        currentStep++;
+                        updateWizardUI();
+                    }
+                }
+            });
+            
+            document.getElementById('prev-btn')?.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateWizardUI();
+                }
+            });
+            
+            // Draft button
+            document.getElementById('draft-btn')?.addEventListener('click', async () => {
+                collectStepData();
+                await saveDraft();
+            });
+            
+            // Form submission
+            document.getElementById('surat-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await submitSurat();
+            });
+            
+            // Tujuan tipe change
+            document.getElementById('tujuan-tipe')?.addEventListener('change', (e) => {
+                const internalGroup = document.getElementById('tujuan-internal-group');
+                const eksternalGroup = document.getElementById('tujuan-eksternal-group');
+                
+                if (e.target.value === 'internal') {
+                    internalGroup.style.display = 'block';
+                    eksternalGroup.style.display = 'none';
+                } else if (e.target.value === 'eksternal') {
+                    internalGroup.style.display = 'none';
+                    eksternalGroup.style.display = 'block';
+                } else {
+                    internalGroup.style.display = 'none';
+                    eksternalGroup.style.display = 'none';
+                }
+            });
+            
+            // Tembusan
+            document.getElementById('add-tembusan')?.addEventListener('click', addTembusan);
+            document.getElementById('tembusan-input')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTembusan();
+                }
+            });
+            
+            // Perihal counter
+            document.getElementById('perihal')?.addEventListener('input', (e) => {
+                const remaining = 200 - e.target.value.length;
+                document.getElementById('perihal-count').textContent = remaining;
+            });
+            
+            // Penandatangan change
+            document.getElementById('penandatangan')?.addEventListener('change', (e) => {
+                updateSignaturePreview(e.target.value);
+            });
+        }
+        
+        function addTembusan() {
+            const input = document.getElementById('tembusan-input');
+            const value = input.value.trim();
+            
+            if (!value) return;
+            if (formData.tembusan.includes(value)) {
+                notifications.warning('Tembusan sudah ditambahkan');
+                return;
+            }
+            
+            formData.tembusan.push(value);
+            renderTembusanTags();
+            input.value = '';
+            input.focus();
+        }
+        
+        function removeTembusan(index) {
+            formData.tembusan.splice(index, 1);
+            renderTembusanTags();
+        }
+        
+        function renderTembusanTags() {
+            const container = document.getElementById('tembusan-tags');
+            container.innerHTML = formData.tembusan.map((t, i) => `
+                <span class="recipient-tag">
+                    ${t}
+                    <span class="remove-tag" onclick="this.parentElement.remove();window.removeTembusan(${i})">
+                        <i class="fas fa-times"></i>
+                    </span>
+                </span>
+            `).join('');
+        }
+        
+        function updateSignaturePreview(penandatangan) {
+            const preview = document.getElementById('signature-preview');
+            const signatures = {
+                dekan: '/signatures/dekan.png',
+                wadek1: '/signatures/wadek1.png',
+                wadek2: '/signatures/wadek2.png',
+                kaprodi_ti: '/signatures/kaprodi_ti.png',
+                kaprodi_si: '/signatures/kaprodi_si.png',
+                kabag: '/signatures/kabag.png'
+            };
+            
+            const signatureUrl = signatures[penandatangan];
+            
+            if (signatureUrl) {
+                preview.innerHTML = `<img src="${signatureUrl}" alt="Tanda Tangan" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                    <p style="color:#94a3b8;display:none;">Tanda tangan tidak tersedia</p>`;
+            } else {
+                preview.innerHTML = `
+                    <i class="fas fa-signature" style="font-size:48px;color:#cbd5e1;"></i>
+                    <p style="color:#94a3b8;">Pilih penandatangan untuk melihat tanda tangan</p>`;
+            }
+        }
+        
+        function validateCurrentStep() {
+            const validations = {
+                1: ['jenis-surat', 'sifat-surat', 'perihal', 'tanggal-surat'],
+                2: ['tujuan-tipe'],
+                3: ['penandatangan']
+            };
+            
+            const fields = validations[currentStep] || [];
+            let isValid = true;
+            
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field && !field.value) {
+                    isValid = false;
+                    field.classList.add('error');
+                    
+                    const errorEl = document.getElementById(`${fieldId}-error`);
+                    if (errorEl) {
+                        errorEl.textContent = 'Field ini wajib diisi';
+                        errorEl.classList.add('show');
+                    }
+                }
+            });
+            
+            // Additional validation for step 2
+            if (currentStep === 2) {
+                const tipe = document.getElementById('tujuan-tipe').value;
+                if (tipe === 'internal' && !document.getElementById('tujuan-internal').value) {
+                    isValid = false;
+                    notifications.warning('Pilih unit tujuan internal');
+                } else if (tipe === 'eksternal' && !document.getElementById('tujuan-eksternal').value) {
+                    isValid = false;
+                    notifications.warning('Masukkan nama instansi tujuan');
+                }
+            }
+            
+            if (!isValid) {
+                notifications.warning('Lengkapi semua field yang wajib diisi');
+            }
+            
+            return isValid;
+        }
+        
+        function collectStepData() {
+            const form = document.getElementById('surat-form');
+            const formDataObj = new FormData(form);
+            
+            formDataObj.forEach((value, key) => {
+                if (value) formData[key] = value;
+            });
+        }
+        
+        function updateReview() {
+            const reviewContent = document.getElementById('review-content');
+            
+            reviewContent.innerHTML = `
+                <table style="width:100%;">
+                    <tr><td style="width:150px;font-weight:500;padding:6px 0;">Jenis Surat</td><td>: ${formData.jenis_surat || '-'}</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Sifat Surat</td><td>: ${formData.sifat_surat || '-'}</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Perihal</td><td>: ${formData.perihal || '-'}</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Tanggal</td><td>: ${formData.tanggal_surat || '-'}</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Tujuan</td><td>: ${formData.tujuan_eksternal || formData.tujuan_internal || '-'}</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Penandatangan</td><td>: ${formData.penandatangan || '-'}</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Dokumen</td><td>: ${formData.dokumen.length} file</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Lampiran</td><td>: ${formData.lampiran.length} file</td></tr>
+                    <tr><td style="font-weight:500;padding:6px 0;">Tembusan</td><td>: ${formData.tembusan.join(', ') || '-'}</td></tr>
+                </table>
+            `;
+        }
+        
+        async function saveDraft() {
+            try {
+                notifications.info('Menyimpan draft...');
+                
+                const response = await apiService.post('/api/surat/draft', formData);
+                
+                if (response.data?.id) {
+                    notifications.success('Draft berhasil disimpan');
+                    // Redirect to draft page
+                    setTimeout(() => {
+                        window.location.href = `/surat-keluar/draft.html?id=${response.data.id}`;
+                    }, 1000);
+                }
+            } catch (error) {
+                logger.error('Failed to save draft', error);
+                notifications.error('Gagal menyimpan draft');
+            }
+        }
+        
+        async function submitSurat() {
+            if (!validateCurrentStep()) return;
+            collectStepData();
+            
+            try {
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Mengirim...';
+                
+                // Upload files first
+                if (formData.dokumen.length > 0 || formData.lampiran.length > 0) {
+                    await uploadFiles();
+                }
+                
+                const response = await apiService.post('/api/surat/create', formData);
+                
+                notifications.success('Surat berhasil dibuat dan dikirim!');
+                
+                setTimeout(() => {
+                    window.location.href = `/surat-keluar/preview.html?id=${response.data.id}`;
+                }, 1500);
+                
+            } catch (error) {
+                logger.error('Failed to submit surat', error);
+                notifications.error('Gagal membuat surat: ' + error.message);
+                
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Surat';
+            }
+        }
+        
+        async function uploadFiles() {
+            const allFiles = [...formData.dokumen, ...formData.lampiran];
+            
+            for (const fileData of allFiles) {
+                const formDataObj = new FormData();
+                formDataObj.append('file', fileData.file);
+                formDataObj.append('type', fileData.file.type);
+                
+                await apiService.uploadFile('/api/upload', fileData.file, {
+                    metadata: { surat_id: 'temp' }
+                });
+            }
+        }
+        
+        // Make removeTembusan available globally for onclick
+        window.removeTembusan = removeTembusan;
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 's':
+                        e.preventDefault();
+                        saveDraft();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        if (currentStep < totalSteps) {
+                            document.getElementById('next-btn')?.click();
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        if (currentStep > 1) {
+                            document.getElementById('prev-btn')?.click();
+                        }
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!-- surat-keluar/qrcode.html - QR Code Verification 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Verifikasi QR Code - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .verify-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .verify-hero {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 16px;
+            color: white;
+            margin-bottom: 24px;
+        }
+        
+        .verify-hero h2 { color: white; margin-bottom: 8px; }
+        
+        .upload-zone {
+            border: 3px dashed #e2e8f0;
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+        
+        .upload-zone:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .upload-zone i {
+            font-size: 64px;
+            color: #2563eb;
+            margin-bottom: 16px;
+        }
+        
+        .result-card {
+            display: none;
+            border-radius: 16px;
+            overflow: hidden;
+            animation: fadeInUp 0.4s ease;
+        }
+        
+        .result-card.show { display: block; }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-header {
+            padding: 24px;
+            text-align: center;
+            color: white;
+        }
+        
+        .result-header.valid { background: #16a34a; }
+        .result-header.invalid { background: #dc2626; }
+        .result-header.unknown { background: #d97706; }
+        
+        .result-header i {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        
+        .result-body {
+            padding: 24px;
+            background: white;
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .result-item {
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .result-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .result-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .verification-badge.valid { background: #dcfce7; color: #16a34a; }
+        .verification-badge.invalid { background: #fee2e2; color: #dc2626; }
+        
+        .history-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        
+        .url-input-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .url-input-group input {
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .result-grid { grid-template-columns: 1fr; }
+            .url-input-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/surat-keluar/qrcode.html" class="nav-item active"><i class="fas fa-qrcode"></i> Verifikasi QR</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="verify-container">
+            <div class="verify-hero">
+                <i class="fas fa-qrcode" style="font-size:48px;margin-bottom:12px;display:block;"></i>
+                <h2>Verifikasi Surat</h2>
+                <p style="opacity:0.8;">Scan QR Code atau masukkan URL verifikasi untuk memeriksa keaslian surat</p>
+            </div>
+            
+            <!-- URL Input -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header"><h3>Verifikasi via URL</h3></div>
+                <div class="card-body">
+                    <div class="url-input-group">
+                        <input type="text" class="form-input" id="verify-url" placeholder="Masukkan URL verifikasi atau ID surat...">
+                        <button class="btn btn-primary" id="verify-btn"><i class="fas fa-search"></i> Verifikasi</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upload Zone -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header"><h3>Upload QR Code</h3></div>
+                <div class="card-body">
+                    <div class="upload-zone" id="upload-zone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h4>Klik atau Seret QR Code di Sini</h4>
+                        <p style="color:#64748b;">Format: JPG, PNG, GIF</p>
+                        <input type="file" id="qr-file-input" accept="image/*" style="display:none;" capture="environment">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Result -->
+            <div class="result-card" id="result-card">
+                <div class="result-header" id="result-header">
+                    <i class="fas" id="result-icon"></i>
+                    <h3 id="result-title" style="color:white;"></h3>
+                    <p id="result-message" style="opacity:0.9;"></p>
+                </div>
+                <div class="result-body">
+                    <div class="result-grid" id="result-grid"></div>
+                    <div style="text-align:center;margin-top:16px;">
+                        <span class="verification-badge" id="verification-badge"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- History -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Riwayat Verifikasi</h3>
+                    <button class="btn btn-sm btn-ghost" id="clear-history-btn"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="card-body">
+                    <ul class="history-list" id="history-list">
+                        <li style="text-align:center;color:#94a3b8;padding:20px;">Belum ada riwayat verifikasi</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        let verifyHistory = JSON.parse(localStorage.getItem('verify_history') || '[]');
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEvents();
+            renderHistory();
+            logger.info('QR verification page loaded');
+        });
+        
+        function initEvents() {
+            document.getElementById('verify-btn')?.addEventListener('click', () => {
+                const url = document.getElementById('verify-url').value.trim();
+                if (url) verifySurat(url);
+            });
+            
+            document.getElementById('verify-url')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const url = e.target.value.trim();
+                    if (url) verifySurat(url);
+                }
+            });
+            
+            document.getElementById('upload-zone')?.addEventListener('click', () => {
+                document.getElementById('qr-file-input')?.click();
+            });
+            
+            document.getElementById('qr-file-input')?.addEventListener('change', handleFileUpload);
+            
+            document.getElementById('upload-zone')?.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.currentTarget.style.borderColor = '#2563eb';
+            });
+            
+            document.getElementById('upload-zone')?.addEventListener('dragleave', (e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0';
+            });
+            
+            document.getElementById('upload-zone')?.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                const file = e.dataTransfer.files[0];
+                if (file) processQRFile(file);
+            });
+            
+            document.getElementById('clear-history-btn')?.addEventListener('click', () => {
+                verifyHistory = [];
+                localStorage.removeItem('verify_history');
+                renderHistory();
+            });
+        }
+        
+        async function verifySurat(input) {
+            // Extract ID from URL or use as is
+            let suratId = input;
+            try {
+                const url = new URL(input);
+                suratId = url.searchParams.get('id') || url.pathname.split('/').pop();
+            } catch (e) { /* Not a URL, use as ID */ }
+            
+            try {
+                const response = await apiService.get(`/api/verify/${suratId}`);
+                showResult(response.data);
+                addToHistory(input, response.data);
+            } catch (error) {
+                showResult({ valid: false, message: 'Surat tidak ditemukan atau tidak valid' });
+                addToHistory(input, { valid: false, message: 'Tidak valid' });
+            }
+        }
+        
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) await processQRFile(file);
+        }
+        
+        async function processQRFile(file) {
+            try {
+                notifications.info('Memproses QR Code...');
+                
+                const formData = new FormData();
+                formData.append('qr_image', file);
+                
+                const response = await apiService.uploadFile('/api/qr/decode', file);
+                
+                if (response.data?.id) {
+                    const verifyResponse = await apiService.get(`/api/verify/${response.data.id}`);
+                    showResult(verifyResponse.data);
+                    addToHistory('QR Upload', verifyResponse.data);
+                } else {
+                    showResult({ valid: false, message: 'QR Code tidak dikenali' });
+                }
+            } catch (error) {
+                notifications.error('Gagal memproses QR Code');
+                showResult({ valid: false, message: 'Gagal membaca QR Code' });
+            }
+        }
+        
+        function showResult(data) {
+            const card = document.getElementById('result-card');
+            const header = document.getElementById('result-header');
+            const icon = document.getElementById('result-icon');
+            const title = document.getElementById('result-title');
+            const message = document.getElementById('result-message');
+            const badge = document.getElementById('verification-badge');
+            
+            card.classList.add('show');
+            card.scrollIntoView({ behavior: 'smooth' });
+            
+            header.className = 'result-header';
+            
+            if (data.valid) {
+                header.classList.add('valid');
+                icon.className = 'fas fa-check-circle';
+                title.textContent = 'Surat Valid';
+                message.textContent = 'Surat ini terdaftar dalam sistem E-Arsip Digital';
+                badge.className = 'verification-badge valid';
+                badge.innerHTML = '<i class="fas fa-shield-alt"></i> Terverifikasi';
+                
+                document.getElementById('result-grid').innerHTML = `
+                    <div class="result-item"><div class="result-label">Nomor Surat</div><div class="result-value">${data.nomor_surat || '-'}</div></div>
+                    <div class="result-item"><div class="result-label">Tanggal Surat</div><div class="result-value">${utils.formatDate(data.tanggal_surat, 'full')}</div></div>
+                    <div class="result-item"><div class="result-label">Perihal</div><div class="result-value">${data.perihal || '-'}</div></div>
+                    <div class="result-item"><div class="result-label">Penandatangan</div><div class="result-value">${data.penandatangan || '-'}</div></div>
+                    <div class="result-item"><div class="result-label">Status</div><div class="result-value">${data.status || '-'}</div></div>
+                    <div class="result-item"><div class="result-label">Diverifikasi</div><div class="result-value">${utils.formatDate(new Date(), 'datetime')}</div></div>
+                `;
+            } else {
+                header.classList.add('invalid');
+                icon.className = 'fas fa-times-circle';
+                title.textContent = 'Surat Tidak Valid';
+                message.textContent = data.message || 'Surat ini tidak dapat diverifikasi';
+                badge.className = 'verification-badge invalid';
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tidak Valid';
+                
+                document.getElementById('result-grid').innerHTML = `
+                    <div class="result-item" style="grid-column:1/-1;">
+                        <div class="result-label">Pesan</div>
+                        <div class="result-value" style="color:#dc2626;">${data.message || 'Tidak dapat memverifikasi surat ini'}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function addToHistory(input, result) {
+            verifyHistory.unshift({
+                input,
+                valid: result.valid,
+                nomor: result.nomor_surat || '-',
+                timestamp: new Date().toISOString()
+            });
+            
+            if (verifyHistory.length > 20) verifyHistory = verifyHistory.slice(0, 20);
+            localStorage.setItem('verify_history', JSON.stringify(verifyHistory));
+            renderHistory();
+        }
+        
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            
+            if (verifyHistory.length === 0) {
+                container.innerHTML = '<li style="text-align:center;color:#94a3b8;padding:20px;">Belum ada riwayat verifikasi</li>';
+                return;
+            }
+            
+            container.innerHTML = verifyHistory.map(h => `
+                <li class="history-item">
+                    <div>
+                        <i class="fas fa-${h.valid ? 'check-circle' : 'times-circle'}" style="color:${h.valid ? '#16a34a' : '#dc2626'};margin-right:8px;"></i>
+                        <span>${h.nomor || h.input}</span>
+                    </div>
+                    <span style="font-size:12px;color:#94a3b8;">${utils.timeAgo(h.timestamp)}</span>
+                </li>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

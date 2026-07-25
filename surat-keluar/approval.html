@@ -1,0 +1,303 @@
+<!-- surat-keluar/approval.html - Tracking Approval 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tracking Approval - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .approval-container { max-width: 800px; margin: 0 auto; }
+        
+        .approval-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 32px 0;
+            flex-wrap: wrap;
+        }
+        
+        .approval-node {
+            text-align: center;
+            position: relative;
+        }
+        
+        .node-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 20px;
+            border: 3px solid;
+            transition: all 0.3s;
+        }
+        
+        .node-circle.completed { background: #dcfce7; border-color: #16a34a; color: #16a34a; }
+        .node-circle.active { background: #eff6ff; border-color: #2563eb; color: #2563eb; animation: pulse 2s infinite; }
+        .node-circle.pending { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+        .node-circle.rejected { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(37,99,235,0); }
+        }
+        
+        .node-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #64748b;
+            max-width: 100px;
+        }
+        
+        .approval-arrow {
+            width: 60px;
+            height: 2px;
+            background: #e2e8f0;
+            margin: 0 -4px;
+            margin-bottom: 28px;
+        }
+        
+        .approval-arrow.completed { background: #16a34a; }
+        
+        .approval-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+        
+        .approval-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .timeline-approval {
+            position: relative;
+            padding-left: 24px;
+        }
+        
+        .timeline-approval::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        
+        .timeline-approval-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .timeline-approval-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .timeline-approval-item.approved::before { background: #16a34a; box-shadow: 0 0 0 2px #16a34a; }
+        .timeline-approval-item.rejected::before { background: #dc2626; box-shadow: 0 0 0 2px #dc2626; }
+        .timeline-approval-item.pending::before { background: #94a3b8; box-shadow: 0 0 0 2px #94a3b8; }
+        
+        @media (max-width: 768px) {
+            .approval-flow { flex-direction: column; gap: 8px; }
+            .approval-arrow { width: 2px; height: 24px; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/surat-keluar/approval.html" class="nav-item active"><i class="fas fa-check-double"></i> Approval</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="approval-container">
+            <div class="page-header">
+                <div>
+                    <h2>Tracking Approval</h2>
+                    <p style="color:#64748b;">Pantau status approval surat keluar</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <select class="form-select" id="filter-status" style="width:auto;">
+                        <option value="">Semua Status</option>
+                        <option value="pending">Menunggu</option>
+                        <option value="approved">Disetujui</option>
+                        <option value="rejected">Ditolak</option>
+                    </select>
+                    <button class="btn btn-outline btn-sm" id="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+                </div>
+            </div>
+            
+            <!-- Approval Flow -->
+            <div class="approval-flow">
+                <div class="approval-node">
+                    <div class="node-circle completed"><i class="fas fa-pen"></i></div>
+                    <div class="node-label">Pembuatan</div>
+                </div>
+                <div class="approval-arrow completed"></div>
+                <div class="approval-node">
+                    <div class="node-circle completed"><i class="fas fa-user-check"></i></div>
+                    <div class="node-label">Verifikasi Admin</div>
+                </div>
+                <div class="approval-arrow completed"></div>
+                <div class="approval-node">
+                    <div class="node-circle active"><i class="fas fa-user-tie"></i></div>
+                    <div class="node-label">Approval Pimpinan</div>
+                </div>
+                <div class="approval-arrow"></div>
+                <div class="approval-node">
+                    <div class="node-circle pending"><i class="fas fa-paper-plane"></i></div>
+                    <div class="node-label">Pengiriman</div>
+                </div>
+            </div>
+            
+            <!-- Approval List -->
+            <div id="approval-list">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <div class="spinner"></div>
+                    <p style="margin-top:12px;">Memuat data approval...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        let approvalList = [];
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            document.getElementById('refresh-btn')?.addEventListener('click', loadData);
+            document.getElementById('filter-status')?.addEventListener('change', loadData);
+            loadData();
+            logger.info('Approval page loaded');
+        });
+        
+        async function loadData() {
+            try {
+                const status = document.getElementById('filter-status').value;
+                const response = await apiService.get('/api/surat-keluar/approvals', { status });
+                approvalList = response.data || [];
+                renderList();
+            } catch (error) {
+                logger.error('Failed to load approvals', error);
+                notifications.error('Gagal memuat data approval');
+            }
+        }
+        
+        function renderList() {
+            const container = document.getElementById('approval-list');
+            
+            if (approvalList.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <i class="fas fa-check-circle" style="font-size:40px;color:#16a34a;margin-bottom:12px;display:block;"></i>
+                    Tidak ada surat yang perlu di-approve
+                </div>`;
+                return;
+            }
+            
+            container.innerHTML = approvalList.map(surat => `
+                <div class="approval-card">
+                    <div class="approval-card-header">
+                        <div>
+                            <strong>${surat.nomor_surat || 'No. Surat Pending'}</strong>
+                            <span style="margin-left:8px;font-size:12px;color:#64748b;">${utils.timeAgo(surat.createdAt)}</span>
+                        </div>
+                        <span class="badge badge-${surat.status === 'approved' ? 'success' : surat.status === 'rejected' ? 'danger' : 'warning'}">
+                            ${surat.status === 'approved' ? 'Disetujui' : surat.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                        </span>
+                    </div>
+                    <p style="margin:0 0 8px 0;">${surat.perihal || '-'}</p>
+                    <div style="font-size:13px;color:#64748b;margin-bottom:12px;">
+                        Pengaju: ${surat.pengaju || '-'} | Tujuan: ${surat.tujuan || '-'}
+                    </div>
+                    
+                    <div class="timeline-approval">
+                        ${(surat.approval_history || []).map(h => `
+                            <div class="timeline-approval-item ${h.status}">
+                                <div style="font-weight:500;">${h.approver || '-'}</div>
+                                <div style="font-size:12px;color:#64748b;">${h.catatan || '-'}</div>
+                                <div style="font-size:11px;color:#94a3b8;">${utils.timeAgo(h.timestamp)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    ${surat.status === 'pending' ? `
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button class="btn btn-sm btn-success" onclick="approveSurat('${surat.id}')">
+                                <i class="fas fa-check"></i> Setujui
+                            </button>
+                            <button class="btn btn-sm btn-outline" style="color:#dc2626;" onclick="rejectSurat('${surat.id}')">
+                                <i class="fas fa-times"></i> Tolak
+                            </button>
+                            <a href="/surat-keluar/preview.html?id=${surat.id}" class="btn btn-sm btn-outline">
+                                <i class="fas fa-eye"></i> Lihat
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        async function approveSurat(id) {
+            const catatan = prompt('Catatan approval (opsional):') || '';
+            try {
+                await apiService.post(`/api/surat-keluar/${id}/approve`, { catatan });
+                notifications.success('Surat berhasil disetujui');
+                loadData();
+            } catch (error) {
+                notifications.error('Gagal menyetujui surat');
+            }
+        }
+        
+        async function rejectSurat(id) {
+            const catatan = prompt('Alasan penolakan:');
+            if (!catatan) return;
+            try {
+                await apiService.post(`/api/surat-keluar/${id}/reject`, { catatan });
+                notifications.success('Surat ditolak');
+                loadData();
+            } catch (error) {
+                notifications.error('Gagal menolak surat');
+            }
+        }
+        
+        window.approveSurat = approveSurat;
+        window.rejectSurat = rejectSurat;
+    </script>
+</body>
+</html>
