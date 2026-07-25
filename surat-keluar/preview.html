@@ -1,362 +1,652 @@
-<!-- surat-keluar/preview.html - Preview Surat 2026 -->
+<!-- surat-keluar/preview.html - Preview Surat 2026 (SECURE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Preview Surat Keluar - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Preview Surat - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/print.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
     <style>
-        .preview-container { max-width: 800px; margin: 0 auto; }
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --transition: all 0.2s ease;
+        }
         
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: linear-gradient(180deg, #1e293b, #0f172a); color: white; z-index: 100; overflow-y: auto; transition: transform 0.3s; }
+        .sidebar-brand { padding: 20px; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); border-left: 3px solid transparent; }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        
+        /* Main */
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 24px; transition: margin 0.3s; }
+        
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none; transition: var(--transition); font-family: inherit; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-outline:hover:not(:disabled) { background: var(--primary); color: white; }
+        .btn-ghost { background: transparent; color: var(--text-light); }
+        .btn-ghost:hover { color: var(--text); background: #f1f5f9; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+        
+        /* Page Header */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .page-header h2 { font-size: 22px; font-weight: 700; margin: 0; }
+        
+        /* Preview Container */
+        .preview-container { max-width: 850px; margin: 0 auto; }
+        
+        /* Preview Paper - Mirip kertas surat */
         .preview-paper {
             background: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            padding: 60px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+            border-radius: 4px;
+            padding: 55px 60px;
             margin-bottom: 24px;
             min-height: 500px;
+            position: relative;
+            line-height: 1.7;
         }
         
-        .preview-header {
+        /* Kop Surat */
+        .preview-kop {
             text-align: center;
-            border-bottom: 3px solid #1e293b;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
+            border-bottom: 3px double #1e293b;
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+        }
+        .preview-kop .kop-logo {
+            width: 70px; height: 70px; margin-bottom: 10px;
+            object-fit: contain;
+        }
+        .preview-kop .kop-instansi {
+            font-size: 17px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 2px;
+        }
+        .preview-kop .kop-fakultas {
+            font-size: 15px; font-weight: 600; margin-bottom: 2px;
+        }
+        .preview-kop .kop-alamat {
+            font-size: 11px; color: #64748b;
         }
         
-        .preview-header .logo {
-            width: 80px;
-            margin-bottom: 12px;
-        }
+        /* Meta Surat */
+        .preview-meta { margin-bottom: 20px; }
+        .preview-meta table { width: 100%; border-collapse: collapse; }
+        .preview-meta td { padding: 3px 0; vertical-align: top; font-size: 13px; }
+        .preview-meta .meta-label { width: 110px; font-weight: 600; color: #475569; white-space: nowrap; }
+        .preview-meta .meta-value { color: #1e293b; }
         
-        .preview-header h2 {
-            font-size: 18px;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        /* Tujuan */
+        .preview-tujuan { margin-bottom: 18px; font-size: 13px; }
+        .preview-tujuan .kepada { margin-bottom: 2px; }
+        .preview-tujuan .nama-tujuan { font-weight: 600; }
+        .preview-tujuan .alamat-tujuan { color: #64748b; font-size: 12px; }
         
-        .preview-header .subtitle {
-            font-size: 13px;
-            color: #64748b;
-        }
+        /* Isi Surat */
+        .preview-isi { font-size: 13px; line-height: 1.9; margin-bottom: 30px; text-align: justify; }
+        .preview-isi p { margin-bottom: 12px; }
         
-        .preview-meta {
-            margin-bottom: 24px;
-        }
+        /* Tanda Tangan */
+        .preview-ttd { text-align: right; margin-top: 35px; }
+        .preview-ttd .ttd-tempat-tanggal { margin-bottom: 4px; font-size: 13px; }
+        .preview-ttd .ttd-jabatan { margin-bottom: 50px; font-size: 13px; }
+        .preview-ttd .ttd-nama { font-weight: 700; font-size: 14px; text-decoration: underline; margin-bottom: 2px; }
+        .preview-ttd .ttd-nip { font-size: 12px; color: #64748b; }
         
-        .preview-meta table {
-            width: 100%;
-        }
+        /* Tembusan */
+        .preview-tembusan { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; }
+        .preview-tembusan .tembusan-title { font-weight: 600; margin-bottom: 4px; }
+        .preview-tembusan ol { padding-left: 20px; color: #475569; }
+        .preview-tembusan ol li { padding: 1px 0; }
         
-        .preview-meta td {
-            padding: 4px 0;
-            vertical-align: top;
-        }
-        
-        .preview-meta .label {
-            width: 130px;
-            font-weight: 500;
-            color: #64748b;
-        }
-        
-        .preview-body {
-            line-height: 1.8;
-            font-size: 14px;
-            margin-bottom: 32px;
-        }
-        
-        .preview-signature {
-            text-align: right;
-            margin-top: 40px;
-        }
-        
-        .preview-signature .name {
-            font-weight: 600;
-            margin-top: 60px;
-            text-decoration: underline;
-        }
-        
-        .preview-signature .nip {
-            font-size: 13px;
-            color: #64748b;
-        }
-        
+        /* QR Code */
         .preview-qr {
-            text-align: center;
-            margin-top: 24px;
-            padding-top: 20px;
+            text-align: center; margin-top: 28px; padding-top: 18px;
             border-top: 1px solid #e2e8f0;
         }
-        
-        .preview-qr canvas {
-            width: 80px;
-            height: 80px;
+        .preview-qr .qr-label {
+            font-size: 10px; color: #94a3b8; margin-bottom: 8px;
+            text-transform: uppercase; letter-spacing: 1px;
         }
+        .preview-qr canvas { display: inline-block; }
         
-        .preview-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
+        /* Watermark (screen only) */
         .watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 80px;
-            color: rgba(0,0,0,0.03);
-            pointer-events: none;
-            z-index: 0;
-            white-space: nowrap;
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            font-size: 90px; color: rgba(0,0,0,0.025);
+            pointer-events: none; z-index: 0; white-space: nowrap;
+            font-weight: 900; letter-spacing: 10px;
         }
         
-        @media print {
-            .sidebar, .preview-actions, .no-print { display: none !important; }
-            .main-content { margin: 0; padding: 0; }
-            .preview-paper { box-shadow: none; border-radius: 0; padding: 20px; }
+        /* Actions Bar */
+        .actions-bar {
+            display: flex; gap: 10px; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 20px;
         }
         
+        /* Status Alert */
+        .status-alert {
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 10px;
+        }
+        .status-alert.draft { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .status-alert.pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .status-alert.approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .status-alert.rejected { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 12px 20px; border-radius: 10px; color: white; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: slideInRight 0.3s; max-width: 380px; display: flex; align-items: center; gap: 10px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        .toast-info { background: #0891b2; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Responsive */
         @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; padding: 16px; }
             .preview-paper { padding: 30px 20px; }
+            .preview-kop .kop-instansi { font-size: 14px; }
+        }
+        
+        /* PRINT STYLES */
+        @media print {
+            @page { size: A4; margin: 15mm; }
+            
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            .sidebar, .loading-screen, .toast-container, .status-alert,
+            .actions-bar, .page-header, .watermark, .no-print { display: none !important; }
+            
+            .main-content { margin: 0 !important; padding: 0 !important; }
+            
+            .preview-container { max-width: 100%; }
+            
+            .preview-paper {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            .preview-qr { border-top-color: #000 !important; }
+        }
+        
+        /* Screen-only elements */
+        @media screen {
+            .print-only { display: none !important; }
         }
     </style>
 </head>
 <body>
+    <!-- Loading -->
     <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
     
-    <aside class="sidebar no-print">
+    <!-- Toast -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Watermark (screen only) -->
+    <div class="watermark no-print" id="watermark-text">PREVIEW</div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar no-print" id="sidebar">
         <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="../admin/index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="draft.html" class="nav-item"><i class="fas fa-file-alt"></i> Draft</a>
+            <a href="approval.html" class="nav-item"><i class="fas fa-check-double"></i> Approval</a>
+            <a href="generate.html" class="nav-item"><i class="fas fa-cog"></i> Generate</a>
+            <a href="../../surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="../../laporan/index.html" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
         </nav>
     </aside>
     
+    <!-- Main Content -->
     <main class="main-content">
         <div class="preview-container">
-            <div class="page-header no-print" style="margin-bottom:20px;">
+            <!-- Page Header (no-print) -->
+            <div class="page-header no-print">
                 <div>
                     <h2>Preview Surat</h2>
-                    <p style="color:#64748b;">Pratinjau surat sebelum dicetak</p>
+                    <p style="color:var(--text-light);font-size:14px;">Pratinjau surat sebelum dicetak atau digenerate</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline btn-sm" id="refresh-btn"><i class="fas fa-sync-alt"></i></button>
                 </div>
             </div>
             
-            <!-- Watermark -->
-            <div class="watermark no-print">PREVIEW</div>
+            <!-- Status Alert -->
+            <div class="status-alert draft no-print" id="status-alert">
+                <i class="fas fa-info-circle"></i>
+                <span id="status-message">Memuat data surat...</span>
+            </div>
             
-            <!-- Paper -->
+            <!-- Actions Bar (no-print) -->
+            <div class="actions-bar no-print">
+                <button class="btn btn-primary" id="print-btn">
+                    <i class="fas fa-print"></i> Cetak Surat
+                </button>
+                <button class="btn btn-outline" id="download-btn">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+                <a href="generate.html" class="btn btn-success" id="generate-link">
+                    <i class="fas fa-cog"></i> Generate Final
+                </a>
+                <a href="list.html" class="btn btn-ghost">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </a>
+            </div>
+            
+            <!-- Preview Paper -->
             <div class="preview-paper" id="preview-paper">
-                <!-- Header -->
-                <div class="preview-header">
-                    <img src="/icons/logo.svg" alt="Logo" class="logo" onerror="this.style.display='none'">
-                    <h2>KEMENTERIAN PENDIDIKAN TINGGI</h2>
-                    <div class="subtitle">Fakultas Ilmu Komputer</div>
-                    <div class="subtitle">Jl. Pendidikan No. 123, Jakarta - Telp. (021) 1234567</div>
+                <!-- Kop Surat -->
+                <div class="preview-kop">
+                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='%232563eb'/><text x='50' y='65' text-anchor='middle' fill='white' font-size='45' font-weight='bold'>A</text></svg>" 
+                         alt="Logo" class="kop-logo" onerror="this.style.display='none'">
+                    <div class="kop-instansi" id="kop-instansi">KEMENTERIAN PENDIDIKAN TINGGI</div>
+                    <div class="kop-fakultas" id="kop-fakultas">Fakultas Ilmu Komputer</div>
+                    <div class="kop-alamat" id="kop-alamat">Jl. Pendidikan No. 123, Jakarta - Telp. (021) 1234567</div>
                 </div>
                 
-                <!-- Meta -->
+                <!-- Meta Surat -->
                 <div class="preview-meta">
                     <table>
                         <tr>
-                            <td class="label">Nomor</td>
-                            <td>: <span id="pv-nomor">-</span></td>
+                            <td class="meta-label">Nomor</td>
+                            <td class="meta-value">: <strong><span id="pv-nomor">-</span></strong></td>
                         </tr>
                         <tr>
-                            <td class="label">Lampiran</td>
-                            <td>: <span id="pv-lampiran">-</span></td>
+                            <td class="meta-label">Lampiran</td>
+                            <td class="meta-value">: <span id="pv-lampiran">-</span></td>
                         </tr>
                         <tr>
-                            <td class="label">Perihal</td>
-                            <td>: <strong><span id="pv-perihal">-</span></strong></td>
+                            <td class="meta-label">Perihal</td>
+                            <td class="meta-value">: <strong><span id="pv-perihal">-</span></strong></td>
                         </tr>
                     </table>
                 </div>
                 
                 <!-- Tujuan -->
-                <div style="margin-bottom:20px;">
-                    <p style="margin-bottom:4px;">Kepada Yth.</p>
-                    <p style="font-weight:500;" id="pv-tujuan">-</p>
-                    <p style="color:#64748b;" id="pv-alamat">-</p>
+                <div class="preview-tujuan">
+                    <p class="kepada">Kepada Yth.</p>
+                    <p class="nama-tujuan" id="pv-tujuan">-</p>
+                    <p class="alamat-tujuan" id="pv-alamat">-</p>
                 </div>
                 
-                <!-- Body -->
-                <div class="preview-body" id="pv-body">
+                <!-- Isi Surat -->
+                <div class="preview-isi">
                     <p>Dengan hormat,</p>
-                    <p>Sehubungan dengan <span id="pv-isi">-</span></p>
+                    <p id="pv-isi">-</p>
                     <p>Demikian surat ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.</p>
                 </div>
                 
-                <!-- Signature -->
-                <div class="preview-signature">
-                    <p id="pv-tempat-tanggal">Jakarta, -</p>
-                    <p style="margin-bottom:4px;" id="pv-jabatan">Dekan</p>
-                    <p class="name" id="pv-penandatangan">-</p>
-                    <p class="nip" id="pv-nip">-</p>
+                <!-- Tanda Tangan -->
+                <div class="preview-ttd">
+                    <p class="ttd-tempat-tanggal" id="pv-tempat-tanggal">Jakarta, -</p>
+                    <p class="ttd-jabatan" id="pv-jabatan">Dekan</p>
+                    <p class="ttd-nama" id="pv-penandatangan">-</p>
+                    <p class="ttd-nip" id="pv-nip">-</p>
                 </div>
                 
                 <!-- Tembusan -->
-                <div style="margin-top:20px;font-size:13px;" id="pv-tembusan-section" style="display:none;">
-                    <p style="font-weight:500;">Tembusan:</p>
-                    <ol id="pv-tembusan" style="padding-left:20px;"></ol>
+                <div class="preview-tembusan" id="pv-tembusan-section" style="display:none;">
+                    <p class="tembusan-title">Tembusan:</p>
+                    <ol id="pv-tembusan"></ol>
                 </div>
                 
                 <!-- QR Code -->
                 <div class="preview-qr" id="pv-qr-section">
-                    <p style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Scan QR Code untuk verifikasi keaslian surat</p>
-                    <div id="pv-qrcode"></div>
+                    <p class="qr-label">Scan untuk verifikasi keaslian surat</p>
+                    <div id="pv-qrcode">
+                        <p style="font-size:11px;color:#94a3b8;">QR Code akan ditampilkan di sini</p>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Actions -->
-            <div class="preview-actions">
-                <button class="btn btn-primary" id="print-btn">
-                    <i class="fas fa-print"></i> Cetak
-                </button>
-                <button class="btn btn-outline" id="download-pdf-btn">
-                    <i class="fas fa-file-pdf"></i> Download PDF
-                </button>
-                <a href="/surat-keluar/generate.html" class="btn btn-outline" id="generate-btn">
-                    <i class="fas fa-cog"></i> Generate Final
-                </a>
-                <a href="/surat-keluar/list.html" class="btn btn-ghost">
-                    <i class="fas fa-arrow-left"></i> Kembali
-                </a>
             </div>
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import apiService from '../js/api.js';
-        import notifications from '../js/notifications.js';
-        import utils from '../js/utils.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    (function() {
+        'use strict';
         
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import notifications from '/js/notifications.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+        // CSRF Token
+        var csrfToken = (function() {
+            var t = localStorage.getItem('csrf_token');
+            if (!t) { var a = new Uint32Array(8); crypto.getRandomValues(a); t = Array.from(a, function(d) { return ('0'+d.toString(16)).slice(-2); }).join(''); localStorage.setItem('csrf_token', t); }
+            return t;
+        })();
         
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // Sanitization
+        function sanitize(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function sanitizePlain(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
         
-        const params = new URLSearchParams(window.location.search);
-        const suratId = params.get('id');
+        // State
+        var state = { suratId: null, suratData: null };
         
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            
-            document.getElementById('print-btn')?.addEventListener('click', () => window.print());
-            document.getElementById('download-pdf-btn')?.addEventListener('click', downloadPDF);
-            
-            if (suratId) {
-                await loadSuratData();
-                await generateQRCode();
+        // Auth
+        function checkAuth() {
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) return true;
+            try { var s = localStorage.getItem('auth_session'); if (s) { var d = JSON.parse(s); if (d.user && d.expiresAt && Date.now() < d.expiresAt) return true; } } catch(e) {}
+            window.location.href = '../../login.html?message=unauthorized'; return false;
+        }
+        
+        // Toast
+        function showToast(msg, type) {
+            var c = document.getElementById('toast-container'); if (!c) return;
+            var t = document.createElement('div'); t.className = 'toast toast-' + (type||'info'); t.textContent = sanitizePlain(msg); c.appendChild(t);
+            setTimeout(function() { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(function() { t.remove(); }, 300); }, 4000);
+        }
+        
+        // Format
+        function formatDate(s, style) {
+            if (!s) return '-';
+            try {
+                var d = new Date(s); if (isNaN(d.getTime())) return s;
+                if (style === 'long') return d.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+                return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+            } catch(e) { return s; }
+        }
+        
+        // ============ DATA LOADING ============
+        function loadSuratData() {
+            if (!state.suratId) {
+                showToast('ID Surat tidak valid', 'error');
+                document.getElementById('status-message').textContent = 'ID Surat tidak ditemukan di URL';
+                return;
             }
             
-            logger.info('Preview page loaded', { suratId });
-        });
-        
-        async function loadSuratData() {
-            try {
-                const response = await apiService.get(`/api/surat-keluar/${suratId}`);
-                const data = response.data;
-                
-                if (!data) {
-                    notifications.error('Surat tidak ditemukan');
-                    return;
-                }
-                
-                // Populate preview
-                document.getElementById('pv-nomor').textContent = data.nomor_surat || '-';
-                document.getElementById('pv-lampiran').textContent = data.lampiran || '-';
-                document.getElementById('pv-perihal').textContent = data.perihal || '-';
-                document.getElementById('pv-tujuan').textContent = data.tujuan || '-';
-                document.getElementById('pv-alamat').textContent = data.alamat || '';
-                document.getElementById('pv-isi').textContent = data.isi_ringkas || '-';
-                
-                document.getElementById('pv-tempat-tanggal').textContent = 
-                    `${data.tempat || 'Jakarta'}, ${utils.formatDate(data.tanggal_surat, 'long')}`;
-                document.getElementById('pv-jabatan').textContent = data.jabatan_penandatangan || 'Dekan';
-                document.getElementById('pv-penandatangan').textContent = data.penandatangan || '-';
-                document.getElementById('pv-nip').textContent = data.nip_penandatangan ? `NIP. ${data.nip_penandatangan}` : '';
-                
-                // Tembusan
-                if (data.tembusan && data.tembusan.length > 0) {
-                    document.getElementById('pv-tembusan-section').style.display = 'block';
-                    document.getElementById('pv-tembusan').innerHTML = 
-                        data.tembusan.map(t => `<li>${t}</li>`).join('');
-                }
-                
-                // Update generate link
-                document.getElementById('generate-btn').href = `/surat-keluar/generate.html?id=${suratId}`;
-                
-            } catch (error) {
-                logger.error('Failed to load surat for preview', error);
-                notifications.error('Gagal memuat data surat');
+            // Show loading
+            document.getElementById('pv-nomor').textContent = 'Memuat...';
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('surat-keluar/detail', { id: state.suratId })
+                    .then(function(r) {
+                        if (r && r.data) { state.suratData = r.data; populatePreview(); }
+                        else { state.suratData = getSampleData(); populatePreview(); showToast('Menggunakan data sample', 'warning'); }
+                    })
+                    .catch(function() { state.suratData = getSampleData(); populatePreview(); showToast('Menggunakan data sample (offline)', 'warning'); });
+            } else {
+                state.suratData = getSampleData();
+                populatePreview();
+                showToast('Mode offline - data sample', 'info');
             }
         }
         
-        async function generateQRCode() {
-            try {
-                const QRCode = await import('qrcode');
-                const canvas = document.createElement('canvas');
-                
-                const verifyUrl = `${window.location.origin}/surat-keluar/qrcode.html?id=${suratId}`;
-                
-                await QRCode.toCanvas(canvas, verifyUrl, {
+        function getSampleData() {
+            return {
+                id: state.suratId || 'SK001',
+                nomor_surat: '001/K.UM/FIKOM/VII/2024',
+                lampiran: '1 (satu) berkas',
+                perihal: 'Undangan Rapat Koordinasi Program Studi',
+                tujuan: 'Yth. Kaprodi Teknik Informatika',
+                alamat: 'Fakultas Ilmu Komputer, Kampus B',
+                isi_ringkas: 'Sehubungan dengan akan dilaksanakannya rapat koordinasi program studi semester ganjil tahun akademik 2024/2025, dengan ini kami mengundang Bapak/Ibu untuk hadir pada acara tersebut yang akan dilaksanakan pada Hari Senin, 22 Juli 2024 pukul 09.00 WIB di Ruang Rapat Dekanat.',
+                tempat: 'Jakarta',
+                tanggal_surat: '2024-07-15',
+                jabatan_penandatangan: 'Dekan',
+                penandatangan: 'Prof. Dr. Ahmad Subhan, M.Kom.',
+                nip_penandatangan: '197501012008011001',
+                tembusan: ['Wakil Dekan I', 'Wakil Dekan II', 'Kepala Bagian Akademik'],
+                status: 'approved',
+                instansi_nama: 'KEMENTERIAN PENDIDIKAN TINGGI',
+                instansi_fakultas: 'Fakultas Ilmu Komputer',
+                instansi_alamat: 'Jl. Pendidikan No. 123, Jakarta - Telp. (021) 1234567'
+            };
+        }
+        
+        // ============ POPULATE PREVIEW ============
+        function populatePreview() {
+            var d = state.suratData;
+            if (!d) return;
+            
+            // Kop surat
+            if (d.instansi_nama) document.getElementById('kop-instansi').textContent = sanitizePlain(d.instansi_nama);
+            if (d.instansi_fakultas) document.getElementById('kop-fakultas').textContent = sanitizePlain(d.instansi_fakultas);
+            if (d.instansi_alamat) document.getElementById('kop-alamat').textContent = sanitizePlain(d.instansi_alamat);
+            
+            // Meta
+            document.getElementById('pv-nomor').textContent = sanitizePlain(d.nomor_surat || '-');
+            document.getElementById('pv-lampiran').textContent = sanitizePlain(d.lampiran || '-');
+            document.getElementById('pv-perihal').textContent = sanitizePlain(d.perihal || '-');
+            
+            // Tujuan
+            document.getElementById('pv-tujuan').textContent = sanitizePlain(d.tujuan || '-');
+            document.getElementById('pv-alamat').textContent = sanitizePlain(d.alamat || '');
+            document.getElementById('pv-alamat').style.display = d.alamat ? 'block' : 'none';
+            
+            // Isi
+            document.getElementById('pv-isi').textContent = sanitizePlain(d.isi_ringkas || '-');
+            
+            // TTD
+            document.getElementById('pv-tempat-tanggal').textContent = sanitizePlain((d.tempat || 'Jakarta') + ', ' + formatDate(d.tanggal_surat, 'long'));
+            document.getElementById('pv-jabatan').textContent = sanitizePlain(d.jabatan_penandatangan || 'Dekan');
+            document.getElementById('pv-penandatangan').textContent = sanitizePlain(d.penandatangan || '-');
+            document.getElementById('pv-nip').textContent = d.nip_penandatangan ? 'NIP. ' + sanitizePlain(d.nip_penandatangan) : '';
+            
+            // Tembusan
+            if (d.tembusan && Array.isArray(d.tembusan) && d.tembusan.length > 0) {
+                document.getElementById('pv-tembusan-section').style.display = 'block';
+                document.getElementById('pv-tembusan').innerHTML = d.tembusan.map(function(t) { return '<li>' + sanitize(t) + '</li>'; }).join('');
+            }
+            
+            // Update status
+            updateStatusAlert(d.status);
+            
+            // Update generate link
+            var genLink = document.getElementById('generate-link');
+            if (genLink) genLink.href = 'generate.html?id=' + sanitizePlain(d.id || state.suratId);
+            
+            // Update watermark
+            if (d.status === 'draft') document.getElementById('watermark-text').textContent = 'DRAFT';
+            else if (d.status === 'rejected') document.getElementById('watermark-text').textContent = 'DITOLAK';
+            else document.getElementById('watermark-text').textContent = 'PREVIEW';
+            
+            // Generate QR
+            generateQRCode();
+        }
+        
+        function updateStatusAlert(status) {
+            var alert = document.getElementById('status-alert');
+            var msg = document.getElementById('status-message');
+            var icon = alert.querySelector('i');
+            
+            alert.className = 'status-alert no-print ' + (status || 'draft');
+            
+            var statusMap = {
+                'draft': { icon: 'fa-edit', text: 'Surat ini masih <strong>DRAFT</strong> - Belum diajukan untuk approval.' },
+                'pending': { icon: 'fa-clock', text: 'Surat ini sedang <strong>MENUNGGU APPROVAL</strong>.' },
+                'proses': { icon: 'fa-spinner fa-spin', text: 'Surat ini sedang <strong>DIPROSES</strong>.' },
+                'disetujui': { icon: 'fa-check-circle', text: 'Surat ini telah <strong>DISETUJUI</strong> dan siap digenerate.' },
+                'approved': { icon: 'fa-check-circle', text: 'Surat ini telah <strong>DISETUJUI</strong> dan siap digenerate.' },
+                'completed': { icon: 'fa-check-circle', text: 'Surat ini telah <strong>SELESAI</strong>.' },
+                'ditolak': { icon: 'fa-times-circle', text: 'Surat ini <strong>DITOLAK</strong>.' },
+                'rejected': { icon: 'fa-times-circle', text: 'Surat ini <strong>DITOLAK</strong>.' }
+            };
+            
+            var info = statusMap[status] || statusMap['draft'];
+            icon.className = 'fas ' + info.icon;
+            msg.innerHTML = info.text;
+        }
+        
+        // ============ QR CODE ============
+        function generateQRCode() {
+            var container = document.getElementById('pv-qrcode');
+            if (!container) return;
+            
+            // Build verification URL safely
+            var baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
+            var verifyUrl = baseUrl + '/verify.html?id=' + encodeURIComponent(state.suratId || '');
+            
+            // Use QRCode library if available
+            if (window.QRCode && typeof QRCode.toCanvas === 'function') {
+                var canvas = document.createElement('canvas');
+                QRCode.toCanvas(canvas, verifyUrl, {
                     width: 100,
                     margin: 1,
-                    color: { dark: '#1e293b', light: '#ffffff' }
+                    color: { dark: '#1e293b', light: '#ffffff' },
+                    errorCorrectionLevel: 'M'
+                }, function(error) {
+                    if (error) {
+                        console.warn('QR generation error:', error);
+                        container.innerHTML = '<p style="font-size:11px;color:#94a3b8;">QR Code tidak dapat dibuat</p>';
+                    } else {
+                        container.innerHTML = '';
+                        container.appendChild(canvas);
+                    }
                 });
-                
-                document.getElementById('pv-qrcode').appendChild(canvas);
-            } catch (error) {
-                logger.warn('QR Code generation failed', error);
-                document.getElementById('pv-qr-section').innerHTML = 
-                    '<p style="color:#94a3b8;">QR Code tidak dapat dibuat</p>';
+            } else if (window.QRCode && typeof QRCode.toString === 'function') {
+                // Alternative: generate as data URL
+                try {
+                    QRCode.toDataURL(verifyUrl, { width: 100, margin: 1, color: { dark: '#1e293b', light: '#ffffff' } }, function(err, url) {
+                        if (!err && url) {
+                            container.innerHTML = '<img src="' + url + '" width="100" height="100" alt="QR Code">';
+                        } else {
+                            container.innerHTML = '<p style="font-size:11px;color:#94a3b8;">QR Code tidak tersedia</p>';
+                        }
+                    });
+                } catch(e) {
+                    container.innerHTML = '<p style="font-size:11px;color:#94a3b8;">QR Code tidak tersedia</p>';
+                }
+            } else {
+                // QRCode library not loaded
+                container.innerHTML = '<p style="font-size:11px;color:#94a3b8;">QR Code library tidak dimuat</p>' +
+                    '<p style="font-size:9px;color:#cbd5e1;">Verifikasi: ' + sanitize(verifyUrl) + '</p>';
             }
         }
         
-        async function downloadPDF() {
-            try {
-                notifications.info('Membuat PDF...');
-                
-                const { default: exportHandler } = await import('/js/export.js');
-                
-                // Collect preview data
-                const data = [{
-                    nomor: document.getElementById('pv-nomor').textContent,
-                    perihal: document.getElementById('pv-perihal').textContent,
-                    tujuan: document.getElementById('pv-tujuan').textContent,
-                    tanggal: document.getElementById('pv-tempat-tanggal').textContent
-                }];
-                
-                await exportHandler.exportPDF(data, {
-                    filename: `surat-${suratId}.pdf`,
-                    title: 'Preview Surat'
+        // ============ DOWNLOAD PDF ============
+        function downloadPDF() {
+            showToast('Menyiapkan PDF...', 'info');
+            
+            // Use browser print to PDF
+            var originalTitle = document.title;
+            document.title = 'Surat_' + (state.suratData ? sanitizePlain(state.suratData.nomor_surat || state.suratId).replace(/\//g, '_') : 'output');
+            
+            // Hide no-print elements temporarily
+            document.querySelectorAll('.no-print').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            
+            window.print();
+            
+            // Restore
+            setTimeout(function() {
+                document.title = originalTitle;
+                document.querySelectorAll('.no-print').forEach(function(el) {
+                    el.style.display = '';
                 });
-                
-                notifications.success('PDF berhasil didownload');
-            } catch (error) {
-                // Fallback: print to PDF
-                window.print();
-            }
+            }, 500);
+            
+            showToast('Gunakan opsi "Save as PDF" di dialog print', 'info');
         }
+        
+        // ============ LOGOUT ============
+        function handleLogout() {
+            if (!confirm('Yakin logout?')) return;
+            try { if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout(); } catch(e) {}
+            localStorage.removeItem('auth_session'); localStorage.removeItem('auth_token');
+            window.location.href = '../../login.html?message=logged_out';
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============ INIT ============
+        function init() {
+            if (!checkAuth()) return;
+            
+            // Get surat ID from URL
+            var params = new URLSearchParams(window.location.search);
+            var rawId = params.get('id');
+            
+            // Validate ID
+            if (rawId && /^[A-Za-z0-9\-_]+$/.test(rawId)) {
+                state.suratId = sanitizePlain(rawId);
+            } else if (rawId) {
+                showToast('ID Surat tidak valid', 'error');
+                document.getElementById('status-message').textContent = 'ID Surat tidak valid: ' + sanitize(rawId);
+            }
+            
+            // Hide loading
+            setTimeout(function() {
+                var loader = document.getElementById('loading-screen');
+                if (loader) loader.classList.add('hidden');
+            }, 300);
+            
+            // Events
+            document.getElementById('print-btn').addEventListener('click', function() { window.print(); });
+            document.getElementById('download-btn').addEventListener('click', downloadPDF);
+            document.getElementById('refresh-btn').addEventListener('click', function() { loadSuratData(); showToast('Data diperbarui', 'info'); });
+            
+            // Load data
+            loadSuratData();
+        }
+        
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+    })();
     </script>
 </body>
 </html>

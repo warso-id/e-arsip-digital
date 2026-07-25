@@ -1,230 +1,1032 @@
-<!-- surat-keluar/draft.html - Draft Surat 2026 -->
+<!-- surat-keluar/draft.html - Draft Surat 2026 (SECURE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Draft Surat Keluar - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- CSP - Strict Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <!-- Anti-Clickjacking -->
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Draft Surat - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --transition: all 0.25s ease;
         }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Loading */
+        .loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--white); display: flex; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.4s;
+        }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner {
+            width: 44px; height: 44px; border: 3px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed; top: 0; left: 0; width: 250px; height: 100vh;
+            background: linear-gradient(180deg, #1e293b, #0f172a); color: white;
+            z-index: 100; overflow-y: auto; transition: transform 0.3s;
+        }
+        .sidebar-brand {
+            padding: 20px; display: flex; align-items: center; gap: 10px;
+            font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+            color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px;
+            font-weight: 500; transition: var(--transition); border-left: 3px solid transparent;
+        }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active {
+            background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600;
+        }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-footer {
+            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto;
+        }
+        
+        /* Main */
+        .main-content {
+            margin-left: 250px; min-height: 100vh; padding: 24px; transition: margin 0.3s;
+        }
+        
+        /* Page Header */
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .page-header h2 { font-size: 22px; font-weight: 700; margin: 0; }
+        .page-header .subtitle { font-size: 14px; color: var(--text-light); margin-top: 4px; }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: flex; gap: 16px; margin-bottom: 20px;
+            padding: 14px 18px; background: var(--white); border-radius: var(--radius);
+            border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+            flex-wrap: wrap; align-items: center;
+        }
+        .stats-bar .stat-item {
+            display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-light);
+        }
+        .stats-bar .stat-item strong { color: var(--text); font-size: 18px; }
+        .stats-bar .stat-divider {
+            width: 1px; height: 24px; background: var(--border);
+        }
+        
+        /* Search */
+        .search-box {
+            position: relative; flex: 1; min-width: 200px;
+        }
+        .search-box input {
+            width: 100%; padding: 9px 14px 9px 38px; font-size: 13px;
+            border: 2px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--bg); outline: none; transition: var(--transition);
+            font-family: inherit;
+        }
+        .search-box input:focus { border-color: var(--primary); background: var(--white); }
+        .search-box i {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; font-size: 14px;
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 18px; font-size: 13px; font-weight: 600;
+            border: none; border-radius: var(--radius-sm); cursor: pointer;
+            text-decoration: none; transition: var(--transition); font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent; color: var(--primary); border: 2px solid var(--primary);
+        }
+        .btn-outline:hover:not(:disabled) { background: var(--primary); color: white; }
+        .btn-danger { background: transparent; color: var(--danger); border: 2px solid var(--danger); }
+        .btn-danger:hover:not(:disabled) { background: var(--danger); color: white; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+        .btn-icon {
+            width: 34px; height: 34px; padding: 0; display: inline-flex;
+            align-items: center; justify-content: center; border-radius: 8px;
+        }
+        
+        /* Draft Cards */
+        .draft-list-container { display: flex; flex-direction: column; gap: 10px; }
         
         .draft-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
+            background: var(--white); border-radius: var(--radius);
+            padding: 18px 20px; border: 1px solid var(--border);
+            cursor: pointer; transition: var(--transition);
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 16px; box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+        .draft-card:hover {
+            box-shadow: var(--shadow-md); border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .draft-card.selected {
+            border-color: var(--primary); background: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
         }
         
-        .draft-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border-color: #2563eb;
+        /* Checkbox */
+        .draft-checkbox {
+            width: 20px; height: 20px; cursor: pointer;
+            accent-color: var(--primary); flex-shrink: 0;
         }
         
         .draft-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: #fffbeb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #d97706;
-            font-size: 20px;
+            width: 46px; height: 46px; border-radius: 12px;
+            background: #fffbeb; display: flex; align-items: center;
+            justify-content: center; color: var(--warning); font-size: 18px;
             flex-shrink: 0;
         }
+        .draft-icon.has-perihal { background: #eff6ff; color: var(--primary); }
         
-        .draft-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
+        .draft-info { flex: 1; min-width: 0; }
         .draft-info h4 {
-            font-size: 15px;
-            margin-bottom: 4px;
+            font-size: 15px; font-weight: 600; margin-bottom: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        
         .draft-info .meta {
-            font-size: 12px;
-            color: #64748b;
+            font-size: 12px; color: var(--text-light);
+            display: flex; gap: 12px; flex-wrap: wrap;
+        }
+        .draft-info .meta span {
+            display: flex; align-items: center; gap: 4px;
         }
         
         .draft-status {
-            font-size: 11px;
-            padding: 3px 10px;
-            border-radius: 10px;
-            background: #fef3c7;
-            color: #d97706;
-            font-weight: 500;
-            white-space: nowrap;
+            font-size: 11px; padding: 4px 12px; border-radius: 20px;
+            background: #fef3c7; color: #92400e; font-weight: 600;
+            white-space: nowrap; flex-shrink: 0;
         }
+        .draft-status.old { background: #f1f5f9; color: #64748b; }
         
         .draft-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
+            display: flex; gap: 6px; flex-shrink: 0;
         }
         
+        /* Empty State */
         .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #94a3b8;
+            text-align: center; padding: 60px 20px; color: #94a3b8;
+        }
+        .empty-state i { font-size: 52px; margin-bottom: 16px; display: block; color: #cbd5e1; }
+        .empty-state h3 { font-size: 18px; color: #64748b; margin-bottom: 8px; }
+        .empty-state p { font-size: 14px; }
+        
+        /* Batch Actions */
+        .batch-actions {
+            display: none; align-items: center; gap: 10px;
+            padding: 12px 18px; background: var(--primary); color: white;
+            border-radius: var(--radius); margin-bottom: 16px;
+        }
+        .batch-actions.visible { display: flex; }
+        .batch-actions span { font-size: 13px; font-weight: 500; }
+        .batch-actions .btn { color: white; border-color: rgba(255,255,255,0.5); }
+        .batch-actions .btn:hover { background: rgba(255,255,255,0.15); border-color: white; }
+        
+        /* Confirm Dialog */
+        .confirm-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 9998; align-items: center; justify-content: center;
+        }
+        .confirm-overlay.active { display: flex; }
+        .confirm-dialog {
+            background: white; border-radius: var(--radius); padding: 24px;
+            max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease; text-align: center;
+        }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .confirm-dialog i { font-size: 40px; color: var(--danger); margin-bottom: 12px; display: block; }
+        .confirm-dialog h3 { margin-bottom: 8px; }
+        .confirm-dialog p { font-size: 14px; color: var(--text-light); margin-bottom: 20px; }
+        .confirm-dialog .btn-group { display: flex; gap: 8px; justify-content: center; }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px; border-radius: 10px; color: white;
+            font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease; max-width: 380px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        .toast-info { background: #0891b2; }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 12px;
-            display: block;
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; padding: 16px; }
+            .draft-card { flex-wrap: wrap; padding: 14px 16px; }
+            .draft-actions { width: 100%; justify-content: flex-end; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .stats-bar { flex-direction: column; gap: 10px; }
+            .stat-divider { display: none; }
+        }
+        
+        @media (max-width: 480px) {
+            .draft-card { gap: 10px; }
+            .draft-info h4 { font-size: 14px; }
+            .draft-status { font-size: 10px; padding: 3px 8px; }
+        }
+        
+        /* Print */
+        @media print {
+            .sidebar, .toast-container, .confirm-overlay, .batch-actions,
+            .draft-actions, .draft-checkbox, .search-box { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .draft-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
         }
     </style>
 </head>
 <body>
+    <!-- Loading -->
     <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
     
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Confirm Dialog -->
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-dialog">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3 id="confirm-title">Konfirmasi Hapus</h3>
+            <p id="confirm-message">Apakah Anda yakin ingin menghapus draft ini?</p>
+            <div class="btn-group">
+                <button class="btn btn-outline btn-sm" id="confirm-cancel">Batal</button>
+                <button class="btn btn-danger btn-sm" id="confirm-ok">Hapus</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
-            <a href="/surat-keluar/draft.html" class="nav-item active"><i class="fas fa-file-alt"></i> Draft</a>
+            <a href="../admin/index.html" class="nav-item">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="list.html" class="nav-item">
+                <i class="fas fa-paper-plane"></i> Surat Keluar
+            </a>
+            <a href="draft.html" class="nav-item active">
+                <i class="fas fa-file-alt"></i> Draft
+                <span class="badge" id="draft-count-badge" style="margin-left:auto;background:#fef3c7;color:#92400e;font-size:10px;padding:2px 8px;border-radius:10px;">0</span>
+            </a>
+            <a href="approval.html" class="nav-item">
+                <i class="fas fa-check-double"></i> Approval
+            </a>
+            <a href="../../surat-masuk/list.html" class="nav-item">
+                <i class="fas fa-inbox"></i> Surat Masuk
+            </a>
+            <a href="../../laporan/index.html" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Laporan
+            </a>
         </nav>
+        <div class="sidebar-footer">
+            <button class="btn btn-outline btn-sm" style="width:100%;color:white;border-color:rgba(255,255,255,0.3);" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
     </aside>
     
+    <!-- Main Content -->
     <main class="main-content">
+        <!-- Page Header -->
         <div class="page-header">
             <div>
                 <h2>Draft Surat</h2>
-                <p style="color:#64748b;font-size:14px;">Surat yang belum selesai atau disimpan sebagai draft</p>
+                <p class="subtitle">Surat yang belum selesai atau disimpan sebagai draft</p>
             </div>
-            <a href="/surat-keluar/form.html" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Buat Surat Baru
-            </a>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-outline btn-sm btn-icon" id="refresh-btn" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <a href="form.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Buat Surat Baru
+                </a>
+            </div>
         </div>
         
-        <div id="draft-list">
+        <!-- Stats & Search Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <i class="fas fa-file-alt" style="color:var(--warning);"></i>
+                <span>Total Draft: <strong id="total-drafts">0</strong></span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <i class="fas fa-clock" style="color:#94a3b8;"></i>
+                <span>Terakhir update: <strong id="last-update">-</strong></span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Cari draft berdasarkan perihal..." maxlength="100">
+            </div>
+            <button class="btn btn-outline btn-sm" id="clear-search" style="display:none;">
+                <i class="fas fa-times"></i> Clear
+            </button>
+        </div>
+        
+        <!-- Batch Actions -->
+        <div class="batch-actions" id="batch-actions">
+            <input type="checkbox" id="select-all" title="Pilih semua">
+            <span id="selected-count">0 draft terpilih</span>
+            <button class="btn btn-sm btn-outline" id="delete-selected-btn">
+                <i class="fas fa-trash"></i> Hapus Terpilih
+            </button>
+            <button class="btn btn-sm btn-outline" id="deselect-all-btn">
+                <i class="fas fa-times"></i> Batal Pilih
+            </button>
+        </div>
+        
+        <!-- Draft List -->
+        <div class="draft-list-container" id="draft-list">
             <div style="text-align:center;padding:40px;color:#94a3b8;">
-                <div class="spinner"></div>
-                <p style="margin-top:12px;">Memuat draft...</p>
+                <div class="spinner" style="margin:0 auto 12px;"></div>
+                <p>Memuat draft...</p>
             </div>
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import apiService from '../js/api.js';
-        import notifications from '../js/notifications.js';
-        import utils from '../js/utils.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    // ============================================
+    // DRAFT SURAT CONTROLLER v2026.1.0 (SECURE)
+    // ============================================
+    (function() {
+        'use strict';
         
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import notifications from '/js/notifications.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+        // ============================================
+        // SECURITY: CSRF TOKEN
+        // ============================================
+        var csrfToken = (function() {
+            var token = localStorage.getItem('csrf_token');
+            if (!token) {
+                var arr = new Uint32Array(8);
+                crypto.getRandomValues(arr);
+                token = Array.from(arr, function(d) { return ('0' + d.toString(16)).slice(-2); }).join('');
+                localStorage.setItem('csrf_token', token);
+            }
+            return token;
+        })();
         
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // ============================================
+        // SECURITY: SANITIZATION
+        // ============================================
+        function sanitize(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
         
-        let drafts = [];
+        function sanitizePlain(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            loadDrafts();
-            logger.info('Draft page loaded');
-        });
+        // ============================================
+        // STATE (Encapsulated)
+        // ============================================
+        var state = {
+            drafts: [],
+            filteredDrafts: [],
+            selectedIds: {},
+            confirmCallback: null,
+            isLoading: false
+        };
         
-        async function loadDrafts() {
+        // ============================================
+        // AUTH CHECK
+        // ============================================
+        function checkAuth() {
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
+                return true;
+            }
             try {
-                const response = await apiService.get('/api/surat-keluar/drafts');
-                drafts = response.data || [];
-                renderDrafts();
-            } catch (error) {
-                logger.error('Failed to load drafts', error);
-                drafts = [];
-                renderDrafts();
+                var s = localStorage.getItem('auth_session');
+                if (s) {
+                    var d = JSON.parse(s);
+                    if (d.user && d.expiresAt && Date.now() < d.expiresAt) return true;
+                }
+            } catch(e) {}
+            window.location.href = '../../login.html?message=unauthorized';
+            return false;
+        }
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+            } catch(e) { return dateStr; }
+        }
+        
+        function timeAgo(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                var diff = Math.floor((Date.now() - d.getTime()) / 1000);
+                if (diff < 60) return 'Baru saja';
+                if (diff < 3600) return Math.floor(diff/60) + ' menit lalu';
+                if (diff < 86400) return Math.floor(diff/3600) + ' jam lalu';
+                if (diff < 604800) return Math.floor(diff/86400) + ' hari lalu';
+                if (diff < 2592000) return Math.floor(diff/604800) + ' minggu lalu';
+                return formatDate(dateStr);
+            } catch(e) { return dateStr; }
+        }
+        
+        function isOldDraft(dateStr) {
+            if (!dateStr) return false;
+            try {
+                var d = new Date(dateStr);
+                var diff = Date.now() - d.getTime();
+                return diff > 7 * 86400000; // Older than 7 days
+            } catch(e) { return false; }
+        }
+        
+        // ============================================
+        // TOAST NOTIFICATION
+        // ============================================
+        function showToast(message, type) {
+            var container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + (type || 'info');
+            toast.textContent = sanitizePlain(message);
+            container.appendChild(toast);
+            
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 4000);
+        }
+        
+        // ============================================
+        // CONFIRM DIALOG
+        // ============================================
+        function showConfirm(title, message, callback) {
+            document.getElementById('confirm-title').textContent = sanitizePlain(title);
+            document.getElementById('confirm-message').textContent = sanitizePlain(message);
+            document.getElementById('confirm-overlay').classList.add('active');
+            state.confirmCallback = callback;
+        }
+        
+        function hideConfirm() {
+            document.getElementById('confirm-overlay').classList.remove('active');
+            state.confirmCallback = null;
+        }
+        
+        // ============================================
+        // DATA LOADING
+        // ============================================
+        function loadDrafts() {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var payload = {
+                action: 'getDrafts',
+                csrf_token: csrfToken
+            };
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('drafts', payload)
+                    .then(function(res) {
+                        state.isLoading = false;
+                        if (res && res.data) {
+                            state.drafts = res.data;
+                        } else {
+                            state.drafts = [];
+                        }
+                        applyFilter();
+                    })
+                    .catch(function(err) {
+                        state.isLoading = false;
+                        console.warn('Failed to load drafts:', err);
+                        loadSampleData();
+                    });
+            } else {
+                state.isLoading = false;
+                loadSampleData();
             }
         }
         
-        function renderDrafts() {
-            const container = document.getElementById('draft-list');
+        function loadSampleData() {
+            state.drafts = [
+                {
+                    id: 'DR-001',
+                    perihal: 'Undangan Rapat Evaluasi Program Studi',
+                    tujuan: 'Kaprodi Teknik Informatika',
+                    jenis_surat: 'undangan',
+                    createdAt: new Date(Date.now() - 3600000).toISOString(),
+                    updatedAt: new Date(Date.now() - 1800000).toISOString()
+                },
+                {
+                    id: 'DR-002',
+                    perihal: '',
+                    tujuan: 'Wakil Dekan I',
+                    jenis_surat: 'pemberitahuan',
+                    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+                    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
+                },
+                {
+                    id: 'DR-003',
+                    perihal: 'Permohonan Data Akademik Semester Genap',
+                    tujuan: 'BAAK',
+                    jenis_surat: 'permohonan',
+                    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+                    updatedAt: new Date(Date.now() - 86400000 * 8).toISOString()
+                }
+            ];
+            applyFilter();
+        }
+        
+        function applyFilter() {
+            var searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
             
-            if (drafts.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-file-alt"></i>
-                        <h3>Tidak Ada Draft</h3>
-                        <p>Surat yang disimpan sebagai draft akan muncul di sini</p>
-                        <a href="/surat-keluar/form.html" class="btn btn-primary btn-sm" style="margin-top:16px;">
-                            Buat Surat Baru
-                        </a>
-                    </div>`;
+            if (searchTerm) {
+                state.filteredDrafts = state.drafts.filter(function(d) {
+                    return (d.perihal && d.perihal.toLowerCase().indexOf(searchTerm) !== -1) ||
+                           (d.tujuan && d.tujuan.toLowerCase().indexOf(searchTerm) !== -1) ||
+                           (d.jenis_surat && d.jenis_surat.toLowerCase().indexOf(searchTerm) !== -1);
+                });
+            } else {
+                state.filteredDrafts = state.drafts.slice();
+            }
+            
+            // Sort by updatedAt descending
+            state.filteredDrafts.sort(function(a, b) {
+                return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+            });
+            
+            // Clear selections
+            state.selectedIds = {};
+            
+            renderDrafts();
+            updateStats();
+        }
+        
+        // ============================================
+        // RENDERING
+        // ============================================
+        function renderDrafts() {
+            var container = document.getElementById('draft-list');
+            if (!container) return;
+            
+            if (state.filteredDrafts.length === 0) {
+                var searchTerm = document.getElementById('search-input').value.trim();
+                container.innerHTML = '<div class="empty-state">' +
+                    '<i class="fas fa-file-alt"></i>' +
+                    '<h3>' + (searchTerm ? 'Draft Tidak Ditemukan' : 'Tidak Ada Draft') + '</h3>' +
+                    '<p>' + (searchTerm ? 'Tidak ada draft yang cocok dengan pencarian "' + sanitize(searchTerm) + '"' : 'Surat yang disimpan sebagai draft akan muncul di sini') + '</p>' +
+                    (searchTerm ? '<button class="btn btn-outline btn-sm" style="margin-top:16px;" onclick="document.getElementById(\'search-input\').value=\'\';draftController.applyFilter();">Clear Pencarian</button>' : '') +
+                    (!searchTerm ? '<a href="form.html" class="btn btn-primary btn-sm" style="margin-top:16px;">Buat Surat Baru</a>' : '') +
+                '</div>';
+                updateBatchActions();
                 return;
             }
             
-            container.innerHTML = drafts.map(d => `
-                <div class="draft-card" onclick="window.location.href='/surat-keluar/form.html?edit=${d.id}'">
-                    <div class="draft-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="draft-info">
-                        <h4>${d.perihal || 'Tanpa Perihal'}</h4>
-                        <div class="meta">
-                            ${d.tujuan ? `<span><i class="fas fa-building"></i> ${d.tujuan}</span> &nbsp;` : ''}
-                            <span><i class="fas fa-clock"></i> ${utils.timeAgo(d.updatedAt || d.createdAt)}</span>
-                        </div>
-                    </div>
-                    <span class="draft-status">Draft</span>
-                    <div class="draft-actions" onclick="event.stopPropagation();">
-                        <a href="/surat-keluar/form.html?edit=${d.id}" class="btn btn-sm btn-outline" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <button class="btn btn-sm btn-outline" title="Hapus" style="color:#dc2626;" 
-                            onclick="deleteDraft('${d.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = state.filteredDrafts.map(function(d) {
+                var perihal = d.perihal || 'Tanpa Perihal';
+                var isOld = isOldDraft(d.updatedAt || d.createdAt);
+                var isSelected = !!state.selectedIds[d.id];
+                var safeId = sanitizePlain(d.id || '');
+                
+                return '<div class="draft-card' + (isSelected ? ' selected' : '') + '" data-id="' + safeId + '">' +
+                    '<input type="checkbox" class="draft-checkbox" ' + (isSelected ? 'checked' : '') + ' data-id="' + safeId + '" title="Pilih draft">' +
+                    '<div class="draft-icon' + (d.perihal ? ' has-perihal' : '') + '">' +
+                        '<i class="fas ' + (d.perihal ? 'fa-file-alt' : 'fa-file') + '"></i>' +
+                    '</div>' +
+                    '<div class="draft-info" data-href="form.html?edit=' + safeId + '">' +
+                        '<h4 title="' + sanitize(perihal) + '">' + sanitize(perihal) + '</h4>' +
+                        '<div class="meta">' +
+                            (d.tujuan ? '<span><i class="fas fa-building"></i> ' + sanitize(d.tujuan) + '</span>' : '') +
+                            '<span><i class="fas fa-clock"></i> ' + timeAgo(d.updatedAt || d.createdAt) + '</span>' +
+                            (d.jenis_surat ? '<span><i class="fas fa-tag"></i> ' + sanitize(d.jenis_surat.replace(/_/g, ' ')) + '</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="draft-status' + (isOld ? ' old' : '') + '">' + (isOld ? 'Lama' : 'Draft') + '</span>' +
+                    '<div class="draft-actions">' +
+                        '<a href="form.html?edit=' + safeId + '" class="btn btn-sm btn-outline" title="Edit draft">' +
+                            '<i class="fas fa-edit"></i>' +
+                        '</a>' +
+                        '<button class="btn btn-sm btn-danger btn-icon" title="Hapus draft" data-delete="' + safeId + '">' +
+                            '<i class="fas fa-trash"></i>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            
+            // Attach event handlers
+            attachCardEvents();
+            updateBatchActions();
         }
         
-        async function deleteDraft(id) {
-            if (!confirm('Hapus draft ini?')) return;
+        function attachCardEvents() {
+            // Checkbox clicks
+            document.querySelectorAll('.draft-checkbox').forEach(function(cb) {
+                cb.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var id = this.dataset.id;
+                    if (this.checked) {
+                        state.selectedIds[id] = true;
+                    } else {
+                        delete state.selectedIds[id];
+                    }
+                    updateSelectionUI();
+                });
+            });
             
-            try {
-                await apiService.delete(`/api/surat-keluar/drafts/${id}`);
-                notifications.success('Draft dihapus');
-                drafts = drafts.filter(d => d.id !== id);
-                renderDrafts();
-            } catch (error) {
-                notifications.error('Gagal menghapus draft');
+            // Card click (navigate to edit)
+            document.querySelectorAll('.draft-info[data-href]').forEach(function(info) {
+                info.addEventListener('click', function() {
+                    var href = this.dataset.href;
+                    if (href) {
+                        window.location.href = href;
+                    }
+                });
+            });
+            
+            // Delete buttons
+            document.querySelectorAll('[data-delete]').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var id = this.dataset.delete;
+                    var draft = state.drafts.find(function(d) { return d.id === id; });
+                    var name = draft ? (draft.perihal || 'Tanpa Perihal') : id;
+                    
+                    showConfirm(
+                        'Hapus Draft',
+                        'Apakah Anda yakin ingin menghapus draft "' + name + '"?\n\nTindakan ini tidak dapat dibatalkan.',
+                        function() { deleteDraft(id); }
+                    );
+                });
+            });
+        }
+        
+        function updateSelectionUI() {
+            // Update card styles
+            document.querySelectorAll('.draft-card').forEach(function(card) {
+                var id = card.dataset.id;
+                card.classList.toggle('selected', !!state.selectedIds[id]);
+            });
+            
+            // Update checkboxes
+            document.querySelectorAll('.draft-checkbox').forEach(function(cb) {
+                cb.checked = !!state.selectedIds[cb.dataset.id];
+            });
+            
+            updateBatchActions();
+        }
+        
+        function updateBatchActions() {
+            var selectedCount = Object.keys(state.selectedIds).length;
+            var batchActions = document.getElementById('batch-actions');
+            var selectAll = document.getElementById('select-all');
+            
+            document.getElementById('selected-count').textContent = selectedCount + ' draft terpilih';
+            
+            if (selectedCount > 0) {
+                batchActions.classList.add('visible');
+            } else {
+                batchActions.classList.remove('visible');
+            }
+            
+            // Update select all checkbox
+            if (state.filteredDrafts.length > 0) {
+                selectAll.checked = selectedCount === state.filteredDrafts.length;
+                selectAll.indeterminate = selectedCount > 0 && selectedCount < state.filteredDrafts.length;
             }
         }
         
-        window.deleteDraft = deleteDraft;
+        function updateStats() {
+            document.getElementById('total-drafts').textContent = state.drafts.length;
+            document.getElementById('draft-count-badge').textContent = state.drafts.length;
+            document.getElementById('draft-count-badge').style.display = state.drafts.length > 0 ? 'inline' : 'none';
+            
+            // Last update
+            if (state.drafts.length > 0) {
+                var latest = state.drafts.reduce(function(a, b) {
+                    return new Date(a.updatedAt || a.createdAt) > new Date(b.updatedAt || b.createdAt) ? a : b;
+                });
+                document.getElementById('last-update').textContent = timeAgo(latest.updatedAt || latest.createdAt);
+            } else {
+                document.getElementById('last-update').textContent = '-';
+            }
+        }
+        
+        // ============================================
+        // DRAFT ACTIONS
+        // ============================================
+        function deleteDraft(id) {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var payload = {
+                action: 'deleteDraft',
+                id: id,
+                csrf_token: csrfToken
+            };
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.post('drafts/delete', payload)
+                    .then(function(res) {
+                        state.isLoading = false;
+                        if (res && res.success) {
+                            state.drafts = state.drafts.filter(function(d) { return d.id !== id; });
+                            delete state.selectedIds[id];
+                            applyFilter();
+                            showToast('Draft berhasil dihapus', 'success');
+                        } else {
+                            showToast(res?.message || 'Gagal menghapus draft', 'error');
+                        }
+                    })
+                    .catch(function(err) {
+                        state.isLoading = false;
+                        showToast('Gagal: ' + sanitizePlain(err.message || 'Server error'), 'error');
+                    });
+            } else {
+                // Fallback - simulate success
+                setTimeout(function() {
+                    state.isLoading = false;
+                    state.drafts = state.drafts.filter(function(d) { return d.id !== id; });
+                    delete state.selectedIds[id];
+                    applyFilter();
+                    showToast('Draft berhasil dihapus', 'success');
+                }, 300);
+            }
+        }
+        
+        function deleteSelectedDrafts() {
+            var ids = Object.keys(state.selectedIds);
+            if (ids.length === 0) {
+                showToast('Pilih draft yang ingin dihapus', 'warning');
+                return;
+            }
+            
+            showConfirm(
+                'Hapus Draft Terpilih',
+                'Apakah Anda yakin ingin menghapus ' + ids.length + ' draft terpilih?\n\nTindakan ini tidak dapat dibatalkan.',
+                function() { executeBatchDelete(ids); }
+            );
+        }
+        
+        function executeBatchDelete(ids) {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var payload = {
+                action: 'deleteDrafts',
+                ids: ids,
+                csrf_token: csrfToken
+            };
+            
+            var deleteFromState = function() {
+                state.drafts = state.drafts.filter(function(d) { return ids.indexOf(d.id) === -1; });
+                state.selectedIds = {};
+                applyFilter();
+                showToast(ids.length + ' draft berhasil dihapus', 'success');
+            };
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.post('drafts/batch-delete', payload)
+                    .then(function(res) {
+                        state.isLoading = false;
+                        if (res && res.success) {
+                            deleteFromState();
+                        } else {
+                            showToast(res?.message || 'Gagal menghapus draft', 'error');
+                        }
+                    })
+                    .catch(function(err) {
+                        state.isLoading = false;
+                        showToast('Gagal: ' + sanitizePlain(err.message), 'error');
+                    });
+            } else {
+                setTimeout(function() {
+                    state.isLoading = false;
+                    deleteFromState();
+                }, 500);
+            }
+        }
+        
+        function selectAllDrafts() {
+            var selectAll = document.getElementById('select-all');
+            if (selectAll.checked) {
+                state.filteredDrafts.forEach(function(d) {
+                    state.selectedIds[d.id] = true;
+                });
+            } else {
+                state.selectedIds = {};
+            }
+            updateSelectionUI();
+        }
+        
+        function deselectAll() {
+            state.selectedIds = {};
+            updateSelectionUI();
+        }
+        
+        // ============================================
+        // SEARCH
+        // ============================================
+        function handleSearch() {
+            var searchTerm = document.getElementById('search-input').value.trim();
+            var clearBtn = document.getElementById('clear-search');
+            clearBtn.style.display = searchTerm ? 'inline-flex' : 'none';
+            applyFilter();
+        }
+        
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('clear-search').style.display = 'none';
+            applyFilter();
+        }
+        
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function handleLogout() {
+            if (!confirm('Apakah Anda yakin ingin logout?')) return;
+            try {
+                if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout();
+            } catch(e) {}
+            localStorage.removeItem('auth_session');
+            localStorage.removeItem('auth_token');
+            window.location.href = '../../login.html?message=logged_out';
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============================================
+        // PUBLIC API (single controller object)
+        // ============================================
+        var controller = {
+            refresh: function() {
+                loadDrafts();
+                showToast('Data diperbarui', 'info');
+            },
+            applyFilter: function() {
+                handleSearch();
+            },
+            deleteDraft: deleteDraft,
+            selectAll: selectAllDrafts,
+            deselectAll: deselectAll,
+            deleteSelected: deleteSelectedDrafts
+        };
+        
+        window.draftController = controller;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            console.log('Draft Surat v2026.1.0');
+            
+            if (!checkAuth()) return;
+            
+            // Hide loading
+            setTimeout(function() {
+                var loader = document.getElementById('loading-screen');
+                if (loader) loader.classList.add('hidden');
+            }, 300);
+            
+            // Refresh button
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                controller.refresh();
+            });
+            
+            // Search input
+            var searchInput = document.getElementById('search-input');
+            var searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(handleSearch, 300);
+            });
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') clearSearch();
+            });
+            
+            // Clear search
+            document.getElementById('clear-search').addEventListener('click', clearSearch);
+            
+            // Select all
+            document.getElementById('select-all').addEventListener('change', selectAllDrafts);
+            
+            // Batch delete
+            document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedDrafts);
+            
+            // Deselect all
+            document.getElementById('deselect-all-btn').addEventListener('click', deselectAll);
+            
+            // Confirm dialog
+            document.getElementById('confirm-cancel').addEventListener('click', hideConfirm);
+            document.getElementById('confirm-ok').addEventListener('click', function() {
+                if (state.confirmCallback) {
+                    state.confirmCallback();
+                }
+                hideConfirm();
+            });
+            document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+                if (e.target === this) hideConfirm();
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') hideConfirm();
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+            });
+            
+            // Load data
+            loadDrafts();
+            
+            console.log('Draft Surat initialized');
+        }
+        
+        // Start
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+    })();
     </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

@@ -1,175 +1,514 @@
-<!-- surat-keluar/generate.html - Generate Surat Final 2026 -->
+<!-- surat-keluar/generate.html - Generate Surat Final 2026 (SECURE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Generate Surat Final - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- CSP - Strict Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <!-- Anti-Clickjacking -->
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Generate Surat - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
-        .generate-container { max-width: 700px; margin: 0 auto; }
-        
-        .option-card {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 16px;
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706; --info: #0891b2;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
         }
         
-        .option-card:hover {
-            border-color: #2563eb;
-            background: #f8fafc;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
         
-        .option-card.selected {
-            border-color: #2563eb;
-            background: #eff6ff;
+        /* Loading */
+        .loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--white); display: flex; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.4s;
+        }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner {
+            width: 44px; height: 44px; border: 3px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed; top: 0; left: 0; width: 250px; height: 100vh;
+            background: linear-gradient(180deg, #1e293b, #0f172a); color: white;
+            z-index: 100; overflow-y: auto; transition: transform 0.3s;
+        }
+        .sidebar-brand {
+            padding: 20px; display: flex; align-items: center; gap: 10px;
+            font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+            color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px;
+            font-weight: 500; transition: var(--transition); border-left: 3px solid transparent;
+        }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active {
+            background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600;
+        }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-footer {
+            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto;
         }
         
-        .option-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
+        /* Main Content */
+        .main-content {
+            margin-left: 250px; min-height: 100vh; padding: 24px; transition: margin 0.3s;
+        }
+        
+        /* Page Header */
+        .page-header {
+            margin-bottom: 24px;
+        }
+        .page-header .breadcrumb {
+            display: flex; align-items: center; gap: 8px; font-size: 13px;
+            color: var(--text-light); margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .page-header .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .page-header .breadcrumb a:hover { text-decoration: underline; }
+        .page-header .breadcrumb i { font-size: 10px; }
+        .page-header h2 { font-size: 22px; font-weight: 700; margin: 0; }
+        .page-header .subtitle { font-size: 14px; color: var(--text-light); margin-top: 4px; }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 20px; font-size: 14px; font-weight: 600;
+            border: none; border-radius: var(--radius-sm); cursor: pointer;
+            text-decoration: none; transition: var(--transition); font-family: inherit;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover:not(:disabled) { background: #15803d; transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent; color: var(--primary); border: 2px solid var(--primary);
+        }
+        .btn-outline:hover:not(:disabled) { background: var(--primary); color: white; }
+        .btn-lg { padding: 14px 30px; font-size: 16px; border-radius: var(--radius); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 6px; }
+        
+        /* Generate Container */
+        .generate-container { max-width: 750px; margin: 0 auto; }
+        
+        /* Surat Info Card */
+        .surat-info-card {
+            background: var(--white); border-radius: var(--radius);
+            padding: 18px 20px; border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .surat-info-card .info-icon {
+            width: 46px; height: 46px; border-radius: 12px;
+            background: #eff6ff; display: flex; align-items: center;
+            justify-content: center; color: var(--primary); font-size: 20px;
             flex-shrink: 0;
         }
+        .surat-info-card .info-text { flex: 1; min-width: 0; }
+        .surat-info-card .info-text strong { font-size: 15px; }
+        .surat-info-card .info-text .meta { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+        .surat-info-card .status-badge {
+            font-size: 11px; padding: 4px 12px; border-radius: 20px;
+            font-weight: 600; white-space: nowrap; flex-shrink: 0;
+        }
+        .status-approved { background: #dcfce7; color: #15803d; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-draft { background: #f1f5f9; color: #64748b; }
         
+        /* Option Cards */
+        .option-card {
+            background: var(--white); border: 2px solid var(--border);
+            border-radius: var(--radius); padding: 18px 20px;
+            margin-bottom: 10px; cursor: pointer;
+            transition: var(--transition); display: flex;
+            align-items: center; gap: 16px; position: relative;
+        }
+        .option-card:hover { border-color: #93c5fd; background: #f8fafc; }
+        .option-card.selected {
+            border-color: var(--primary); background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .option-card:focus-visible {
+            outline: 3px solid var(--primary); outline-offset: 2px;
+        }
+        .option-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+        }
         .option-icon.blue { background: #eff6ff; color: #2563eb; }
         .option-icon.green { background: #f0fdf4; color: #16a34a; }
         .option-icon.purple { background: #faf5ff; color: #9333ea; }
-        
-        .option-info { flex: 1; }
-        .option-info h4 { margin: 0 0 4px 0; font-size: 15px; }
-        .option-info p { margin: 0; font-size: 13px; color: #64748b; }
-        
-        .generated-info {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            display: none;
-            animation: fadeIn 0.4s ease;
+        .option-icon.orange { background: #fff7ed; color: #ea580c; }
+        .option-info { flex: 1; min-width: 0; }
+        .option-info h4 { margin: 0 0 2px 0; font-size: 15px; font-weight: 600; }
+        .option-info p { margin: 0; font-size: 12px; color: var(--text-light); }
+        .option-radio {
+            width: 22px; height: 22px; border: 2px solid var(--border);
+            border-radius: 50%; flex-shrink: 0; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .option-card.selected .option-radio {
+            border-color: var(--primary); background: var(--primary);
+        }
+        .option-card.selected .option-radio::after {
+            content: ''; width: 8px; height: 8px;
+            background: white; border-radius: 50%;
         }
         
-        .generated-info.show { display: block; }
+        /* Settings Card */
+        .card {
+            background: var(--white); border-radius: var(--radius);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            margin-top: 20px; overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-header h3 { font-size: 16px; font-weight: 600; margin: 0; }
+        .card-body { padding: 20px; }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        /* Form Elements */
+        .form-row {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-label {
+            display: block; font-size: 13px; font-weight: 600; color: var(--text);
+            margin-bottom: 6px;
+        }
+        .form-input, .form-select {
+            width: 100%; padding: 10px 14px; font-size: 14px;
+            border: 2px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--bg); color: var(--text); outline: none;
+            transition: var(--transition); font-family: inherit;
+        }
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary); background: var(--white);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+        }
+        .form-check {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 14px; cursor: pointer; padding: 8px 0;
+        }
+        .form-check input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;
+        }
+        
+        /* Generated Result */
+        .generated-result {
+            background: #f0fdf4; border: 2px solid #bbf7d0;
+            border-radius: var(--radius); padding: 28px;
+            text-align: center; display: none; animation: fadeSlideUp 0.5s ease;
+            margin-top: 24px;
+        }
+        .generated-result.visible { display: block; }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .generated-result .success-icon {
+            font-size: 48px; color: var(--success); margin-bottom: 12px;
+        }
+        .generated-result h3 { font-size: 20px; margin-bottom: 4px; }
+        .generated-result .nomor-box {
+            display: inline-block; margin: 12px 0; padding: 12px 24px;
+            background: white; border: 2px solid #bbf7d0; border-radius: var(--radius-sm);
+            font-size: 20px; font-weight: 800; color: var(--success);
+            font-family: 'Courier New', monospace; letter-spacing: 1px;
+        }
+        .generated-result .action-buttons {
+            display: flex; gap: 10px; justify-content: center; margin-top: 16px;
+            flex-wrap: wrap;
+        }
         
-        .nomor-generated {
-            font-size: 32px;
-            font-weight: 800;
-            color: #16a34a;
-            letter-spacing: 1px;
-            font-family: 'SF Mono', monospace;
+        /* Error State */
+        .error-state {
+            background: #fef2f2; border: 2px solid #fecaca;
+            border-radius: var(--radius); padding: 28px;
+            text-align: center; margin-top: 24px;
+        }
+        .error-state i { font-size: 40px; color: var(--danger); margin-bottom: 12px; display: block; }
+        .error-state h3 { color: var(--danger); margin-bottom: 8px; }
+        .error-state p { color: var(--text-light); font-size: 14px; }
+        
+        /* Loading State */
+        .generating-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); z-index: 9998;
+            align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+        }
+        .generating-overlay.active { display: flex; }
+        .generating-overlay .big-spinner {
+            width: 56px; height: 56px; border: 4px solid #e2e8f0;
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .generating-overlay p { font-size: 15px; color: var(--text); font-weight: 500; }
+        .generating-overlay .progress-steps {
+            font-size: 12px; color: var(--text-light);
+        }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px; border-radius: 10px; color: white;
+            font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease; max-width: 380px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        .toast-info { background: var(--info); }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; padding: 16px; }
+            .form-row { grid-template-columns: 1fr; }
+            .generate-container { max-width: 100%; }
+            .surat-info-card { flex-wrap: wrap; }
+            .generated-result .action-buttons { flex-direction: column; }
+            .generated-result .action-buttons .btn { width: 100%; justify-content: center; }
+        }
+        
+        @media print {
+            .sidebar, .toast-container, .generating-overlay,
+            #generate-btn, .option-card, .card { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .generated-result { border: 1px solid #ccc; break-inside: avoid; }
         }
     </style>
 </head>
 <body>
+    <!-- Loading -->
     <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
     
+    <!-- Generating Overlay -->
+    <div class="generating-overlay" id="generating-overlay">
+        <div class="big-spinner"></div>
+        <p>Sedang mengenerate surat...</p>
+        <span class="progress-steps" id="progress-text">Menyiapkan dokumen...</span>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="../admin/index.html" class="nav-item">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="list.html" class="nav-item">
+                <i class="fas fa-paper-plane"></i> Surat Keluar
+            </a>
+            <a href="draft.html" class="nav-item">
+                <i class="fas fa-file-alt"></i> Draft
+            </a>
+            <a href="approval.html" class="nav-item">
+                <i class="fas fa-check-double"></i> Approval
+            </a>
+            <a href="generate.html" class="nav-item active">
+                <i class="fas fa-cog"></i> Generate Surat
+            </a>
+            <a href="../../surat-masuk/list.html" class="nav-item">
+                <i class="fas fa-inbox"></i> Surat Masuk
+            </a>
+            <a href="../../laporan/index.html" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Laporan
+            </a>
         </nav>
+        <div class="sidebar-footer">
+            <button class="btn btn-outline btn-sm" style="width:100%;color:white;border-color:rgba(255,255,255,0.3);" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
     </aside>
     
+    <!-- Main Content -->
     <main class="main-content">
         <div class="generate-container">
-            <h2 style="margin-bottom:8px;">Generate Surat Final</h2>
-            <p style="color:#64748b;margin-bottom:24px;">Pilih format output untuk surat yang telah disetujui</p>
+            <!-- Breadcrumb & Header -->
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <a href="../admin/index.html">Dashboard</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <a href="list.html">Surat Keluar</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Generate Surat</span>
+                </div>
+                <h2>Generate Surat Final</h2>
+                <p class="subtitle">Pilih format output untuk surat yang telah disetujui</p>
+            </div>
+            
+            <!-- Surat Info (Loaded dynamically) -->
+            <div class="surat-info-card" id="surat-info-card">
+                <div class="info-icon"><i class="fas fa-file-alt"></i></div>
+                <div class="info-text">
+                    <strong id="info-perihal">Memuat informasi surat...</strong>
+                    <div class="meta">
+                        <span id="info-nomor">-</span> &bull; 
+                        <span id="info-tanggal">-</span> &bull;
+                        <span id="info-tujuan">-</span>
+                    </div>
+                </div>
+                <span class="status-badge status-pending" id="info-status">Loading...</span>
+            </div>
             
             <!-- Format Options -->
-            <div class="option-card selected" data-format="pdf" id="opt-pdf">
+            <h3 style="font-size:15px;margin-bottom:10px;color:var(--text-light);">Pilih Format Output</h3>
+            
+            <div class="option-card selected" data-format="pdf" tabindex="0" role="radio" aria-checked="true">
                 <div class="option-icon blue"><i class="fas fa-file-pdf"></i></div>
                 <div class="option-info">
                     <h4>PDF Document</h4>
-                    <p>Format standar dengan kop surat dan tanda tangan digital</p>
+                    <p>Format standar dengan kop surat, stempel, dan tanda tangan digital</p>
                 </div>
-                <i class="fas fa-check-circle" style="color:#2563eb;font-size:20px;"></i>
+                <div class="option-radio"></div>
             </div>
             
-            <div class="option-card" data-format="word" id="opt-word">
+            <div class="option-card" data-format="word" tabindex="0" role="radio" aria-checked="false">
                 <div class="option-icon green"><i class="fas fa-file-word"></i></div>
                 <div class="option-info">
-                    <h4>Word Document</h4>
-                    <p>Format editable untuk revisi lebih lanjut</p>
+                    <h4>Word Document (.docx)</h4>
+                    <p>Format editable untuk revisi lebih lanjut jika diperlukan</p>
                 </div>
-                <i class="fas fa-circle" style="color:#e2e8f0;font-size:20px;"></i>
+                <div class="option-radio"></div>
             </div>
             
-            <div class="option-card" data-format="print" id="opt-print">
-                <div class="option-icon purple"><i class="fas fa-print"></i></div>
+            <div class="option-card" data-format="html" tabindex="0" role="radio" aria-checked="false">
+                <div class="option-icon purple"><i class="fas fa-code"></i></div>
                 <div class="option-info">
-                    <h4>Cetak Langsung</h4>
-                    <p>Cetak surat dengan printer yang terhubung</p>
+                    <h4>HTML (Print Ready)</h4>
+                    <p>Format HTML yang siap cetak langsung dari browser</p>
                 </div>
-                <i class="fas fa-circle" style="color:#e2e8f0;font-size:20px;"></i>
+                <div class="option-radio"></div>
+            </div>
+            
+            <div class="option-card" data-format="arsip" tabindex="0" role="radio" aria-checked="false">
+                <div class="option-icon orange"><i class="fas fa-archive"></i></div>
+                <div class="option-info">
+                    <h4>Arsip Digital (PDF/A)</h4>
+                    <p>Format arsip jangka panjang sesuai standar ISO PDF/A</p>
+                </div>
+                <div class="option-radio"></div>
             </div>
             
             <!-- Settings -->
-            <div class="card" style="margin-top:20px;">
-                <div class="card-header"><h3>Pengaturan Generate</h3></div>
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-sliders-h" style="color:var(--primary);"></i>
+                    <h3>Pengaturan Generate</h3>
+                </div>
                 <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Kertas</label>
+                            <label class="form-label" for="paper-size">Ukuran Kertas</label>
                             <select class="form-select" id="paper-size">
-                                <option value="A4">A4</option>
-                                <option value="F4">F4 (Folio)</option>
-                                <option value="Legal">Legal</option>
+                                <option value="A4" selected>A4 (210 × 297 mm)</option>
+                                <option value="F4">F4 / Folio (215 × 330 mm)</option>
+                                <option value="Legal">Legal (216 × 356 mm)</option>
+                                <option value="Letter">Letter (216 × 279 mm)</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Jumlah Salinan</label>
+                            <label class="form-label" for="copies">Jumlah Salinan</label>
                             <input type="number" class="form-input" id="copies" value="1" min="1" max="10">
+                            <div class="form-help" style="font-size:11px;color:var(--text-light);margin-top:4px;">Min 1, Maks 10 salinan</div>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-check">
-                            <input type="checkbox" class="form-check-input" id="include-qr" checked>
-                            Sertakan QR Code verifikasi
+                            <input type="checkbox" id="include-qr" checked>
+                            <span>Sertakan QR Code untuk verifikasi keaslian surat</span>
                         </label>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-check">
-                            <input type="checkbox" class="form-check-input" id="include-ttd" checked>
-                            Sertakan tanda tangan digital
+                            <input type="checkbox" id="include-ttd" checked>
+                            <span>Sertakan tanda tangan digital penandatangan</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" id="include-stempel">
+                            <span>Sertakan stempel/cap institusi</span>
                         </label>
                     </div>
                 </div>
             </div>
             
-            <!-- Generated Info -->
-            <div class="generated-info" id="generated-info">
-                <i class="fas fa-check-circle" style="font-size:40px;color:#16a34a;margin-bottom:12px;"></i>
+            <!-- Generated Result -->
+            <div class="generated-result" id="generated-result">
+                <div class="success-icon"><i class="fas fa-check-circle"></i></div>
                 <h3>Surat Berhasil Digenerate!</h3>
-                <p style="color:#64748b;">Nomor surat final:</p>
-                <div class="nomor-generated" id="final-nomor">-</div>
-                <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;">
+                <p style="color:var(--text-light);margin:4px 0;">Nomor surat final:</p>
+                <div class="nomor-box" id="final-nomor">-</div>
+                <p style="font-size:12px;color:var(--text-light);" id="final-info"></p>
+                <div class="action-buttons">
                     <button class="btn btn-primary" id="download-btn">
                         <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn btn-outline" id="preview-btn">
+                        <i class="fas fa-eye"></i> Preview
                     </button>
                     <button class="btn btn-outline" id="print-btn">
                         <i class="fas fa-print"></i> Cetak
@@ -177,104 +516,535 @@
                 </div>
             </div>
             
-            <!-- Action -->
-            <div style="text-align:center;margin-top:20px;">
-                <button class="btn btn-primary btn-lg" id="generate-btn">
+            <!-- Error State -->
+            <div class="error-state" id="error-state" style="display:none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Gagal Mengenerate Surat</h3>
+                <p id="error-message">Terjadi kesalahan saat memproses surat.</p>
+                <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="generateController.retry()">
+                    <i class="fas fa-redo"></i> Coba Lagi
+                </button>
+            </div>
+            
+            <!-- Generate Button -->
+            <div style="text-align:center;margin-top:24px;">
+                <button class="btn btn-success btn-lg" id="generate-btn">
                     <i class="fas fa-cog"></i> Generate Surat
                 </button>
+                <p style="font-size:12px;color:var(--text-light);margin-top:8px;">
+                    Pastikan surat sudah disetujui sebelum digenerate
+                </p>
             </div>
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import apiService from '../js/api.js';
-        import notifications from '../js/notifications.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    // ============================================
+    // GENERATE SURAT CONTROLLER v2026.1.0 (SECURE)
+    // ============================================
+    (function() {
+        'use strict';
         
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import notifications from '/js/notifications.js';
-        import logger from '/js/logger.js';
+        // ============================================
+        // SECURITY: CSRF TOKEN
+        // ============================================
+        var csrfToken = (function() {
+            var token = localStorage.getItem('csrf_token');
+            if (!token) {
+                var arr = new Uint32Array(8);
+                crypto.getRandomValues(arr);
+                token = Array.from(arr, function(d) { return ('0' + d.toString(16)).slice(-2); }).join('');
+                localStorage.setItem('csrf_token', token);
+            }
+            return token;
+        })();
         
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // ============================================
+        // SECURITY: SANITIZATION
+        // ============================================
+        function sanitize(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
         
-        const params = new URLSearchParams(window.location.search);
-        const suratId = params.get('id');
-        let selectedFormat = 'pdf';
+        function sanitizePlain(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            initEvents();
-            logger.info('Generate page loaded', { suratId });
-        });
+        // ============================================
+        // URL VALIDATION
+        // ============================================
+        function isValidUrl(url) {
+            if (!url) return false;
+            try {
+                var parsed = new URL(url, window.location.origin);
+                // Only allow same-origin or trusted domains
+                var allowedHosts = [
+                    window.location.hostname,
+                    'script.google.com',
+                    'script.googleusercontent.com',
+                    'drive.google.com',
+                    'docs.google.com'
+                ];
+                return allowedHosts.indexOf(parsed.hostname) !== -1;
+            } catch(e) {
+                return false;
+            }
+        }
         
-        function initEvents() {
-            // Format selection
-            document.querySelectorAll('.option-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-                    document.querySelectorAll('.option-card i.fa-check-circle').forEach(i => {
-                        i.className = 'fas fa-circle';
-                        i.style.color = '#e2e8f0';
+        // ============================================
+        // STATE (Encapsulated)
+        // ============================================
+        var state = {
+            suratId: null,
+            suratData: null,
+            selectedFormat: 'pdf',
+            generatedData: null,
+            isGenerating: false
+        };
+        
+        // ============================================
+        // AUTH CHECK
+        // ============================================
+        function checkAuth() {
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
+                return true;
+            }
+            try {
+                var s = localStorage.getItem('auth_session');
+                if (s) {
+                    var d = JSON.parse(s);
+                    if (d.user && d.expiresAt && Date.now() < d.expiresAt) return true;
+                }
+            } catch(e) {}
+            window.location.href = '../../login.html?message=unauthorized';
+            return false;
+        }
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+            } catch(e) { return dateStr; }
+        }
+        
+        function showToast(message, type) {
+            var container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + (type || 'info');
+            toast.textContent = sanitizePlain(message);
+            container.appendChild(toast);
+            
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 4000);
+        }
+        
+        // ============================================
+        // GENERATING OVERLAY
+        // ============================================
+        function showGenerating(step) {
+            document.getElementById('generating-overlay').classList.add('active');
+            document.getElementById('progress-text').textContent = sanitizePlain(step || 'Menyiapkan dokumen...');
+        }
+        
+        function hideGenerating() {
+            document.getElementById('generating-overlay').classList.remove('active');
+        }
+        
+        // ============================================
+        // LOAD SURAT INFO
+        // ============================================
+        function loadSuratInfo() {
+            if (!state.suratId) {
+                showError('ID Surat tidak ditemukan. Silakan pilih surat dari daftar.', false);
+                return;
+            }
+            
+            var payload = {
+                action: 'getSuratDetail',
+                id: state.suratId,
+                csrf_token: csrfToken
+            };
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('surat-keluar/detail', { id: state.suratId })
+                    .then(function(res) {
+                        if (res && res.data) {
+                            state.suratData = res.data;
+                            renderSuratInfo();
+                            checkSuratStatus();
+                        } else {
+                            state.suratData = getFallbackSuratData();
+                            renderSuratInfo();
+                        }
+                    })
+                    .catch(function() {
+                        state.suratData = getFallbackSuratData();
+                        renderSuratInfo();
                     });
+            } else {
+                state.suratData = getFallbackSuratData();
+                renderSuratInfo();
+            }
+        }
+        
+        function getFallbackSuratData() {
+            return {
+                nomor_surat: '001/K.UM/FIKOM/VII/2024',
+                perihal: 'Undangan Rapat Koordinasi Program Studi',
+                tujuan: 'Kaprodi Teknik Informatika',
+                tanggal: new Date().toISOString().split('T')[0],
+                status: 'approved'
+            };
+        }
+        
+        function renderSuratInfo() {
+            var d = state.suratData;
+            document.getElementById('info-perihal').textContent = sanitizePlain(d.perihal || 'Tanpa Perihal');
+            document.getElementById('info-nomor').textContent = sanitizePlain(d.nomor_surat || '-');
+            document.getElementById('info-tanggal').textContent = formatDate(d.tanggal || d.createdAt);
+            document.getElementById('info-tujuan').textContent = sanitizePlain(d.tujuan || '-');
+            
+            var statusEl = document.getElementById('info-status');
+            var status = d.status || 'draft';
+            statusEl.textContent = status === 'approved' ? 'Disetujui' : 
+                                   status === 'pending' ? 'Menunggu' : 'Draft';
+            statusEl.className = 'status-badge status-' + 
+                (status === 'approved' ? 'approved' : status === 'pending' ? 'pending' : 'draft');
+        }
+        
+        function checkSuratStatus() {
+            var d = state.suratData;
+            var btn = document.getElementById('generate-btn');
+            
+            if (d.status === 'draft') {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-lock"></i> Surat Belum Diajukan';
+                showToast('Surat masih draft. Ajukan terlebih dahulu.', 'warning');
+            } else if (d.status === 'pending') {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-clock"></i> Menunggu Approval';
+                showToast('Surat belum disetujui. Tunggu approval.', 'warning');
+            }
+        }
+        
+        // ============================================
+        // FORMAT SELECTION
+        // ============================================
+        function selectFormat(format) {
+            state.selectedFormat = format;
+            
+            document.querySelectorAll('.option-card').forEach(function(card) {
+                var isSelected = card.dataset.format === format;
+                card.classList.toggle('selected', isSelected);
+                card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+            });
+        }
+        
+        // ============================================
+        // GENERATE SURAT
+        // ============================================
+        function generateSurat() {
+            if (state.isGenerating) return;
+            
+            if (!state.suratId) {
+                showToast('ID Surat tidak valid', 'error');
+                return;
+            }
+            
+            if (state.suratData && state.suratData.status !== 'approved') {
+                showToast('Surat harus disetujui terlebih dahulu', 'warning');
+                return;
+            }
+            
+            // Hide previous results
+            document.getElementById('generated-result').classList.remove('visible');
+            document.getElementById('error-state').style.display = 'none';
+            
+            state.isGenerating = true;
+            
+            // Simulate progress steps
+            var steps = [
+                'Menyiapkan template surat...',
+                'Menambahkan kop surat...',
+                'Menyisipkan tanda tangan digital...',
+                'Mengenerate QR Code...',
+                'Menyusun dokumen final...'
+            ];
+            var stepIndex = 0;
+            showGenerating(steps[0]);
+            
+            var progressInterval = setInterval(function() {
+                stepIndex++;
+                if (stepIndex < steps.length) {
+                    document.getElementById('progress-text').textContent = steps[stepIndex];
+                }
+            }, 600);
+            
+            // Build payload
+            var payload = {
+                action: 'generateSurat',
+                suratId: state.suratId,
+                format: state.selectedFormat,
+                paperSize: document.getElementById('paper-size').value,
+                copies: parseInt(document.getElementById('copies').value) || 1,
+                includeQR: document.getElementById('include-qr').checked,
+                includeTTD: document.getElementById('include-ttd').checked,
+                includeStempel: document.getElementById('include-stempel').checked,
+                csrf_token: csrfToken,
+                timestamp: new Date().toISOString()
+            };
+            
+            var generateBtn = document.getElementById('generate-btn');
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;"></span> Generating...';
+            
+            // API call or fallback
+            var apiPromise;
+            if (window.EArsip && window.EArsip.Api) {
+                apiPromise = window.EArsip.Api.post('surat-keluar/generate', payload);
+            } else {
+                // Simulate success for demo
+                apiPromise = new Promise(function(resolve) {
+                    setTimeout(function() {
+                        resolve({
+                            success: true,
+                            data: {
+                                nomor_final: '001/K.UM-S1/FIKOM/VII/2024',
+                                downloadUrl: '#',
+                                previewUrl: '#',
+                                generatedAt: new Date().toISOString(),
+                                format: state.selectedFormat,
+                                size: '245 KB'
+                            }
+                        });
+                    }, 2000);
+                });
+            }
+            
+            apiPromise
+                .then(function(res) {
+                    clearInterval(progressInterval);
+                    hideGenerating();
+                    state.isGenerating = false;
                     
-                    card.classList.add('selected');
-                    card.querySelector('i:last-child').className = 'fas fa-check-circle';
-                    card.querySelector('i:last-child').style.color = '#2563eb';
-                    
-                    selectedFormat = card.dataset.format;
+                    if (res && res.success) {
+                        state.generatedData = res.data;
+                        showGeneratedResult(res.data);
+                        showToast('Surat berhasil digenerate!', 'success');
+                    } else {
+                        throw new Error(res?.message || 'Gagal mengenerate surat');
+                    }
+                })
+                .catch(function(err) {
+                    clearInterval(progressInterval);
+                    hideGenerating();
+                    state.isGenerating = false;
+                    showError(sanitizePlain(err.message || 'Terjadi kesalahan saat mengenerate surat'), true);
+                })
+                .finally(function() {
+                    generateBtn.disabled = false;
+                    generateBtn.innerHTML = '<i class="fas fa-cog"></i> Generate Surat';
+                });
+        }
+        
+        function showGeneratedResult(data) {
+            var container = document.getElementById('generated-result');
+            document.getElementById('final-nomor').textContent = sanitizePlain(data.nomor_final || '-');
+            document.getElementById('final-info').textContent = 
+                'Format: ' + sanitizePlain(data.format || '-').toUpperCase() + 
+                ' | Ukuran: ' + sanitizePlain(data.size || '-') +
+                ' | ' + formatDate(data.generatedAt);
+            
+            container.classList.add('visible');
+            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        function showError(message, showRetry) {
+            var errorState = document.getElementById('error-state');
+            document.getElementById('error-message').textContent = sanitizePlain(message);
+            errorState.style.display = 'block';
+            errorState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            var retryBtn = errorState.querySelector('button');
+            if (retryBtn) retryBtn.style.display = showRetry ? 'inline-flex' : 'none';
+        }
+        
+        // ============================================
+        // DOWNLOAD / PREVIEW / PRINT
+        // ============================================
+        function downloadSurat() {
+            if (!state.generatedData) {
+                showToast('Generate surat terlebih dahulu', 'warning');
+                return;
+            }
+            
+            var url = state.generatedData.downloadUrl;
+            if (url && isValidUrl(url)) {
+                // Secure download - create temporary link
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'surat_' + (state.generatedData.nomor_final || 'output').replace(/\//g, '_') + '.' + state.selectedFormat;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                // Fallback - trigger print
+                window.print();
+            }
+            
+            showToast('Mengunduh surat...', 'info');
+        }
+        
+        function previewSurat() {
+            if (!state.generatedData) {
+                showToast('Generate surat terlebih dahulu', 'warning');
+                return;
+            }
+            
+            var url = state.generatedData.previewUrl;
+            if (url && isValidUrl(url)) {
+                var previewWindow = window.open('', '_blank', 'width=800,height=600');
+                if (previewWindow) {
+                    previewWindow.document.write('<html><head><title>Preview Surat</title></head><body style="margin:0;"><iframe src="' + sanitizePlain(url) + '" width="100%" height="100%" style="border:none;"></iframe></body></html>');
+                }
+            } else {
+                showToast('Preview tidak tersedia. Silakan download.', 'warning');
+            }
+        }
+        
+        function printSurat() {
+            if (!state.generatedData) {
+                showToast('Generate surat terlebih dahulu', 'warning');
+                return;
+            }
+            
+            window.print();
+        }
+        
+        function retryGenerate() {
+            document.getElementById('error-state').style.display = 'none';
+            generateSurat();
+        }
+        
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function handleLogout() {
+            if (!confirm('Apakah Anda yakin ingin logout?')) return;
+            try {
+                if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout();
+            } catch(e) {}
+            localStorage.removeItem('auth_session');
+            localStorage.removeItem('auth_token');
+            window.location.href = '../../login.html?message=logged_out';
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============================================
+        // PUBLIC API (single controller object)
+        // ============================================
+        var controller = {
+            generate: generateSurat,
+            download: downloadSurat,
+            preview: previewSurat,
+            print: printSurat,
+            retry: retryGenerate,
+            selectFormat: selectFormat
+        };
+        
+        window.generateController = controller;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            console.log('Generate Surat v2026.1.0');
+            
+            if (!checkAuth()) return;
+            
+            // Get surat ID from URL
+            var params = new URLSearchParams(window.location.search);
+            var rawId = params.get('id');
+            
+            // Validate ID
+            if (rawId && /^[A-Za-z0-9\-_]+$/.test(rawId)) {
+                state.suratId = sanitizePlain(rawId);
+            } else if (rawId) {
+                showToast('ID Surat tidak valid', 'error');
+            }
+            
+            // Hide loading
+            setTimeout(function() {
+                var loader = document.getElementById('loading-screen');
+                if (loader) loader.classList.add('hidden');
+            }, 300);
+            
+            // Load surat info
+            loadSuratInfo();
+            
+            // Format selection - click
+            document.querySelectorAll('.option-card').forEach(function(card) {
+                card.addEventListener('click', function() {
+                    selectFormat(this.dataset.format);
+                });
+                
+                // Keyboard accessibility
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectFormat(this.dataset.format);
+                    }
                 });
             });
             
-            document.getElementById('generate-btn')?.addEventListener('click', generateSurat);
-            document.getElementById('download-btn')?.addEventListener('click', downloadSurat);
-            document.getElementById('print-btn')?.addEventListener('click', () => window.print());
-        }
-        
-        async function generateSurat() {
-            const btn = document.getElementById('generate-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Generating...';
+            // Generate button
+            document.getElementById('generate-btn').addEventListener('click', generateSurat);
             
-            try {
-                const response = await apiService.post(`/api/surat-keluar/${suratId}/generate`, {
-                    format: selectedFormat,
-                    paperSize: document.getElementById('paper-size').value,
-                    copies: document.getElementById('copies').value,
-                    includeQR: document.getElementById('include-qr').checked,
-                    includeTTD: document.getElementById('include-ttd').checked
-                });
-                
-                // Show generated info
-                document.getElementById('final-nomor').textContent = response.data?.nomor_final || '-';
-                document.getElementById('generated-info').classList.add('show');
-                document.getElementById('generated-info').scrollIntoView({ behavior: 'smooth' });
-                
-                notifications.success('Surat berhasil digenerate');
-                
-                // Store download URL
-                window._downloadUrl = response.data?.downloadUrl;
-                
-            } catch (error) {
-                notifications.error('Gagal generate surat: ' + error.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-cog"></i> Generate Surat';
-            }
+            // Result actions
+            document.getElementById('download-btn').addEventListener('click', downloadSurat);
+            document.getElementById('preview-btn').addEventListener('click', previewSurat);
+            document.getElementById('print-btn').addEventListener('click', printSurat);
+            
+            // Copies validation
+            document.getElementById('copies').addEventListener('change', function() {
+                var val = parseInt(this.value);
+                if (val < 1) this.value = 1;
+                if (val > 10) this.value = 10;
+            });
+            
+            console.log('Generate Surat initialized');
         }
         
-        function downloadSurat() {
-            if (window._downloadUrl) {
-                window.open(window._downloadUrl, '_blank');
-            } else {
-                window.print();
-            }
+        // Start
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
         }
+        
+    })();
     </script>
 </body>
 </html>

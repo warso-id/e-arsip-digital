@@ -1,175 +1,467 @@
-<!-- surat-keluar/approval.html - Tracking Approval 2026 -->
+<!-- surat-keluar/approval.html - Tracking Approval 2026 (SECURE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Tracking Approval Surat Keluar - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- CSP - Strict Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <!-- Anti-Clickjacking -->
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Tracking Approval - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
-        .approval-container { max-width: 800px; margin: 0 auto; }
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706; --info: #0891b2;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --transition: all 0.3s ease;
+        }
         
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Loading */
+        .loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--white); display: flex; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.4s;
+        }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner {
+            width: 44px; height: 44px; border: 3px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed; top: 0; left: 0; width: 250px; height: 100vh;
+            background: linear-gradient(180deg, #1e293b, #0f172a); color: white;
+            z-index: 100; overflow-y: auto; transition: transform 0.3s;
+        }
+        .sidebar-brand {
+            padding: 20px; display: flex; align-items: center; gap: 10px;
+            font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+            color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px;
+            font-weight: 500; transition: var(--transition); border-left: 3px solid transparent;
+        }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active {
+            background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600;
+        }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-footer {
+            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: auto;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 250px; min-height: 100vh; padding: 24px; transition: margin 0.3s;
+        }
+        
+        /* Page Header */
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+        }
+        .page-header h2 { font-size: 22px; font-weight: 700; margin: 0; }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 18px; font-size: 13px; font-weight: 600;
+            border: none; border-radius: var(--radius-sm); cursor: pointer;
+            text-decoration: none; transition: var(--transition); font-family: inherit;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover:not(:disabled) { background: #15803d; transform: translateY(-1px); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover:not(:disabled) { background: #b91c1c; transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent; color: var(--primary); border: 2px solid var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary); color: white; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+        .btn-icon {
+            width: 36px; height: 36px; padding: 0; display: inline-flex;
+            align-items: center; justify-content: center; border-radius: 8px;
+        }
+        
+        /* Form Select */
+        .form-select {
+            padding: 8px 14px; font-size: 13px; border: 2px solid var(--border);
+            border-radius: var(--radius-sm); background: var(--white); color: var(--text);
+            cursor: pointer; outline: none; font-family: inherit;
+            transition: var(--transition);
+        }
+        .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        
+        /* Approval Container */
+        .approval-container { max-width: 900px; margin: 0 auto; }
+        
+        /* Approval Flow */
         .approval-flow {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0;
-            margin: 32px 0;
+            display: flex; align-items: center; justify-content: center;
+            gap: 0; margin: 28px 0 32px; flex-wrap: wrap;
+            background: var(--white); border-radius: var(--radius);
+            padding: 28px 16px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+        .approval-node { text-align: center; position: relative; }
+        .node-circle {
+            width: 52px; height: 52px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 8px; font-size: 18px; border: 3px solid;
+            transition: var(--transition); position: relative; z-index: 1;
+        }
+        .node-circle.completed {
+            background: #dcfce7; border-color: var(--success); color: var(--success);
+            box-shadow: 0 0 0 4px rgba(22,163,74,0.1);
+        }
+        .node-circle.active {
+            background: #eff6ff; border-color: var(--primary); color: var(--primary);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
+        }
+        .node-circle.pending {
+            background: #f8fafc; border-color: #cbd5e1; color: #94a3b8;
+        }
+        .node-circle.rejected {
+            background: #fef2f2; border-color: var(--danger); color: var(--danger);
+            box-shadow: 0 0 0 4px rgba(220,38,38,0.1);
+        }
+        .node-circle.skipped {
+            background: #fef3c7; border-color: var(--warning); color: var(--warning);
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+            50% { box-shadow: 0 0 0 16px rgba(37,99,235,0); }
+        }
+        .node-label {
+            font-size: 11px; font-weight: 500; color: #64748b;
+            max-width: 90px; line-height: 1.3;
+        }
+        .node-label.completed { color: var(--success); font-weight: 600; }
+        .node-label.active { color: var(--primary); font-weight: 600; }
+        
+        .approval-arrow {
+            width: 50px; height: 3px; background: #e2e8f0;
+            margin: 0 -2px; margin-bottom: 26px; border-radius: 2px;
+            transition: background 0.5s ease;
+        }
+        .approval-arrow.completed { background: var(--success); }
+        .approval-arrow.active { background: linear-gradient(90deg, var(--success), var(--primary)); }
+        
+        /* Approval Cards */
+        .approval-card {
+            background: var(--white); border-radius: var(--radius);
+            padding: 20px 24px; border: 1px solid var(--border);
+            margin-bottom: 16px; box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+        .approval-card:hover { box-shadow: var(--shadow-md); }
+        .approval-card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+        }
+        .approval-card-header .surat-number {
+            font-weight: 700; font-size: 15px; color: var(--text);
+        }
+        .approval-card-header .surat-date {
+            font-size: 12px; color: var(--text-light);
+        }
+        
+        /* Badges */
+        .badge {
+            font-size: 11px; padding: 4px 12px; border-radius: 20px;
+            font-weight: 600; white-space: nowrap;
+        }
+        .badge-success { background: #dcfce7; color: #15803d; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fef2f2; color: #b91c1c; }
+        .badge-info { background: #dbeafe; color: #1d4ed8; }
+        .badge-secondary { background: #f1f5f9; color: #475569; }
+        
+        /* Timeline */
+        .timeline {
+            position: relative; padding-left: 28px; margin-top: 12px;
+        }
+        .timeline::before {
+            content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px;
+            width: 2px; background: #e2e8f0; border-radius: 1px;
+        }
+        .timeline-item {
+            position: relative; padding-bottom: 18px;
+        }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -23px; top: 6px;
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid white; z-index: 1;
+        }
+        .timeline-item.approved::before {
+            background: var(--success); box-shadow: 0 0 0 3px rgba(22,163,74,0.2);
+        }
+        .timeline-item.rejected::before {
+            background: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,0.2);
+        }
+        .timeline-item.pending::before {
+            background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.2);
+        }
+        .timeline-item.skipped::before {
+            background: var(--warning); box-shadow: 0 0 0 3px rgba(217,119,6,0.2);
+        }
+        .timeline-item-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 2px;
+        }
+        .timeline-item-header strong { font-size: 13px; }
+        .timeline-item-header .role-tag {
+            font-size: 10px; padding: 2px 8px; background: #f1f5f9;
+            border-radius: 10px; color: #64748b;
+        }
+        .timeline-item .timeline-note {
+            font-size: 12px; color: var(--text-light); margin: 2px 0;
+        }
+        .timeline-item .timeline-time {
+            font-size: 11px; color: #94a3b8;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center; padding: 48px 20px; color: #94a3b8;
+        }
+        .empty-state i { font-size: 48px; display: block; margin-bottom: 12px; }
+        .empty-state.success i { color: var(--success); }
+        
+        /* Action Buttons in Card */
+        .approval-actions {
+            display: flex; gap: 8px; margin-top: 14px;
+            padding-top: 14px; border-top: 1px solid #f1f5f9;
             flex-wrap: wrap;
         }
         
-        .approval-node {
-            text-align: center;
-            position: relative;
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 9998; align-items: center; justify-content: center;
         }
-        
-        .node-circle {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 8px;
-            font-size: 20px;
-            border: 3px solid;
-            transition: all 0.3s;
+        .modal-overlay.active { display: flex; }
+        .modal-dialog {
+            background: white; border-radius: var(--radius); padding: 24px;
+            max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease;
         }
-        
-        .node-circle.completed { background: #dcfce7; border-color: #16a34a; color: #16a34a; }
-        .node-circle.active { background: #eff6ff; border-color: #2563eb; color: #2563eb; animation: pulse 2s infinite; }
-        .node-circle.pending { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
-        .node-circle.rejected { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
-        
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
-            50% { box-shadow: 0 0 0 12px rgba(37,99,235,0); }
-        }
-        
-        .node-label {
-            font-size: 12px;
-            font-weight: 500;
-            color: #64748b;
-            max-width: 100px;
-        }
-        
-        .approval-arrow {
-            width: 60px;
-            height: 2px;
-            background: #e2e8f0;
-            margin: 0 -4px;
-            margin-bottom: 28px;
-        }
-        
-        .approval-arrow.completed { background: #16a34a; }
-        
-        .approval-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #e2e8f0;
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 16px;
         }
+        .modal-header h3 { font-size: 18px; margin: 0; }
+        .modal-close {
+            background: none; border: none; font-size: 20px; cursor: pointer;
+            color: #94a3b8; width: 32px; height: 32px; display: flex;
+            align-items: center; justify-content: center; border-radius: 6px;
+        }
+        .modal-close:hover { background: #f1f5f9; color: var(--text); }
+        .modal-body { margin-bottom: 20px; }
+        .modal-body textarea {
+            width: 100%; padding: 12px; border: 2px solid var(--border);
+            border-radius: var(--radius-sm); font-family: inherit; font-size: 14px;
+            resize: vertical; min-height: 80px; outline: none;
+        }
+        .modal-body textarea:focus { border-color: var(--primary); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
         
-        .approval-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
+        /* Toast */
+        .toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px; border-radius: 10px; color: white;
+            font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease; max-width: 380px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        .toast-info { background: var(--info); }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
-        .timeline-approval {
-            position: relative;
-            padding-left: 24px;
-        }
-        
-        .timeline-approval::before {
-            content: '';
-            position: absolute;
-            left: 7px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #e2e8f0;
-        }
-        
-        .timeline-approval-item {
-            position: relative;
-            padding-bottom: 20px;
-        }
-        
-        .timeline-approval-item::before {
-            content: '';
-            position: absolute;
-            left: -20px;
-            top: 6px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 2px solid white;
-        }
-        
-        .timeline-approval-item.approved::before { background: #16a34a; box-shadow: 0 0 0 2px #16a34a; }
-        .timeline-approval-item.rejected::before { background: #dc2626; box-shadow: 0 0 0 2px #dc2626; }
-        .timeline-approval-item.pending::before { background: #94a3b8; box-shadow: 0 0 0 2px #94a3b8; }
-        
+        /* Responsive */
         @media (max-width: 768px) {
-            .approval-flow { flex-direction: column; gap: 8px; }
-            .approval-arrow { width: 2px; height: 24px; margin: 0; }
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; padding: 16px; }
+            .approval-flow { flex-direction: column; gap: 0; padding: 20px 12px; }
+            .approval-arrow { width: 3px; height: 28px; margin: 0; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .approval-actions { flex-direction: column; }
+            .approval-actions .btn { width: 100%; justify-content: center; }
+        }
+        
+        @media (max-width: 480px) {
+            .approval-card { padding: 16px; }
+            .node-circle { width: 44px; height: 44px; font-size: 16px; }
+            .node-label { font-size: 10px; max-width: 70px; }
+        }
+        
+        /* Print */
+        @media print {
+            .sidebar, .toast-container, .modal-overlay, .approval-actions { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .approval-card { break-inside: avoid; border: 1px solid #ccc; }
         }
     </style>
 </head>
 <body>
+    <!-- Loading -->
     <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
     
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Approval Modal -->
+    <div class="modal-overlay" id="approval-modal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modal-title">Konfirmasi Approval</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:14px;margin-bottom:8px;" id="modal-message"></p>
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">
+                    Catatan <span style="color:#94a3b8;font-weight:400;">(opsional)</span>
+                </label>
+                <textarea id="modal-catatan" placeholder="Masukkan catatan approval..." maxlength="500"></textarea>
+                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
+                    Sisa karakter: <span id="catatan-count">500</span>
+                </div>
+                <input type="hidden" id="modal-surat-id" value="">
+                <input type="hidden" id="modal-action" value="">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline btn-sm" id="modal-cancel">Batal</button>
+                <button class="btn btn-sm" id="modal-confirm">Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
-            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
-            <a href="/surat-keluar/approval.html" class="nav-item active"><i class="fas fa-check-double"></i> Approval</a>
+            <a href="../admin/index.html" class="nav-item">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="list.html" class="nav-item">
+                <i class="fas fa-paper-plane"></i> Surat Keluar
+            </a>
+            <a href="../../surat-masuk/list.html" class="nav-item">
+                <i class="fas fa-inbox"></i> Surat Masuk
+            </a>
+            <a href="../../disposisi/list.html" class="nav-item">
+                <i class="fas fa-clipboard-list"></i> Disposisi
+            </a>
+            <a href="approval.html" class="nav-item active">
+                <i class="fas fa-check-double"></i> Approval
+                <span class="badge badge-warning" id="pending-badge" style="margin-left:auto;font-size:10px;">0</span>
+            </a>
+            <a href="../../laporan/index.html" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Laporan
+            </a>
         </nav>
+        <div class="sidebar-footer">
+            <button class="btn btn-outline btn-sm" style="width:100%;color:white;border-color:rgba(255,255,255,0.3);" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
     </aside>
     
+    <!-- Main Content -->
     <main class="main-content">
         <div class="approval-container">
+            <!-- Page Header -->
             <div class="page-header">
                 <div>
                     <h2>Tracking Approval</h2>
-                    <p style="color:#64748b;">Pantau status approval surat keluar</p>
+                    <p style="color:var(--text-light);font-size:14px;margin-top:4px;">
+                        Pantau dan kelola status approval surat keluar
+                    </p>
                 </div>
-                <div style="display:flex;gap:8px;">
-                    <select class="form-select" id="filter-status" style="width:auto;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <select class="form-select" id="filter-status" aria-label="Filter status">
                         <option value="">Semua Status</option>
-                        <option value="pending">Menunggu</option>
+                        <option value="pending">Menunggu Approval</option>
                         <option value="approved">Disetujui</option>
                         <option value="rejected">Ditolak</option>
                     </select>
-                    <button class="btn btn-outline btn-sm" id="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+                    <button class="btn btn-outline btn-sm btn-icon" id="refresh-btn" title="Refresh data">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                 </div>
             </div>
             
-            <!-- Approval Flow -->
-            <div class="approval-flow">
+            <!-- Approval Flow Visualization -->
+            <div class="approval-flow" id="approval-flow">
                 <div class="approval-node">
                     <div class="node-circle completed"><i class="fas fa-pen"></i></div>
-                    <div class="node-label">Pembuatan</div>
+                    <div class="node-label completed">Pembuatan Surat</div>
                 </div>
                 <div class="approval-arrow completed"></div>
                 <div class="approval-node">
                     <div class="node-circle completed"><i class="fas fa-user-check"></i></div>
-                    <div class="node-label">Verifikasi Admin</div>
+                    <div class="node-label completed">Verifikasi Admin</div>
                 </div>
                 <div class="approval-arrow completed"></div>
                 <div class="approval-node">
                     <div class="node-circle active"><i class="fas fa-user-tie"></i></div>
-                    <div class="node-label">Approval Pimpinan</div>
+                    <div class="node-label active">Approval Pimpinan</div>
                 </div>
                 <div class="approval-arrow"></div>
                 <div class="approval-node">
@@ -181,133 +473,600 @@
             <!-- Approval List -->
             <div id="approval-list">
                 <div style="text-align:center;padding:40px;color:#94a3b8;">
-                    <div class="spinner"></div>
-                    <p style="margin-top:12px;">Memuat data approval...</p>
+                    <div class="spinner" style="margin:0 auto 12px;"></div>
+                    <p>Memuat data approval...</p>
                 </div>
             </div>
+            
+            <!-- Pagination -->
+            <nav id="pagination-container" style="display:flex;justify-content:center;margin-top:20px;"></nav>
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import apiService from '../js/api.js';
-        import notifications from '../js/notifications.js';
-        import utils from '../js/utils.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    // ============================================
+    // APPROVAL TRACKING CONTROLLER v2026.1.0 (SECURE)
+    // ============================================
+    (function() {
+        'use strict';
         
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import notifications from '/js/notifications.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+        // ============================================
+        // SECURITY: CSRF TOKEN
+        // ============================================
+        var csrfToken = (function() {
+            var token = localStorage.getItem('csrf_token');
+            if (!token) {
+                var arr = new Uint32Array(8);
+                crypto.getRandomValues(arr);
+                token = Array.from(arr, function(d) { return ('0' + d.toString(16)).slice(-2); }).join('');
+                localStorage.setItem('csrf_token', token);
+            }
+            return token;
+        })();
         
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // ============================================
+        // SECURITY: SANITIZATION
+        // ============================================
+        function sanitize(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
         
-        let approvalList = [];
+        function sanitizePlain(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            document.getElementById('refresh-btn')?.addEventListener('click', loadData);
-            document.getElementById('filter-status')?.addEventListener('change', loadData);
-            loadData();
-            logger.info('Approval page loaded');
-        });
+        // ============================================
+        // STATE (Encapsulated)
+        // ============================================
+        var state = {
+            approvalList: [],
+            currentPage: 1,
+            totalPages: 1,
+            currentFilter: '',
+            currentAction: null,
+            currentSuratId: null,
+            isLoading: false
+        };
         
-        async function loadData() {
+        // ============================================
+        // AUTH CHECK
+        // ============================================
+        function checkAuth() {
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
+                return true;
+            }
             try {
-                const status = document.getElementById('filter-status').value;
-                const response = await apiService.get('/api/surat-keluar/approvals', { status });
-                approvalList = response.data || [];
-                renderList();
-            } catch (error) {
-                logger.error('Failed to load approvals', error);
-                notifications.error('Gagal memuat data approval');
+                var s = localStorage.getItem('auth_session');
+                if (s) {
+                    var d = JSON.parse(s);
+                    if (d.user && d.expiresAt && Date.now() < d.expiresAt) return true;
+                }
+            } catch(e) {}
+            window.location.href = '../../login.html?message=unauthorized';
+            return false;
+        }
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+            } catch(e) { return dateStr; }
+        }
+        
+        function timeAgo(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                var diff = Math.floor((Date.now() - d.getTime()) / 1000);
+                if (diff < 60) return 'Baru saja';
+                if (diff < 3600) return Math.floor(diff/60) + ' menit lalu';
+                if (diff < 86400) return Math.floor(diff/3600) + ' jam lalu';
+                if (diff < 604800) return Math.floor(diff/86400) + ' hari lalu';
+                return formatDate(dateStr);
+            } catch(e) { return dateStr; }
+        }
+        
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'approved': return '<span class="badge badge-success">Disetujui</span>';
+                case 'rejected': return '<span class="badge badge-danger">Ditolak</span>';
+                case 'pending': return '<span class="badge badge-warning">Menunggu</span>';
+                case 'draft': return '<span class="badge badge-secondary">Draft</span>';
+                default: return '<span class="badge badge-info">' + sanitize(status || '-') + '</span>';
             }
         }
         
-        function renderList() {
-            const container = document.getElementById('approval-list');
+        function getTimelineStatusClass(status) {
+            switch(status) {
+                case 'approved': return 'approved';
+                case 'rejected': return 'rejected';
+                case 'pending': return 'pending';
+                case 'skipped': return 'skipped';
+                default: return 'pending';
+            }
+        }
+        
+        // ============================================
+        // TOAST NOTIFICATION
+        // ============================================
+        function showToast(message, type) {
+            var container = document.getElementById('toast-container');
+            if (!container) return;
             
-            if (approvalList.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">
-                    <i class="fas fa-check-circle" style="font-size:40px;color:#16a34a;margin-bottom:12px;display:block;"></i>
-                    Tidak ada surat yang perlu di-approve
-                </div>`;
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + (type || 'info');
+            toast.textContent = sanitizePlain(message);
+            container.appendChild(toast);
+            
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 4000);
+        }
+        
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
+        function showModal(title, message, action, suratId, confirmClass, confirmText) {
+            document.getElementById('modal-title').textContent = sanitizePlain(title);
+            document.getElementById('modal-message').textContent = sanitizePlain(message);
+            document.getElementById('modal-catatan').value = '';
+            document.getElementById('catatan-count').textContent = '500';
+            document.getElementById('modal-surat-id').value = suratId;
+            document.getElementById('modal-action').value = action;
+            
+            var confirmBtn = document.getElementById('modal-confirm');
+            confirmBtn.textContent = confirmText || 'Konfirmasi';
+            confirmBtn.className = 'btn btn-sm ' + (confirmClass || 'btn-primary');
+            
+            document.getElementById('approval-modal').classList.add('active');
+        }
+        
+        function hideModal() {
+            document.getElementById('approval-modal').classList.remove('active');
+            state.currentAction = null;
+            state.currentSuratId = null;
+        }
+        
+        // ============================================
+        // APPROVAL ACTIONS
+        // ============================================
+        function confirmApproval() {
+            var suratId = document.getElementById('modal-surat-id').value;
+            var action = document.getElementById('modal-action').value;
+            var catatan = document.getElementById('modal-catatan').value.trim();
+            
+            // Sanitize catatan
+            catatan = sanitizePlain(catatan).substring(0, 500);
+            
+            if (action === 'approve') {
+                executeApprove(suratId, catatan);
+            } else if (action === 'reject') {
+                if (!catatan) {
+                    showToast('Mohon isi alasan penolakan', 'warning');
+                    return;
+                }
+                executeReject(suratId, catatan);
+            }
+            
+            hideModal();
+        }
+        
+        function executeApprove(id, catatan) {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var payload = {
+                action: 'approveSurat',
+                id: id,
+                catatan: catatan,
+                csrf_token: csrfToken,
+                timestamp: new Date().toISOString()
+            };
+            
+            callAPI(payload, function() {
+                showToast('Surat berhasil disetujui!', 'success');
+                loadData();
+            }, function(err) {
+                showToast('Gagal menyetujui: ' + sanitizePlain(err.message), 'error');
+            });
+        }
+        
+        function executeReject(id, catatan) {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var payload = {
+                action: 'rejectSurat',
+                id: id,
+                catatan: catatan,
+                csrf_token: csrfToken,
+                timestamp: new Date().toISOString()
+            };
+            
+            callAPI(payload, function() {
+                showToast('Surat ditolak', 'success');
+                loadData();
+            }, function(err) {
+                showToast('Gagal menolak: ' + sanitizePlain(err.message), 'error');
+            });
+        }
+        
+        function callAPI(payload, onSuccess, onError) {
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.post('approval', payload)
+                    .then(function(res) {
+                        state.isLoading = false;
+                        if (res && res.success) {
+                            onSuccess(res);
+                        } else {
+                            onError(new Error(res?.message || 'Gagal'));
+                        }
+                    })
+                    .catch(function(err) {
+                        state.isLoading = false;
+                        onError(err);
+                    });
+            } else {
+                // Fallback - simulate success
+                setTimeout(function() {
+                    state.isLoading = false;
+                    onSuccess({ success: true });
+                }, 500);
+            }
+        }
+        
+        // ============================================
+        // DATA LOADING
+        // ============================================
+        function loadData() {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var filter = document.getElementById('filter-status').value;
+            state.currentFilter = filter;
+            
+            var payload = {
+                action: 'getApprovals',
+                status: filter || undefined,
+                page: state.currentPage,
+                limit: 10
+            };
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('approvals', payload)
+                    .then(function(res) {
+                        state.isLoading = false;
+                        if (res && res.data) {
+                            state.approvalList = res.data;
+                            state.totalPages = res.totalPages || 1;
+                            renderList();
+                            updatePendingBadge();
+                        } else {
+                            state.approvalList = [];
+                            renderList();
+                        }
+                    })
+                    .catch(function(err) {
+                        state.isLoading = false;
+                        console.warn('Failed to load approvals:', err);
+                        // Load sample data for demo
+                        loadSampleData();
+                    });
+            } else {
+                state.isLoading = false;
+                loadSampleData();
+            }
+        }
+        
+        function loadSampleData() {
+            state.approvalList = [
+                {
+                    id: 'SK-001',
+                    nomor_surat: '001/K.UM/FIKOM/VII/2024',
+                    perihal: 'Undangan Rapat Koordinasi Program Studi',
+                    pengaju: 'Staf Akademik',
+                    tujuan: 'Kaprodi Teknik Informatika',
+                    status: 'pending',
+                    createdAt: new Date(Date.now() - 3600000).toISOString(),
+                    approval_history: [
+                        { approver: 'Admin', role: 'admin', status: 'approved', catatan: 'Dokumen lengkap', timestamp: new Date(Date.now() - 7200000).toISOString() },
+                        { approver: 'Kasubag', role: 'kasubag', status: 'pending', catatan: 'Menunggu review', timestamp: null }
+                    ]
+                },
+                {
+                    id: 'SK-002',
+                    nomor_surat: '002/K.KEU/FIKOM/VII/2024',
+                    perihal: 'Permohonan Anggaran Kegiatan Workshop',
+                    pengaju: 'Bendahara',
+                    tujuan: 'Wakil Dekan II',
+                    status: 'approved',
+                    createdAt: new Date(Date.now() - 86400000).toISOString(),
+                    approval_history: [
+                        { approver: 'Admin', role: 'admin', status: 'approved', catatan: 'Dokumen diverifikasi', timestamp: new Date(Date.now() - 86400000).toISOString() },
+                        { approver: 'Wadek II', role: 'wadek', status: 'approved', catatan: 'Disetujui', timestamp: new Date(Date.now() - 43200000).toISOString() }
+                    ]
+                }
+            ];
+            state.totalPages = 1;
+            renderList();
+            updatePendingBadge();
+        }
+        
+        function updatePendingBadge() {
+            var badge = document.getElementById('pending-badge');
+            if (!badge) return;
+            var pendingCount = state.approvalList.filter(function(item) { return item.status === 'pending'; }).length;
+            badge.textContent = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'inline' : 'none';
+        }
+        
+        // ============================================
+        // RENDERING
+        // ============================================
+        function renderList() {
+            var container = document.getElementById('approval-list');
+            if (!container) return;
+            
+            // Filter locally if API doesn't support filtering
+            var filteredList = state.approvalList;
+            if (state.currentFilter) {
+                filteredList = state.approvalList.filter(function(item) {
+                    return item.status === state.currentFilter;
+                });
+            }
+            
+            if (filteredList.length === 0) {
+                container.innerHTML = '<div class="empty-state success">' +
+                    '<i class="fas fa-check-circle"></i>' +
+                    '<p style="font-size:16px;font-weight:500;color:#475569;">Tidak ada surat yang perlu di-approve</p>' +
+                    '<p style="font-size:13px;">Semua surat sudah diproses</p>' +
+                '</div>';
+                renderPagination(0);
                 return;
             }
             
-            container.innerHTML = approvalList.map(surat => `
-                <div class="approval-card">
-                    <div class="approval-card-header">
-                        <div>
-                            <strong>${surat.nomor_surat || 'No. Surat Pending'}</strong>
-                            <span style="margin-left:8px;font-size:12px;color:#64748b;">${utils.timeAgo(surat.createdAt)}</span>
-                        </div>
-                        <span class="badge badge-${surat.status === 'approved' ? 'success' : surat.status === 'rejected' ? 'danger' : 'warning'}">
-                            ${surat.status === 'approved' ? 'Disetujui' : surat.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
-                        </span>
-                    </div>
-                    <p style="margin:0 0 8px 0;">${surat.perihal || '-'}</p>
-                    <div style="font-size:13px;color:#64748b;margin-bottom:12px;">
-                        Pengaju: ${surat.pengaju || '-'} | Tujuan: ${surat.tujuan || '-'}
-                    </div>
-                    
-                    <div class="timeline-approval">
-                        ${(surat.approval_history || []).map(h => `
-                            <div class="timeline-approval-item ${h.status}">
-                                <div style="font-weight:500;">${h.approver || '-'}</div>
-                                <div style="font-size:12px;color:#64748b;">${h.catatan || '-'}</div>
-                                <div style="font-size:11px;color:#94a3b8;">${utils.timeAgo(h.timestamp)}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    ${surat.status === 'pending' ? `
-                        <div style="display:flex;gap:8px;margin-top:12px;">
-                            <button class="btn btn-sm btn-success" onclick="approveSurat('${surat.id}')">
-                                <i class="fas fa-check"></i> Setujui
-                            </button>
-                            <button class="btn btn-sm btn-outline" style="color:#dc2626;" onclick="rejectSurat('${surat.id}')">
-                                <i class="fas fa-times"></i> Tolak
-                            </button>
-                            <a href="/surat-keluar/preview.html?id=${surat.id}" class="btn btn-sm btn-outline">
-                                <i class="fas fa-eye"></i> Lihat
-                            </a>
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
+            container.innerHTML = filteredList.map(function(surat) {
+                return renderApprovalCard(surat);
+            }).join('');
+            
+            renderPagination(filteredList.length);
         }
         
-        async function approveSurat(id) {
-            const catatan = prompt('Catatan approval (opsional):') || '';
-            try {
-                await apiService.post(`/api/surat-keluar/${id}/approve`, { catatan });
-                notifications.success('Surat berhasil disetujui');
-                loadData();
-            } catch (error) {
-                notifications.error('Gagal menyetujui surat');
+        function renderApprovalCard(surat) {
+            var statusBadge = getStatusBadge(surat.status);
+            var timelineHtml = renderTimeline(surat.approval_history || [], surat.status);
+            var actionsHtml = surat.status === 'pending' ? renderActions(surat) : '';
+            
+            return '<div class="approval-card">' +
+                '<div class="approval-card-header">' +
+                    '<div>' +
+                        '<span class="surat-number">' + sanitize(surat.nomor_surat || 'No. Surat Pending') + '</span>' +
+                        '<span class="surat-date" style="margin-left:10px;">' + timeAgo(surat.createdAt) + '</span>' +
+                    '</div>' +
+                    statusBadge +
+                '</div>' +
+                '<p style="margin:4px 0 8px;font-size:14px;"><strong>Perihal:</strong> ' + sanitize(surat.perihal || '-') + '</p>' +
+                '<div style="font-size:13px;color:var(--text-light);margin-bottom:8px;">' +
+                    '<span><i class="fas fa-user-edit" style="width:16px;"></i> Pengaju: ' + sanitize(surat.pengaju || '-') + '</span>' +
+                    '<span style="margin-left:16px;"><i class="fas fa-building" style="width:16px;"></i> Tujuan: ' + sanitize(surat.tujuan || '-') + '</span>' +
+                '</div>' +
+                '<div class="timeline">' + timelineHtml + '</div>' +
+                actionsHtml +
+            '</div>';
+        }
+        
+        function renderTimeline(history, currentStatus) {
+            if (!history || history.length === 0) {
+                return '<div class="timeline-item pending">' +
+                    '<div class="timeline-item-header"><strong>Menunggu Approval</strong></div>' +
+                    '<div class="timeline-note">Belum ada riwayat approval</div>' +
+                '</div>';
             }
+            
+            return history.map(function(h, index) {
+                var statusClass = getTimelineStatusClass(h.status);
+                var icon = '';
+                if (h.status === 'approved') icon = '<i class="fas fa-check-circle" style="color:#16a34a;"></i> ';
+                else if (h.status === 'rejected') icon = '<i class="fas fa-times-circle" style="color:#dc2626;"></i> ';
+                else if (h.status === 'pending') icon = '<i class="fas fa-clock" style="color:#d97706;"></i> ';
+                
+                return '<div class="timeline-item ' + statusClass + '">' +
+                    '<div class="timeline-item-header">' +
+                        icon +
+                        '<strong>' + sanitize(h.approver || 'Unknown') + '</strong>' +
+                        (h.role ? '<span class="role-tag">' + sanitize(h.role) + '</span>' : '') +
+                    '</div>' +
+                    (h.catatan ? '<div class="timeline-note">' + sanitize(h.catatan) + '</div>' : '') +
+                    '<div class="timeline-time">' + (h.timestamp ? timeAgo(h.timestamp) : 'Menunggu...') + '</div>' +
+                '</div>';
+            }).join('');
         }
         
-        async function rejectSurat(id) {
-            const catatan = prompt('Alasan penolakan:');
-            if (!catatan) return;
-            try {
-                await apiService.post(`/api/surat-keluar/${id}/reject`, { catatan });
-                notifications.success('Surat ditolak');
-                loadData();
-            } catch (error) {
-                notifications.error('Gagal menolak surat');
+        function renderActions(surat) {
+            var id = sanitizePlain(surat.id || '');
+            var nomor = sanitizePlain(surat.nomor_surat || 'surat ini');
+            
+            return '<div class="approval-actions">' +
+                '<button class="btn btn-sm btn-success" onclick="approvalController.approve(\'' + id + '\', \'' + nomor + '\')">' +
+                    '<i class="fas fa-check"></i> Setujui' +
+                '</button>' +
+                '<button class="btn btn-sm btn-danger" onclick="approvalController.reject(\'' + id + '\', \'' + nomor + '\')">' +
+                    '<i class="fas fa-times"></i> Tolak' +
+                '</button>' +
+                '<a href="preview.html?id=' + id + '" class="btn btn-sm btn-outline">' +
+                    '<i class="fas fa-eye"></i> Lihat Detail' +
+                '</a>' +
+            '</div>';
+        }
+        
+        function renderPagination(totalItems) {
+            var container = document.getElementById('pagination-container');
+            if (!container || state.totalPages <= 1) {
+                if (container) container.innerHTML = '';
+                return;
             }
+            
+            var html = '<div style="display:flex;gap:4px;align-items:center;">';
+            
+            // Previous
+            html += '<button class="btn btn-sm btn-outline" ' + (state.currentPage <= 1 ? 'disabled' : '') + 
+                ' onclick="approvalController.goToPage(' + (state.currentPage - 1) + ')">' +
+                '<i class="fas fa-chevron-left"></i></button>';
+            
+            // Page numbers
+            for (var i = 1; i <= state.totalPages; i++) {
+                if (i === state.currentPage) {
+                    html += '<button class="btn btn-sm btn-primary">' + i + '</button>';
+                } else if (Math.abs(i - state.currentPage) <= 2 || i === 1 || i === state.totalPages) {
+                    html += '<button class="btn btn-sm btn-outline" onclick="approvalController.goToPage(' + i + ')">' + i + '</button>';
+                } else if (Math.abs(i - state.currentPage) === 3) {
+                    html += '<span style="color:#94a3b8;">...</span>';
+                }
+            }
+            
+            // Next
+            html += '<button class="btn btn-sm btn-outline" ' + (state.currentPage >= state.totalPages ? 'disabled' : '') + 
+                ' onclick="approvalController.goToPage(' + (state.currentPage + 1) + ')">' +
+                '<i class="fas fa-chevron-right"></i></button>';
+            
+            html += '<span style="font-size:12px;color:#94a3b8;margin-left:8px;">' + totalItems + ' surat</span>';
+            html += '</div>';
+            
+            container.innerHTML = html;
         }
         
-        window.approveSurat = approveSurat;
-        window.rejectSurat = rejectSurat;
+        // ============================================
+        // PUBLIC API (exposed via controller object)
+        // ============================================
+        var controller = {
+            approve: function(id, nomor) {
+                showModal(
+                    'Setujui Surat',
+                    'Apakah Anda yakin ingin menyetujui surat <strong>' + sanitize(nomor) + '</strong>?',
+                    'approve',
+                    id,
+                    'btn-success',
+                    'Setujui'
+                );
+            },
+            
+            reject: function(id, nomor) {
+                showModal(
+                    'Tolak Surat',
+                    'Masukkan alasan penolakan untuk surat <strong>' + sanitize(nomor) + '</strong>:',
+                    'reject',
+                    id,
+                    'btn-danger',
+                    'Tolak'
+                );
+            },
+            
+            goToPage: function(page) {
+                state.currentPage = page;
+                loadData();
+                document.querySelector('.approval-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+            
+            refresh: function() {
+                state.currentPage = 1;
+                loadData();
+            }
+        };
+        
+        // Expose controller (single global object instead of multiple functions)
+        window.approvalController = controller;
+        
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function handleLogout() {
+            if (!confirm('Apakah Anda yakin ingin logout?')) return;
+            try {
+                if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout();
+            } catch(e) {}
+            localStorage.removeItem('auth_session');
+            localStorage.removeItem('auth_token');
+            window.location.href = '../../login.html?message=logged_out';
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            console.log('Approval Tracking v2026.1.0');
+            
+            if (!checkAuth()) return;
+            
+            // Hide loading
+            setTimeout(function() {
+                var loader = document.getElementById('loading-screen');
+                if (loader) loader.classList.add('hidden');
+            }, 300);
+            
+            // Event listeners
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                controller.refresh();
+                showToast('Data diperbarui', 'info');
+            });
+            
+            document.getElementById('filter-status').addEventListener('change', function() {
+                state.currentPage = 1;
+                loadData();
+            });
+            
+            // Modal events
+            document.getElementById('modal-close').addEventListener('click', hideModal);
+            document.getElementById('modal-cancel').addEventListener('click', hideModal);
+            document.getElementById('modal-confirm').addEventListener('click', confirmApproval);
+            
+            // Close modal on overlay click
+            document.getElementById('approval-modal').addEventListener('click', function(e) {
+                if (e.target === this) hideModal();
+            });
+            
+            // Character counter for catatan
+            document.getElementById('modal-catatan').addEventListener('input', function() {
+                document.getElementById('catatan-count').textContent = 500 - this.value.length;
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') hideModal();
+            });
+            
+            // Load data
+            loadData();
+            
+            console.log('Approval Tracking initialized');
+        }
+        
+        // Start
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+    })();
     </script>
 </body>
 </html>

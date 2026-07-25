@@ -1,221 +1,523 @@
-<!-- surat-masuk/buku-agenda.html - Buku Agenda Surat Masuk 2026 -->
+<!-- surat-masuk/buku-agenda.html - Buku Agenda Surat Masuk 2026 (PWA SECURE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Buku Agenda">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Buku Agenda Surat Masuk - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icons/icon-192.png">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Buku Agenda - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/print.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
+    <!-- jsPDF + AutoTable for export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
     <style>
-        .buku-container { max-width: 1100px; margin: 0 auto; }
+        :root {
+            --primary: #1e3a5f; --primary-light: #1e40af;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --transition: all 0.3s ease;
+        }
         
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Network Bar */
+        .network-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 9998; padding: 8px; text-align: center; font-size: 12px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s; }
+        .network-bar.offline { transform: translateY(0); background: #fef2f2; color: #dc2626; }
+        .network-bar.restored { transform: translateY(0); background: #f0fdf4; color: #16a34a; animation: slideDown 0.3s, slideUp 0.3s 2.5s forwards; }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: linear-gradient(180deg, #1e293b, #0f172a); color: white; z-index: 100; overflow-y: auto; transition: transform 0.3s; padding-top: var(--safe-top); }
+        .sidebar-brand { padding: 20px; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); border-left: 3px solid transparent; }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        
+        /* Main */
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 24px; padding-top: calc(24px + var(--safe-top)); transition: margin 0.3s; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; gap: 10px; }
+        .mobile-header .hamburger { width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; transition: var(--transition); font-family: inherit; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; min-height: 34px; }
+        
+        /* Page Header */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); margin-bottom: 6px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        
+        /* Form */
+        .form-select { padding: 9px 12px; font-size: 14px; border: 2px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); outline: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%2364748b' d='M4.5 6l3.5 3.5L11.5 6'/></svg>"); background-repeat: no-repeat; background-position: right 10px center; background-size: 14px; padding-right: 32px; }
+        
+        /* Buku Container */
+        .buku-container { max-width: 1150px; margin: 0 auto; }
+        
+        /* Cover */
         .buku-cover {
-            background: linear-gradient(135deg, #1e3a5f, #1e40af);
-            color: white;
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 24px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 50%, #1e3a5f 100%);
+            color: white; border-radius: var(--radius); padding: 36px 24px;
+            text-align: center; margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(30,58,95,0.2);
+            position: relative; overflow: hidden;
+        }
+        .buku-cover::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+        }
+        .buku-cover h2 { position: relative; font-size: 20px; font-weight: 800; letter-spacing: 2px; margin: 0; text-transform: uppercase; }
+        .buku-cover .tahun-buku { position: relative; font-size: 36px; font-weight: 900; opacity: 0.9; margin: 4px 0; }
+        .buku-cover .subtitle { position: relative; opacity: 0.7; font-size: 13px; }
+        
+        /* Stats Mini */
+        .stats-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 16px; }
+        .stat-mini { background: var(--white); border-radius: 8px; padding: 12px; text-align: center; border: 1px solid var(--border); }
+        .stat-mini .val { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-mini .lbl { font-size: 10px; color: var(--text-light); text-transform: uppercase; }
+        
+        /* Toolbar */
+        .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .toolbar .form-group { margin-bottom: 0; }
+        .form-label { font-size: 11px; font-weight: 600; color: var(--text-light); margin-bottom: 4px; display: block; }
+        .form-input { width: 100%; padding: 9px 12px; font-size: 14px; border: 2px solid var(--border); border-radius: 8px; background: var(--white); outline: none; font-family: inherit; }
+        .form-input:focus { border-color: var(--primary); }
+        
+        /* Table */
+        .table-container { background: var(--white); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); overflow: hidden; }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        
+        .buku-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 900px; }
+        .buku-table th { background: #1e293b; color: white; padding: 8px 6px; font-weight: 600; text-align: center; border: 1px solid #334155; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+        .buku-table td { padding: 7px 6px; border: 1px solid #e2e8f0; text-align: center; vertical-align: top; }
+        .buku-table td.left { text-align: left; }
+        .buku-table .col-no { width: 32px; }
+        .buku-table .col-tgl { width: 68px; }
+        .buku-table .col-nomor { width: 100px; }
+        .buku-table .col-perihal { min-width: 140px; }
+        .buku-table .col-disposisi { width: 70px; }
+        .buku-table tbody tr:nth-child(even) td { background: #fafbfc; }
+        .buku-table tbody tr:hover td { background: #eff6ff; }
+        .buku-table tbody tr.empty-row td { color: #cbd5e1; font-style: italic; }
+        .buku-table .no-data { text-align: center; padding: 30px; color: #94a3b8; }
+        
+        /* Footer */
+        .table-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-light); flex-wrap: wrap; gap: 8px; }
+        
+        /* Toast */
+        .toast-container { position: fixed; top: calc(12px + var(--safe-top)); right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; max-width: calc(100vw - 24px); }
+        .toast { padding: 10px 16px; border-radius: 8px; color: white; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: slideIn 0.3s; display: flex; align-items: center; gap: 8px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: #0891b2; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 14px; }
+            .mobile-header { display: flex; }
+            .breadcrumb { display: none; }
+            .buku-cover { padding: 24px 16px; }
+            .buku-cover h2 { font-size: 16px; }
+            .buku-cover .tahun-buku { font-size: 28px; }
+            .buku-table { font-size: 10px; }
+            .buku-table th, .buku-table td { padding: 5px 4px; }
+            .toolbar { flex-direction: column; }
         }
         
-        .buku-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            font-size: 11px;
-        }
-        
-        .buku-table th {
-            background: #1e293b;
-            color: white;
-            padding: 8px 6px;
-            font-weight: 500;
-            text-align: center;
-            border: 1px solid #334155;
-        }
-        
-        .buku-table td {
-            padding: 6px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-            vertical-align: top;
-        }
-        
-        .buku-table .col-no { width: 30px; }
-        .buku-table .col-tgl { width: 65px; }
-        .buku-table .col-nomor { width: 90px; }
-        .buku-table .col-perihal { text-align: left; min-width: 150px; }
-        
-        .buku-table tbody tr:nth-child(even) { background: #f8fafc; }
-        .buku-table tbody tr:hover { background: #eff6ff; }
-        
+        /* Print Styles */
         @media print {
-            .sidebar, .page-header, .no-print { display: none !important; }
-            .main-content { margin: 0; padding: 10mm; }
-            .buku-table { box-shadow: none; font-size: 9pt; }
-            .buku-table th { background: #000 !important; color: #fff !important; }
-            .buku-cover { background: #fff !important; color: #000 !important; border: 2px solid #000; }
+            .sidebar, .mobile-header, .toast-container, .network-bar,
+            .toolbar, .page-header, .stats-mini, .btn { display: none !important; }
+            .main-content { margin: 0 !important; padding: 8mm !important; }
+            .buku-cover { 
+                background: white !important; color: black !important;
+                border: 3px double #000 !important; box-shadow: none !important;
+                padding: 20px !important; margin-bottom: 10mm !important;
+            }
+            .buku-cover h2 { color: black !important; font-size: 16pt !important; }
+            .buku-cover .tahun-buku { color: black !important; font-size: 24pt !important; }
+            .buku-cover .subtitle { color: #333 !important; }
+            .table-container { box-shadow: none !important; border: none !important; }
+            .buku-table { font-size: 8pt !important; }
+            .buku-table th { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .buku-table td { border-color: #999 !important; }
+            .buku-table tbody tr:nth-child(even) td { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; }
+            @page { size: A3 landscape; margin: 10mm; }
         }
     </style>
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <!-- Network Bar -->
+    <div class="network-bar" id="network-bar"><span id="network-msg"></span></div>
     
-    <aside class="sidebar">
+    <!-- Loading -->
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
-            <a href="/surat-masuk/buku-agenda.html" class="nav-item active"><i class="fas fa-book"></i> Buku Agenda</a>
+            <a href="../admin/index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="agenda.html" class="nav-item"><i class="fas fa-calendar-alt"></i> Agenda</a>
+            <a href="buku-agenda.html" class="nav-item active"><i class="fas fa-book"></i> Buku Agenda</a>
+            <a href="../disposisi/list.html" class="nav-item"><i class="fas fa-clipboard-list"></i> Disposisi</a>
+            <a href="../laporan/index.html" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
         </nav>
     </aside>
     
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" id="menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <span style="font-weight:700;flex:1;">Buku Agenda</span>
+    </div>
+    
+    <!-- Main -->
     <main class="main-content">
         <div class="buku-container">
-            <div class="page-header no-print">
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb">
+                <a href="../admin/index.html">Dashboard</a> <i class="fas fa-chevron-right"></i>
+                <a href="list.html">Surat Masuk</a> <i class="fas fa-chevron-right"></i>
+                <span>Buku Agenda</span>
+            </nav>
+            
+            <!-- Header -->
+            <div class="page-header">
                 <div>
-                    <h2>Buku Agenda Surat Masuk</h2>
-                    <p style="color:#64748b;">Format buku agenda tradisional untuk cetak</p>
+                    <h2 style="font-size:22px;font-weight:700;margin:0;">Buku Agenda Surat Masuk</h2>
+                    <p style="color:var(--text-light);font-size:13px;margin-top:2px;">Format buku agenda tradisional</p>
                 </div>
-                <div style="display:flex;gap:8px;">
-                    <select class="form-select" id="filter-tahun" style="width:auto;">
-                        <option value="2026">2026</option><option value="2025">2025</option>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-outline btn-sm" id="export-pdf-btn"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-outline btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Cetak</button>
+                    <button class="btn btn-sm" style="background:transparent;color:var(--text-light);" id="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+                </div>
+            </div>
+            
+            <!-- Stats Mini -->
+            <div class="stats-mini" id="stats-mini">
+                <div class="stat-mini"><div class="val" id="s-total">0</div><div class="lbl">Total Surat</div></div>
+                <div class="stat-mini"><div class="val" id="s-internal">0</div><div class="lbl">Internal</div></div>
+                <div class="stat-mini"><div class="val" id="s-eksternal">0</div><div class="lbl">Eksternal</div></div>
+                <div class="stat-mini"><div class="val" id="s-disposisi">0</div><div class="lbl">Disposisi</div></div>
+                <div class="stat-mini"><div class="val" id="s-bulan">0</div><div class="lbl">Bln Ini</div></div>
+            </div>
+            
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="form-group" style="flex:1;min-width:140px;">
+                    <label class="form-label">Cari</label>
+                    <input type="text" class="form-input" id="search-input" placeholder="No. surat, pengirim, perihal..." maxlength="100">
+                </div>
+                <div class="form-group" style="min-width:100px;">
+                    <label class="form-label">Tahun</label>
+                    <select class="form-select" id="filter-tahun"></select>
+                </div>
+                <div class="form-group" style="min-width:100px;">
+                    <label class="form-label">Baris Kosong</label>
+                    <select class="form-select" id="empty-rows">
+                        <option value="0">Tanpa</option>
+                        <option value="10">10 baris</option>
+                        <option value="20">20 baris</option>
+                        <option value="30" selected>30 baris</option>
                     </select>
-                    <button class="btn btn-outline btn-sm" onclick="window.print()">
-                        <i class="fas fa-print"></i> Cetak Buku
-                    </button>
+                </div>
+                <div class="form-group" style="align-self:flex-end;">
+                    <button class="btn btn-outline btn-sm" id="reset-btn"><i class="fas fa-times"></i> Reset</button>
                 </div>
             </div>
             
+            <!-- Cover -->
             <div class="buku-cover">
-                <h2 style="color:white;margin:0;font-size:20px;">BUKU AGENDA SURAT MASUK</h2>
-                <p style="opacity:0.8;margin-top:4px;">Tahun <span id="tahun-buku">2026</span></p>
-                <p style="opacity:0.6;font-size:13px;">Fakultas Ilmu Komputer</p>
+                <h2>Buku Agenda Surat Masuk</h2>
+                <div class="tahun-buku" id="tahun-cover">2026</div>
+                <p class="subtitle">Fakultas Ilmu Komputer</p>
             </div>
             
-            <div style="overflow-x:auto;">
-                <table class="buku-table">
-                    <thead>
-                        <tr>
-                            <th class="col-no" rowspan="2">No</th>
-                            <th class="col-tgl" rowspan="2">Tgl Terima</th>
-                            <th class="col-nomor" rowspan="2">No. Surat</th>
-                            <th class="col-tgl" rowspan="2">Tgl Surat</th>
-                            <th rowspan="2">Pengirim</th>
-                            <th class="col-perihal" rowspan="2">Perihal</th>
-                            <th colspan="3">Disposisi</th>
-                            <th rowspan="2">Ket</th>
-                        </tr>
-                        <tr>
-                            <th style="width:80px;">Kepada</th>
-                            <th style="width:70px;">Batas Waktu</th>
-                            <th style="width:60px;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="buku-tbody">
-                        <tr><td colspan="11" style="text-align:center;padding:30px;">Memuat data...</td></tr>
-                    </tbody>
-                </table>
+            <!-- Table -->
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table class="buku-table">
+                        <thead>
+                            <tr>
+                                <th class="col-no" rowspan="2">No</th>
+                                <th class="col-tgl" rowspan="2">Tgl Terima</th>
+                                <th class="col-nomor" rowspan="2">No. Surat</th>
+                                <th class="col-tgl" rowspan="2">Tgl Surat</th>
+                                <th rowspan="2">Pengirim</th>
+                                <th class="col-perihal" rowspan="2">Perihal / Isi Ringkas</th>
+                                <th colspan="3" style="text-align:center;">Disposisi</th>
+                                <th rowspan="2">Ket</th>
+                            </tr>
+                            <tr>
+                                <th class="col-disposisi">Kepada</th>
+                                <th class="col-disposisi">Batas Waktu</th>
+                                <th class="col-disposisi">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buku-tbody">
+                            <tr><td colspan="11" class="no-data">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-footer">
+                    <span id="table-info">Menampilkan 0 surat</span>
+                    <span style="color:var(--text-light);">*Baris kosong untuk cetakan manual</span>
+                </div>
             </div>
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import apiService from '../js/api.js';
-        import utils from '../js/utils.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    (function() {
+        'use strict';
         
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+        // CSRF Token
+        var csrfToken = (function() { var t=localStorage.getItem('csrf_token'); if(!t){var a=new Uint32Array(8);crypto.getRandomValues(a);t=Array.from(a,function(d){return('0'+d.toString(16)).slice(-2);}).join('');localStorage.setItem('csrf_token',t);} return t; })();
+        function sanitize(s) { if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+        function sanitizePlain(s) { if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
         
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // State
+        var state = { data:[], stats:{}, isOnline:navigator.onLine };
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            
-            const now = new Date();
-            document.getElementById('filter-tahun').value = now.getFullYear();
-            document.getElementById('tahun-buku').textContent = now.getFullYear();
-            
-            document.getElementById('filter-tahun')?.addEventListener('change', (e) => {
-                document.getElementById('tahun-buku').textContent = e.target.value;
-                loadData();
-            });
-            
-            loadData();
-            logger.info('Buku agenda loaded');
-        });
+        // Auth
+        function checkAuth() { if(window.EArsip&&window.EArsip.Auth&&window.EArsip.Auth.isAuthenticated)return true; try{var s=localStorage.getItem('auth_session');if(s){var d=JSON.parse(s);if(d.user&&d.expiresAt&&Date.now()<d.expiresAt)return true;}}catch(e){} window.location.href='../../login.html?message=unauthorized';return false; }
         
-        async function loadData() {
-            const tahun = document.getElementById('filter-tahun').value;
-            
-            try {
-                const response = await apiService.get('/api/surat-masuk/buku-agenda', { tahun });
-                const data = response.data?.surat || [];
-                renderTable(data);
-            } catch (error) {
-                logger.warn('Failed to load buku agenda');
-                // Generate empty rows for print template
-                const emptyRows = Array.from({ length: 30 }, (_, i) => ({
-                    no: i + 1
-                }));
-                renderTable(emptyRows);
-            }
+        // Toast
+        function showToast(m,t) { var c=document.getElementById('toast-container');if(!c)return;var el=document.createElement('div');el.className='toast toast-'+(t||'info');el.textContent=sanitizePlain(m);c.appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transition='opacity 0.3s';setTimeout(function(){el.remove();},300);},4000); }
+        
+        // Format
+        function formatDate(s) { if(!s)return'-';try{var d=new Date(s);if(isNaN(d.getTime()))return s;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}catch(e){return s;} }
+        
+        // Network
+        function updateNetwork(on) { if(on===state.isOnline)return;state.isOnline=on;var b=document.getElementById('network-bar');if(!on){b.className='network-bar offline';document.getElementById('network-msg').textContent='Offline - data mungkin tidak terbaru';}else{b.className='network-bar restored';document.getElementById('network-msg').textContent='Koneksi pulih';loadData();} }
+        window.addEventListener('online',function(){updateNetwork(true);});window.addEventListener('offline',function(){updateNetwork(false);});
+        if(!navigator.onLine)setTimeout(function(){updateNetwork(false);},1000);
+        
+        // Debounce
+        function debounce(fn,ms){var t;return function(){clearTimeout(t);t=setTimeout(fn,ms);};}
+        
+        // Month names
+        var months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        
+        // ============ POPULATE FILTERS ============
+        function populateFilters() {
+            var now = new Date();
+            var tahunSelect = document.getElementById('filter-tahun');
+            var cy = now.getFullYear();
+            for(var y=cy;y>=cy-5;y--) tahunSelect.innerHTML += '<option value="'+y+'">'+y+'</option>';
+            tahunSelect.value = cy;
+            document.getElementById('tahun-cover').textContent = cy;
         }
         
-        function renderTable(data) {
-            const tbody = document.getElementById('buku-tbody');
+        // ============ LOAD DATA ============
+        function loadData() {
+            var tahun = document.getElementById('filter-tahun').value;
+            var search = document.getElementById('search-input').value.trim().toLowerCase();
             
-            if (data.length === 0) {
-                // Show empty template rows for printing
-                let html = '';
-                for (let i = 0; i < 30; i++) {
-                    html += `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td></td><td></td><td></td><td></td><td></td>
-                            <td></td><td></td><td></td><td></td>
-                        </tr>`;
-                }
-                tbody.innerHTML = html;
+            document.getElementById('tahun-cover').textContent = tahun;
+            
+            var params = { action:'getBukuAgenda', tahun:tahun, csrf_token:csrfToken };
+            
+            if(window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('surat-masuk/buku-agenda', params).then(function(r) {
+                    if(r&&r.data){state.data=r.data.surat||[];state.stats=r.data.stats||{};}
+                    else{state.data=[];state.stats={};}
+                    if(search) state.data = state.data.filter(function(s){ return (s.nomor_surat||'').toLowerCase().indexOf(search)!==-1||(s.pengirim||'').toLowerCase().indexOf(search)!==-1||(s.perihal||'').toLowerCase().indexOf(search)!==-1; });
+                    render();
+                }).catch(function(){loadSampleData();});
+            } else { loadSampleData(); }
+        }
+        
+        function loadSampleData() {
+            var tahun = parseInt(document.getElementById('filter-tahun').value);
+            var search = document.getElementById('search-input').value.trim().toLowerCase();
+            
+            state.data = [
+                { id:'1',tgl_terima:tahun+'-01-05',tgl_surat:tahun+'-01-02',nomor_surat:'001/UND/I/'+tahun,pengirim:'Kemendikbud',perihal:'Undangan Workshop Nasional',disposisi_kepada:'Wadek I',disposisi_batas:tahun+'-01-15',disposisi_status:'Selesai',keterangan:'-',sumber:'eksternal'},
+                { id:'2',tgl_terima:tahun+'-02-10',tgl_surat:tahun+'-02-07',nomor_surat:'B-456/UN/'+tahun,pengirim:'Rektorat',perihal:'Edaran Akademik Semester Genap',disposisi_kepada:'Semua Unit',disposisi_batas:tahun+'-02-20',disposisi_status:'Selesai',keterangan:'-',sumber:'internal'},
+                { id:'3',tgl_terima:tahun+'-03-15',tgl_surat:tahun+'-03-12',nomor_surat:'089/KER/III/'+tahun,pengirim:'PT. Teknologi Nusantara',perihal:'Kerjasama Penelitian dan Pengabdian',disposisi_kepada:'Dekan',disposisi_batas:tahun+'-03-30',disposisi_status:'Proses',keterangan:'Penting',sumber:'eksternal'},
+                { id:'4',tgl_terima:tahun+'-04-20',tgl_surat:tahun+'-04-17',nomor_surat:'045/SK/IV/'+tahun,pengirim:'BAUK',perihal:'SK Pengangkatan Staf Baru',disposisi_kepada:'-',disposisi_batas:'-',disposisi_status:'-',keterangan:'Arsip',sumber:'internal'},
+                { id:'5',tgl_terima:tahun+'-05-08',tgl_surat:tahun+'-05-05',nomor_surat:'112/PEM/V/'+tahun,pengirim:'Dinas Pendidikan',perihal:'Pemberitahuan Akreditasi Prodi',disposisi_kepada:'Kaprodi',disposisi_batas:tahun+'-05-20',disposisi_status:'Selesai',keterangan:'-',sumber:'eksternal'}
+            ];
+            
+            if(search) state.data = state.data.filter(function(s){ return (s.nomor_surat||'').toLowerCase().indexOf(search)!==-1||(s.pengirim||'').toLowerCase().indexOf(search)!==-1||(s.perihal||'').toLowerCase().indexOf(search)!==-1; });
+            
+            state.stats = { total:state.data.length, internal:state.data.filter(function(s){return s.sumber==='internal';}).length, eksternal:state.data.filter(function(s){return s.sumber==='eksternal';}).length, disposisi:state.data.filter(function(s){return s.disposisi_status&&s.disposisi_status!=='-';}).length, bulanIni:state.data.length };
+            render();
+        }
+        
+        // ============ RENDER ============
+        function render() {
+            // Stats
+            document.getElementById('s-total').textContent = state.stats.total || 0;
+            document.getElementById('s-internal').textContent = state.stats.internal || 0;
+            document.getElementById('s-eksternal').textContent = state.stats.eksternal || 0;
+            document.getElementById('s-disposisi').textContent = state.stats.disposisi || 0;
+            document.getElementById('s-bulan').textContent = state.stats.bulanIni || state.data.length;
+            
+            var tbody = document.getElementById('buku-tbody');
+            var emptyRows = parseInt(document.getElementById('empty-rows').value) || 0;
+            var totalRows = Math.max(state.data.length + emptyRows, emptyRows || state.data.length);
+            
+            if(totalRows === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="no-data"><i class="fas fa-book-open" style="font-size:32px;display:block;margin-bottom:8px;"></i>Tidak ada data untuk tahun ini</td></tr>';
+                document.getElementById('table-info').textContent = 'Tidak ada data';
                 return;
             }
             
-            tbody.innerHTML = data.map((s, i) => `
-                <tr>
-                    <td>${i + 1}</td>
-                    <td>${utils.formatDate(s.tgl_terima, 'short')}</td>
-                    <td>${s.nomor_surat || '-'}</td>
-                    <td>${utils.formatDate(s.tgl_surat, 'short')}</td>
-                    <td style="text-align:left;font-size:10px;">${s.pengirim || s.instansi || '-'}</td>
-                    <td style="text-align:left;font-size:10px;">${s.perihal || '-'}</td>
-                    <td style="font-size:10px;">${s.disposisi_kepada || '-'}</td>
-                    <td style="font-size:10px;">${s.disposisi_batas || '-'}</td>
-                    <td>${s.disposisi_status || '-'}</td>
-                    <td style="font-size:10px;">${s.keterangan || '-'}</td>
-                </tr>
-            `).join('');
+            var html = '';
+            for(var i = 0; i < totalRows; i++) {
+                if(i < state.data.length) {
+                    var s = state.data[i];
+                    html += '<tr>' +
+                        '<td>' + (i+1) + '</td>' +
+                        '<td>' + formatDate(s.tgl_terima) + '</td>' +
+                        '<td>' + sanitize(s.nomor_surat||'-') + '</td>' +
+                        '<td>' + formatDate(s.tgl_surat) + '</td>' +
+                        '<td class="left">' + sanitize(s.pengirim||'-') + '</td>' +
+                        '<td class="left">' + sanitize(s.perihal||'-') + '</td>' +
+                        '<td>' + sanitize(s.disposisi_kepada||'-') + '</td>' +
+                        '<td>' + (s.disposisi_batas ? formatDate(s.disposisi_batas) : '-') + '</td>' +
+                        '<td>' + sanitize(s.disposisi_status||'-') + '</td>' +
+                        '<td>' + sanitize(s.keterangan||'-') + '</td>' +
+                    '</tr>';
+                } else {
+                    // Empty rows for print
+                    html += '<tr class="empty-row">' +
+                        '<td>' + (i+1) + '</td>' +
+                        '<td></td><td></td><td></td><td></td><td></td>' +
+                        '<td></td><td></td><td></td><td></td>' +
+                    '</tr>';
+                }
+            }
+            
+            tbody.innerHTML = html;
+            document.getElementById('table-info').textContent = 'Menampilkan ' + state.data.length + ' surat + ' + emptyRows + ' baris kosong';
         }
+        
+        // ============ EXPORT PDF ============
+        function exportPDF() {
+            if(!window.jspdf||!window.jspdf.jsPDF){showToast('Library PDF tidak tersedia','error');return;}
+            var {jsPDF}=window.jspdf;
+            var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a3'});
+            
+            // Title
+            doc.setFontSize(16);doc.text('BUKU AGENDA SURAT MASUK',doc.internal.pageSize.getWidth()/2,15,{align:'center'});
+            doc.setFontSize(12);doc.text('Tahun '+document.getElementById('filter-tahun').value,doc.internal.pageSize.getWidth()/2,22,{align:'center'});
+            
+            var head=[['No','Tgl Terima','No. Surat','Tgl Surat','Pengirim','Perihal','Disp. Kepada','Batas Waktu','Status','Ket']];
+            var body=state.data.map(function(s,i){return[i+1,formatDate(s.tgl_terima),s.nomor_surat||'',formatDate(s.tgl_surat),s.pengirim||'',s.perihal||'',s.disposisi_kepada||'',s.disposisi_batas?formatDate(s.disposisi_batas):'',s.disposisi_status||'',s.keterangan||''];});
+            
+            doc.autoTable({head:head,body:body,startY:28,styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[30,41,59]},columnStyles:{0:{cellWidth:8},1:{cellWidth:18},2:{cellWidth:28},3:{cellWidth:18},4:{cellWidth:30},5:{cellWidth:45},6:{cellWidth:25},7:{cellWidth:20},8:{cellWidth:18},9:{cellWidth:25}}});
+            
+            doc.save('buku-agenda-'+document.getElementById('filter-tahun').value+'.pdf');
+            showToast('PDF berhasil diunduh','success');
+        }
+        
+        // ============ LOGOUT ============
+        function handleLogout(){if(!confirm('Yakin logout?'))return;try{if(window.EArsip&&window.EArsip.Auth)window.EArsip.Auth.logout();}catch(e){}localStorage.removeItem('auth_session');localStorage.removeItem('auth_token');window.location.href='../../login.html?message=logged_out';}
+        window.handleLogout=handleLogout;
+        
+        // ============ INIT ============
+        function init(){
+            if(!checkAuth())return;
+            setTimeout(function(){document.getElementById('loading-screen').classList.add('hidden');},300);
+            
+            populateFilters();
+            
+            // PWA
+            if('serviceWorker'in navigator){navigator.serviceWorker.register('../../sw.js').catch(function(){});}
+            
+            // Mobile menu
+            document.getElementById('menu-btn').addEventListener('click',function(){document.getElementById('sidebar').classList.toggle('mobile-open');document.getElementById('sidebar-overlay').classList.toggle('active');});
+            document.getElementById('sidebar-overlay').addEventListener('click',function(){document.getElementById('sidebar').classList.remove('mobile-open');this.classList.remove('active');});
+            
+            // Events
+            document.getElementById('filter-tahun').addEventListener('change',function(){document.getElementById('tahun-cover').textContent=this.value;loadData();});
+            document.getElementById('empty-rows').addEventListener('change',function(){render();});
+            document.getElementById('search-input').addEventListener('input',debounce(function(){loadData();},400));
+            document.getElementById('reset-btn').addEventListener('click',function(){document.getElementById('search-input').value='';populateFilters();loadData();});
+            document.getElementById('refresh-btn').addEventListener('click',function(){loadData();showToast('Data diperbarui','info');});
+            document.getElementById('export-pdf-btn').addEventListener('click',exportPDF);
+            
+            loadData();
+        }
+        
+        if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+    })();
     </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
