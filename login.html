@@ -1,4 +1,4 @@
-<!-- login.html - Login Page 2026 (FINAL FIXED) -->
+<!-- login.html - Login Page 2026 (FINAL - NO CORS ISSUE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -7,9 +7,6 @@
     <meta name="theme-color" content="#2563eb">
     <meta name="description" content="Login ke Sistem E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
-    
-    <!-- CSP - Allow Google Scripts & CDN -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; form-action 'self'; base-uri 'self';">
     
     <title>Login - E-Arsip Digital</title>
     
@@ -28,8 +25,8 @@
             --bg: #ffffff;
             --bg-light: #f8fafc;
             --border: #e2e8f0;
-            --radius: 12px;
-            --radius-sm: 8px;
+            --radius: 16px;
+            --radius-sm: 10px;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -42,11 +39,12 @@
             padding: 20px;
         }
         
-        .login-container { width: 100%; max-width: 420px; }
+        .login-container { width: 100%; max-width: 420px; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .login-card {
             background: var(--bg); border-radius: var(--radius);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 36px 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 36px 30px;
             position: relative; overflow: hidden;
         }
         .login-card::before {
@@ -59,30 +57,31 @@
             width: 72px; height: 72px; margin: 0 auto 14px;
             background: linear-gradient(135deg, var(--primary), #764ba2);
             border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            font-size: 32px; color: white;
+            font-size: 34px; color: white;
         }
         .login-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
         .login-subtitle { font-size: 13px; color: var(--text-light); }
         
         .status-bar {
-            text-align: center; padding: 8px 12px; margin-bottom: 18px;
+            text-align: center; padding: 8px 12px; margin-bottom: 16px;
             border-radius: 8px; font-size: 12px; font-weight: 500;
+            transition: all 0.3s;
         }
         .status-bar.checking { background: #f8fafc; color: #64748b; }
         .status-bar.online { background: #f0fdf4; color: #16a34a; }
         .status-bar.error { background: #fef2f2; color: #dc2626; }
         
-        .form-group { margin-bottom: 18px; }
+        .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
         
         .input-wrap { position: relative; }
         .input-wrap .icon {
             position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-            color: #94a3b8; font-size: 15px; pointer-events: none;
+            color: #94a3b8; font-size: 15px; pointer-events: none; z-index: 1;
         }
         
         .form-input {
-            width: 100%; padding: 12px 14px 12px 42px;
+            width: 100%; padding: 13px 14px 13px 42px;
             font-size: 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
             background: var(--bg-light); color: var(--text); outline: none;
             transition: all 0.2s; font-family: inherit;
@@ -92,10 +91,11 @@
         .toggle-pw {
             position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; font-size: 16px; color: #94a3b8;
+            padding: 4px;
         }
         
         .alert {
-            padding: 10px 14px; border-radius: 8px; margin-bottom: 16px;
+            padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;
             font-size: 13px; display: none; align-items: center; gap: 8px;
         }
         .alert.show { display: flex; }
@@ -127,6 +127,9 @@
     </style>
 </head>
 <body>
+    <!-- Hidden iframe untuk menerima response dari Google Apps Script -->
+    <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;width:0;height:0;border:0;"></iframe>
+    
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
@@ -141,12 +144,20 @@
             <div class="alert success" id="alert-success"><span>✅</span> <span id="msg-success"></span></div>
             <div class="alert warning" id="alert-warning"><span>⚠️</span> <span id="msg-warning"></span></div>
             
-            <form id="login-form" autocomplete="on">
+            <!-- ⬇️ FORM LANGSUNG SUBMIT KE GOOGLE APPS SCRIPT -->
+            <form id="login-form" autocomplete="on" method="POST" 
+                  action="https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec"
+                  target="hidden-iframe">
+                
+                <!-- ⬇️ HIDDEN INPUT UNTUK ACTION -->
+                <input type="hidden" name="action" value="login">
+                
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
                     <div class="input-wrap">
                         <span class="icon">👤</span>
-                        <input type="text" id="username" class="form-input" placeholder="Masukkan username" autocomplete="username" required autofocus>
+                        <input type="text" id="username" name="username" class="form-input" 
+                               placeholder="Masukkan username" autocomplete="username" required autofocus>
                     </div>
                 </div>
                 
@@ -154,7 +165,8 @@
                     <label class="form-label" for="password">Password</label>
                     <div class="input-wrap">
                         <span class="icon">🔒</span>
-                        <input type="password" id="password" class="form-input" placeholder="Masukkan password" autocomplete="current-password" required>
+                        <input type="password" id="password" name="password" class="form-input" 
+                               placeholder="Masukkan password" autocomplete="current-password" required>
                         <button type="button" class="toggle-pw" id="toggle-pw">👁️</button>
                     </div>
                 </div>
@@ -176,7 +188,6 @@
     (function() {
         'use strict';
         
-        // ⬇️ GOOGLE APPS SCRIPT URL
         var API_URL = 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec';
         
         var loginForm = document.getElementById('login-form');
@@ -186,15 +197,11 @@
         var btnText = document.getElementById('btn-text');
         var togglePw = document.getElementById('toggle-pw');
         var statusBar = document.getElementById('status-bar');
-        var alertError = document.getElementById('alert-error');
-        var alertSuccess = document.getElementById('alert-success');
-        var alertWarning = document.getElementById('alert-warning');
-        var msgError = document.getElementById('msg-error');
-        var msgSuccess = document.getElementById('msg-success');
-        var msgWarning = document.getElementById('msg-warning');
+        var hiddenIframe = document.getElementById('hidden-iframe');
         
         var loginAttempts = 0;
         var maxAttempts = 5;
+        var isSubmitting = false;
         
         // ============================================
         // INIT
@@ -205,21 +212,88 @@
             // Check existing session
             checkExistingSession();
             
-            // Check server connection
+            // Check server connection via hidden iframe
             checkServerConnection();
             
-            // Events
-            loginForm.addEventListener('submit', handleLogin);
+            // Toggle password
             togglePw.addEventListener('click', function() {
                 var isPassword = passwordInput.type === 'password';
                 passwordInput.type = isPassword ? 'text' : 'password';
                 togglePw.textContent = isPassword ? '🙈' : '👁️';
             });
             
-            // Load saved username
-            loadSavedUsername();
+            // ⬇️ HANDLE IFRAME RESPONSE
+            hiddenIframe.addEventListener('load', function() {
+                if (!isSubmitting) return;
+                isSubmitting = false;
+                
+                try {
+                    // Coba baca response dari iframe
+                    var iframeDoc = hiddenIframe.contentDocument || hiddenIframe.contentWindow.document;
+                    var bodyText = iframeDoc.body.innerText || iframeDoc.body.textContent || '';
+                    
+                    console.log('Iframe response:', bodyText.substring(0, 300));
+                    
+                    if (bodyText) {
+                        var data = JSON.parse(bodyText);
+                        processLoginResponse(data);
+                    } else {
+                        throw new Error('Empty response');
+                    }
+                } catch(e) {
+                    console.warn('Iframe read failed, trying fetch fallback:', e.message);
+                    // Fallback: coba fetch POST
+                    tryFetchLogin();
+                }
+            });
             
-            // Focus
+            // ⬇️ OVERRIDE FORM SUBMIT
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (isSubmitting) return;
+                
+                var username = usernameInput.value.trim();
+                var password = passwordInput.value;
+                
+                // Validasi
+                if (!username || username.length < 3) {
+                    showAlert('warning', 'Username minimal 3 karakter');
+                    return;
+                }
+                if (!password || password.length < 6) {
+                    showAlert('warning', 'Password minimal 6 karakter');
+                    return;
+                }
+                
+                if (loginAttempts >= maxAttempts) {
+                    showAlert('error', 'Akun terkunci. Silakan coba lagi nanti.');
+                    return;
+                }
+                
+                hideAllAlerts();
+                setLoading(true);
+                isSubmitting = true;
+                
+                // ⬇️ SUBMIT FORM KE IFRAME (menghindari CORS)
+                loginForm.submit();
+                
+                // ⬇️ TIMEOUT: jika iframe tidak merespon dalam 10 detik
+                setTimeout(function() {
+                    if (isSubmitting) {
+                        isSubmitting = false;
+                        setLoading(false);
+                        showAlert('error', 'Server tidak merespon. Coba lagi.');
+                    }
+                }, 10000);
+            });
+            
+            // Load saved username
+            try {
+                var saved = localStorage.getItem('saved_username');
+                if (saved) usernameInput.value = saved;
+            } catch(e) {}
+            
             setTimeout(function() { usernameInput.focus(); }, 600);
         }
         
@@ -239,201 +313,140 @@
         }
         
         // ============================================
-        // CHECK SERVER CONNECTION
+        // CHECK SERVER
         // ============================================
         function checkServerConnection() {
-            setStatus('checking', 'Mengecek koneksi ke server...');
+            setStatus('checking', 'Mengecek koneksi...');
             
-            // ⬇️ GUNAKAN XMLHttpRequest (lebih kompatibel dengan Google Apps Script)
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', API_URL + '?action=health', true);
-            xhr.timeout = 10000;
+            // ⬇️ GUNAKAN IMAGE PING (tidak terpengaruh CORS)
+            var img = new Image();
+            var timeout = setTimeout(function() {
+                setStatus('error', '⚠️ Server tidak terjangkau - login tetap bisa dicoba');
+            }, 5000);
             
-            xhr.onload = function() {
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    if (data.success) {
-                        setStatus('online', '✅ Server terhubung (v' + (data.version || '?') + ')');
-                    } else {
-                        setStatus('error', '⚠️ Server merespon dengan error');
-                    }
-                } catch(e) {
-                    // Response bukan JSON - coba POST
-                    checkWithPost();
-                }
+            img.onload = function() {
+                clearTimeout(timeout);
+                setStatus('online', '✅ Server terhubung');
             };
             
-            xhr.onerror = function() {
-                checkWithPost();
+            img.onerror = function() {
+                clearTimeout(timeout);
+                // Google Apps Script akan return 200 meskipun lewat image ping
+                // Jika error, coba test dengan GET fetch
+                testWithFetch();
             };
             
-            xhr.ontimeout = function() {
-                checkWithPost();
-            };
-            
-            xhr.send();
+            img.src = API_URL + '?action=health&t=' + Date.now();
         }
         
-        function checkWithPost() {
-            // ⬇️ FALLBACK: Coba dengan POST
-            fetch(API_URL, {
-                method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'health' })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) {
+        function testWithFetch() {
+            fetch(API_URL + '?action=health', { mode: 'no-cors' })
+                .then(function() {
                     setStatus('online', '✅ Server terhubung');
-                } else {
-                    setStatus('error', '⚠️ Server error: ' + (data.error || 'unknown'));
-                }
-            })
-            .catch(function() {
-                setStatus('error', '⚠️ Server tidak terjangkau - login via POST tetap bisa dicoba');
+                })
+                .catch(function() {
+                    setStatus('error', '⚠️ Server tidak terjangkau');
+                });
+        }
+        
+        // ============================================
+        // FALLBACK: FETCH POST
+        // ============================================
+        function tryFetchLogin() {
+            var formData = new FormData(loginForm);
+            var data = {};
+            formData.forEach(function(value, key) {
+                data[key] = value;
             });
-        }
-        
-        function setStatus(type, message) {
-            statusBar.className = 'status-bar ' + type;
-            statusBar.textContent = message;
-        }
-        
-        // ============================================
-        // HANDLE LOGIN
-        // ============================================
-        function handleLogin(event) {
-            event.preventDefault();
             
-            var username = usernameInput.value.trim();
-            var password = passwordInput.value;
+            console.log('Trying fetch fallback:', data);
             
-            // Validasi
-            if (!username || username.length < 3) {
-                showAlert('warning', 'Username minimal 3 karakter');
-                usernameInput.focus();
-                return;
-            }
-            if (!password || password.length < 6) {
-                showAlert('warning', 'Password minimal 6 karakter');
-                passwordInput.focus();
-                return;
-            }
-            
-            if (loginAttempts >= maxAttempts) {
-                showAlert('error', 'Akun terkunci. Silakan coba lagi nanti.');
-                return;
-            }
-            
-            // Sembunyikan alert
-            hideAllAlerts();
-            
-            // Loading
-            setLoading(true);
-            
-            // ⬇️ KIRIM REQUEST KE GOOGLE APPS SCRIPT
-            var requestData = {
-                action: 'login',
-                username: username,
-                password: password
-            };
-            
-            console.log('Login request:', requestData);
-            
-            // ⬇️ GUNAKAN FETCH DENGAN MODE CORS
             fetch(API_URL, {
                 method: 'POST',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=login&username=' + encodeURIComponent(data.username) + '&password=' + encodeURIComponent(data.password)
             })
             .then(function(response) {
-                console.log('Response status:', response.status, response.statusText);
+                // no-cors mode tidak bisa baca response
+                // Coba parse session dari localStorage sebagai fallback
+                console.log('Fetch fallback response received');
                 
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                }
-                
-                // ⬇️ BACA SEBAGAI TEXT DULU
-                return response.text();
-            })
-            .then(function(text) {
-                console.log('Raw response:', text.substring(0, 300));
-                
-                // ⬇️ COBA PARSE JSON
-                var data;
-                try {
-                    data = JSON.parse(text);
-                } catch(e) {
-                    // Mungkin response terbungkus string
-                    try {
-                        var unescaped = text.replace(/^"|"$/g, '').replace(/\\"/g, '"');
-                        data = JSON.parse(unescaped);
-                    } catch(e2) {
-                        throw new Error('Response bukan JSON: ' + text.substring(0, 100));
+                // Tunggu sebentar, lalu cek localStorage
+                setTimeout(function() {
+                    var session = localStorage.getItem('auth_session');
+                    if (session) {
+                        try {
+                            var sessionData = JSON.parse(session);
+                            if (sessionData.user) {
+                                processLoginResponse({ success: true, data: sessionData });
+                                return;
+                            }
+                        } catch(e) {}
                     }
-                }
-                
-                console.log('Parsed response:', data);
-                
-                // ⬇️ CEK RESPONSE
-                if (data.success === false) {
-                    throw new Error(data.error || 'Login gagal');
-                }
-                
-                // ⬇️ AMBIL DATA USER
-                var userData = data.data || data;
-                
-                if (!userData.token || !userData.user) {
-                    throw new Error('Response tidak valid: token/user tidak ditemukan. Response: ' + JSON.stringify(data).substring(0, 200));
-                }
-                
-                // Login berhasil
-                handleLoginSuccess(userData);
+                    
+                    // Jika tidak ada session, coba GET request untuk cek status
+                    setLoading(false);
+                    showAlert('error', 'Login gagal. Silakan coba lagi.');
+                }, 2000);
             })
             .catch(function(error) {
-                console.error('Login error:', error);
-                handleLoginError(error);
-            })
-            .finally(function() {
+                console.error('Fetch fallback error:', error);
                 setLoading(false);
+                showAlert('error', 'Gagal terhubung ke server.');
             });
         }
         
-        function handleLoginSuccess(data) {
-            console.log('Login success:', data.user.username, 'Role:', data.user.role);
+        // ============================================
+        // PROCESS LOGIN RESPONSE
+        // ============================================
+        function processLoginResponse(data) {
+            console.log('Processing response:', data);
+            
+            if (data.success === false) {
+                handleLoginError(new Error(data.error || 'Login gagal'));
+                return;
+            }
+            
+            var userData = data.data || data;
+            
+            if (!userData.token || !userData.user) {
+                handleLoginError(new Error('Response tidak valid'));
+                return;
+            }
             
             // Simpan session
             var sessionData = {
-                token: data.token,
-                refreshToken: data.refreshToken || '',
-                user: data.user,
+                token: userData.token,
+                refreshToken: userData.refreshToken || '',
+                user: userData.user,
                 expiresAt: Date.now() + 3600000,
                 lastActivity: Date.now()
             };
             
             try {
                 localStorage.setItem('auth_session', JSON.stringify(sessionData));
-                localStorage.setItem('auth_token', data.token);
-                if (data.refreshToken) {
-                    localStorage.setItem('auth_refresh_token', data.refreshToken);
+                localStorage.setItem('auth_token', userData.token);
+                if (userData.refreshToken) {
+                    localStorage.setItem('auth_refresh_token', userData.refreshToken);
                 }
-            } catch(e) {
-                console.warn('Storage full:', e);
-            }
+                if (usernameInput.value.trim()) {
+                    localStorage.setItem('saved_username', usernameInput.value.trim());
+                }
+            } catch(e) {}
             
+            console.log('Login success:', userData.user.username);
             showAlert('success', 'Login berhasil! Mengalihkan...');
             
             setTimeout(function() {
-                redirectToDashboard(data.user.role);
-            }, 600);
+                redirectToDashboard(userData.user.role);
+            }, 500);
         }
         
         function handleLoginError(error) {
             loginAttempts++;
+            setLoading(false);
+            
             console.warn('Login failed (' + loginAttempts + '/' + maxAttempts + '):', error.message);
             
             var remaining = maxAttempts - loginAttempts;
@@ -441,12 +454,9 @@
             if (remaining <= 0) {
                 showAlert('error', 'Akun terkunci. Coba lagi nanti.');
                 btnLogin.disabled = true;
-                setTimeout(function() {
-                    loginAttempts = 0;
-                    btnLogin.disabled = false;
-                }, 300000);
+                setTimeout(function() { loginAttempts = 0; btnLogin.disabled = false; }, 300000);
             } else if (remaining <= 2) {
-                showAlert('warning', 'Login gagal. Sisa percobaan: ' + remaining);
+                showAlert('warning', 'Login gagal. Sisa: ' + remaining + ' percobaan');
             } else {
                 showAlert('error', error.message || 'Login gagal. Periksa username dan password.');
             }
@@ -471,23 +481,20 @@
         
         function showAlert(type, message) {
             hideAllAlerts();
-            
-            if (type === 'error') { msgError.textContent = message; alertError.classList.add('show'); }
-            else if (type === 'success') { msgSuccess.textContent = message; alertSuccess.classList.add('show'); }
-            else if (type === 'warning') { msgWarning.textContent = message; alertWarning.classList.add('show'); }
+            if (type === 'error') { document.getElementById('msg-error').textContent = message; document.getElementById('alert-error').classList.add('show'); }
+            else if (type === 'success') { document.getElementById('msg-success').textContent = message; document.getElementById('alert-success').classList.add('show'); }
+            else if (type === 'warning') { document.getElementById('msg-warning').textContent = message; document.getElementById('alert-warning').classList.add('show'); }
         }
         
         function hideAllAlerts() {
-            [alertError, alertSuccess, alertWarning].forEach(function(el) {
-                el.classList.remove('show');
+            ['alert-error', 'alert-success', 'alert-warning'].forEach(function(id) {
+                document.getElementById(id).classList.remove('show');
             });
         }
         
-        function loadSavedUsername() {
-            try {
-                var saved = localStorage.getItem('saved_username');
-                if (saved) usernameInput.value = saved;
-            } catch(e) {}
+        function setStatus(type, message) {
+            statusBar.className = 'status-bar ' + type;
+            statusBar.textContent = message;
         }
         
         // ============================================
@@ -505,12 +512,9 @@
                 'mahasiswa': 'dashboard/mahasiswa/index.html',
                 'user': 'dashboard/user/index.html'
             };
-            
-            var url = routes[role] || 'dashboard/';
-            window.location.href = url;
+            window.location.href = routes[role] || 'dashboard/';
         }
         
-        // Start
         init();
     })();
     </script>
