@@ -1,0 +1,352 @@
+<!-- surat-keluar/preview.html - Preview Surat 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Preview Surat - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/print.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .preview-container { max-width: 800px; margin: 0 auto; }
+        
+        .preview-paper {
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 60px;
+            margin-bottom: 24px;
+            min-height: 500px;
+        }
+        
+        .preview-header {
+            text-align: center;
+            border-bottom: 3px solid #1e293b;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .preview-header .logo {
+            width: 80px;
+            margin-bottom: 12px;
+        }
+        
+        .preview-header h2 {
+            font-size: 18px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .preview-header .subtitle {
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .preview-meta {
+            margin-bottom: 24px;
+        }
+        
+        .preview-meta table {
+            width: 100%;
+        }
+        
+        .preview-meta td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+        
+        .preview-meta .label {
+            width: 130px;
+            font-weight: 500;
+            color: #64748b;
+        }
+        
+        .preview-body {
+            line-height: 1.8;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        
+        .preview-signature {
+            text-align: right;
+            margin-top: 40px;
+        }
+        
+        .preview-signature .name {
+            font-weight: 600;
+            margin-top: 60px;
+            text-decoration: underline;
+        }
+        
+        .preview-signature .nip {
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .preview-qr {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .preview-qr canvas {
+            width: 80px;
+            height: 80px;
+        }
+        
+        .preview-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 80px;
+            color: rgba(0,0,0,0.03);
+            pointer-events: none;
+            z-index: 0;
+            white-space: nowrap;
+        }
+        
+        @media print {
+            .sidebar, .preview-actions, .no-print { display: none !important; }
+            .main-content { margin: 0; padding: 0; }
+            .preview-paper { box-shadow: none; border-radius: 0; padding: 20px; }
+        }
+        
+        @media (max-width: 768px) {
+            .preview-paper { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar no-print">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="preview-container">
+            <div class="page-header no-print" style="margin-bottom:20px;">
+                <div>
+                    <h2>Preview Surat</h2>
+                    <p style="color:#64748b;">Pratinjau surat sebelum dicetak</p>
+                </div>
+            </div>
+            
+            <!-- Watermark -->
+            <div class="watermark no-print">PREVIEW</div>
+            
+            <!-- Paper -->
+            <div class="preview-paper" id="preview-paper">
+                <!-- Header -->
+                <div class="preview-header">
+                    <img src="/icons/logo.svg" alt="Logo" class="logo" onerror="this.style.display='none'">
+                    <h2>KEMENTERIAN PENDIDIKAN TINGGI</h2>
+                    <div class="subtitle">Fakultas Ilmu Komputer</div>
+                    <div class="subtitle">Jl. Pendidikan No. 123, Jakarta - Telp. (021) 1234567</div>
+                </div>
+                
+                <!-- Meta -->
+                <div class="preview-meta">
+                    <table>
+                        <tr>
+                            <td class="label">Nomor</td>
+                            <td>: <span id="pv-nomor">-</span></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Lampiran</td>
+                            <td>: <span id="pv-lampiran">-</span></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Perihal</td>
+                            <td>: <strong><span id="pv-perihal">-</span></strong></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Tujuan -->
+                <div style="margin-bottom:20px;">
+                    <p style="margin-bottom:4px;">Kepada Yth.</p>
+                    <p style="font-weight:500;" id="pv-tujuan">-</p>
+                    <p style="color:#64748b;" id="pv-alamat">-</p>
+                </div>
+                
+                <!-- Body -->
+                <div class="preview-body" id="pv-body">
+                    <p>Dengan hormat,</p>
+                    <p>Sehubungan dengan <span id="pv-isi">-</span></p>
+                    <p>Demikian surat ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.</p>
+                </div>
+                
+                <!-- Signature -->
+                <div class="preview-signature">
+                    <p id="pv-tempat-tanggal">Jakarta, -</p>
+                    <p style="margin-bottom:4px;" id="pv-jabatan">Dekan</p>
+                    <p class="name" id="pv-penandatangan">-</p>
+                    <p class="nip" id="pv-nip">-</p>
+                </div>
+                
+                <!-- Tembusan -->
+                <div style="margin-top:20px;font-size:13px;" id="pv-tembusan-section" style="display:none;">
+                    <p style="font-weight:500;">Tembusan:</p>
+                    <ol id="pv-tembusan" style="padding-left:20px;"></ol>
+                </div>
+                
+                <!-- QR Code -->
+                <div class="preview-qr" id="pv-qr-section">
+                    <p style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Scan QR Code untuk verifikasi keaslian surat</p>
+                    <div id="pv-qrcode"></div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="preview-actions">
+                <button class="btn btn-primary" id="print-btn">
+                    <i class="fas fa-print"></i> Cetak
+                </button>
+                <button class="btn btn-outline" id="download-pdf-btn">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </button>
+                <a href="/surat-keluar/generate.html" class="btn btn-outline" id="generate-btn">
+                    <i class="fas fa-cog"></i> Generate Final
+                </a>
+                <a href="/surat-keluar/list.html" class="btn btn-ghost">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </a>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '../js/auth.js';
+        import apiService from '../js/api.js';
+        import notifications from '../js/notifications.js';
+        import utils from '../js/utils.js';
+        import logger from '../js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '../login.html';
+        
+        const params = new URLSearchParams(window.location.search);
+        const suratId = params.get('id');
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            
+            document.getElementById('print-btn')?.addEventListener('click', () => window.print());
+            document.getElementById('download-pdf-btn')?.addEventListener('click', downloadPDF);
+            
+            if (suratId) {
+                await loadSuratData();
+                await generateQRCode();
+            }
+            
+            logger.info('Preview page loaded', { suratId });
+        });
+        
+        async function loadSuratData() {
+            try {
+                const response = await apiService.get(`/api/surat-keluar/${suratId}`);
+                const data = response.data;
+                
+                if (!data) {
+                    notifications.error('Surat tidak ditemukan');
+                    return;
+                }
+                
+                // Populate preview
+                document.getElementById('pv-nomor').textContent = data.nomor_surat || '-';
+                document.getElementById('pv-lampiran').textContent = data.lampiran || '-';
+                document.getElementById('pv-perihal').textContent = data.perihal || '-';
+                document.getElementById('pv-tujuan').textContent = data.tujuan || '-';
+                document.getElementById('pv-alamat').textContent = data.alamat || '';
+                document.getElementById('pv-isi').textContent = data.isi_ringkas || '-';
+                
+                document.getElementById('pv-tempat-tanggal').textContent = 
+                    `${data.tempat || 'Jakarta'}, ${utils.formatDate(data.tanggal_surat, 'long')}`;
+                document.getElementById('pv-jabatan').textContent = data.jabatan_penandatangan || 'Dekan';
+                document.getElementById('pv-penandatangan').textContent = data.penandatangan || '-';
+                document.getElementById('pv-nip').textContent = data.nip_penandatangan ? `NIP. ${data.nip_penandatangan}` : '';
+                
+                // Tembusan
+                if (data.tembusan && data.tembusan.length > 0) {
+                    document.getElementById('pv-tembusan-section').style.display = 'block';
+                    document.getElementById('pv-tembusan').innerHTML = 
+                        data.tembusan.map(t => `<li>${t}</li>`).join('');
+                }
+                
+                // Update generate link
+                document.getElementById('generate-btn').href = `/surat-keluar/generate.html?id=${suratId}`;
+                
+            } catch (error) {
+                logger.error('Failed to load surat for preview', error);
+                notifications.error('Gagal memuat data surat');
+            }
+        }
+        
+        async function generateQRCode() {
+            try {
+                const QRCode = await import('qrcode');
+                const canvas = document.createElement('canvas');
+                
+                const verifyUrl = `${window.location.origin}/surat-keluar/qrcode.html?id=${suratId}`;
+                
+                await QRCode.toCanvas(canvas, verifyUrl, {
+                    width: 100,
+                    margin: 1,
+                    color: { dark: '#1e293b', light: '#ffffff' }
+                });
+                
+                document.getElementById('pv-qrcode').appendChild(canvas);
+            } catch (error) {
+                logger.warn('QR Code generation failed', error);
+                document.getElementById('pv-qr-section').innerHTML = 
+                    '<p style="color:#94a3b8;">QR Code tidak dapat dibuat</p>';
+            }
+        }
+        
+        async function downloadPDF() {
+            try {
+                notifications.info('Membuat PDF...');
+                
+                const { default: exportHandler } = await import('/js/export.js');
+                
+                // Collect preview data
+                const data = [{
+                    nomor: document.getElementById('pv-nomor').textContent,
+                    perihal: document.getElementById('pv-perihal').textContent,
+                    tujuan: document.getElementById('pv-tujuan').textContent,
+                    tanggal: document.getElementById('pv-tempat-tanggal').textContent
+                }];
+                
+                await exportHandler.exportPDF(data, {
+                    filename: `surat-${suratId}.pdf`,
+                    title: 'Preview Surat'
+                });
+                
+                notifications.success('PDF berhasil didownload');
+            } catch (error) {
+                // Fallback: print to PDF
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>

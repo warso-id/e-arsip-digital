@@ -1,0 +1,526 @@
+<!-- surat-masuk/form.html - Form Input Surat Masuk 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Input Surat Masuk - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .scan-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+        
+        .scan-area:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .scan-area i {
+            font-size: 48px;
+            color: #2563eb;
+            margin-bottom: 12px;
+        }
+        
+        .scan-result {
+            display: none;
+            padding: 16px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+        
+        .scan-result.show {
+            display: block;
+        }
+        
+        .scan-result.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+        
+        .preview-frame {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .preview-frame.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row,
+            .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="form-container">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb" style="margin-bottom:16px;">
+                <a href="/dashboard/">Dashboard</a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="/surat-masuk/list.html">Surat Masuk</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Input Surat Baru</span>
+            </div>
+            
+            <h2 style="margin-bottom:20px;">Input Surat Masuk Baru</h2>
+            
+            <form id="surat-masuk-form" novalidate>
+                <!-- QR Scanner Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-qrcode"></i> Scan QR Code (Opsional)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="scan-area" id="scan-area">
+                            <i class="fas fa-qrcode"></i>
+                            <p><strong>Klik untuk scan QR Code</strong></p>
+                            <p style="color:#64748b;font-size:13px;">Atau upload gambar QR Code untuk auto-fill data surat</p>
+                            <input type="file" id="qr-input" accept="image/*" style="display:none;" capture="environment">
+                        </div>
+                        <div class="scan-result" id="scan-result">
+                            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+                            <span id="scan-message">Data berhasil diekstrak dari QR Code</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informasi Surat -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Informasi Surat</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Nomor Surat</label>
+                                <input type="text" class="form-input" name="nomor_surat" id="nomor-surat" 
+                                    placeholder="Masukkan nomor surat" required>
+                                <div class="form-error" id="nomor-surat-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Tanggal Surat</label>
+                                <input type="date" class="form-input" name="tanggal_surat" id="tanggal-surat" required>
+                                <div class="form-error" id="tanggal-surat-error"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Tanggal Diterima</label>
+                                <input type="date" class="form-input" name="tanggal_diterima" id="tanggal-diterima" required>
+                                <div class="form-error" id="tanggal-diterima-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nomor Agenda</label>
+                                <input type="text" class="form-input" name="nomor_agenda" id="nomor-agenda" 
+                                    placeholder="Otomatis atau manual">
+                                <div class="form-help">Kosongkan untuk penomoran otomatis</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Perihal Surat</label>
+                            <input type="text" class="form-input" name="perihal" id="perihal" 
+                                placeholder="Masukkan perihal surat" required maxlength="200">
+                            <div class="form-help">Sisa karakter: <span id="perihal-count">200</span></div>
+                            <div class="form-error" id="perihal-error"></div>
+                        </div>
+                        
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Jenis Surat</label>
+                                <select class="form-select" name="jenis_surat" id="jenis-surat" required>
+                                    <option value="">Pilih Jenis</option>
+                                    <option value="biasa">Biasa</option>
+                                    <option value="penting">Penting</option>
+                                    <option value="rahasia">Rahasia</option>
+                                    <option value="segera">Segera</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Sifat Surat</label>
+                                <select class="form-select" name="sifat_surat" id="sifat-surat" required>
+                                    <option value="">Pilih Sifat</option>
+                                    <option value="biasa">Biasa</option>
+                                    <option value="segera">Segera</option>
+                                    <option value="sangat_segera">Sangat Segera</option>
+                                    <option value="rahasia">Rahasia</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Klasifikasi</label>
+                                <select class="form-select" name="klasifikasi" id="klasifikasi">
+                                    <option value="">Pilih Klasifikasi</option>
+                                    <option value="umum">Umum</option>
+                                    <option value="keuangan">Keuangan</option>
+                                    <option value="kepegawaian">Kepegawaian</option>
+                                    <option value="akademik">Akademik</option>
+                                    <option value="kemahasiswaan">Kemahasiswaan</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pengirim -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Pengirim</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Asal Surat</label>
+                            <select class="form-select" name="asal_tipe" id="asal-tipe" required>
+                                <option value="">Pilih Tipe Asal</option>
+                                <option value="internal">Internal</option>
+                                <option value="eksternal">Eksternal</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-row" id="asal-internal-row" style="display:none;">
+                            <div class="form-group">
+                                <label class="form-label">Unit Pengirim</label>
+                                <select class="form-select" name="asal_internal" id="asal-internal">
+                                    <option value="">Pilih Unit</option>
+                                    <option value="dekanat">Dekanat</option>
+                                    <option value="prodi_ti">Prodi TI</option>
+                                    <option value="prodi_si">Prodi SI</option>
+                                    <option value="baak">BAAK</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nama Pengirim</label>
+                                <input type="text" class="form-input" name="pengirim_internal" id="pengirim-internal">
+                            </div>
+                        </div>
+                        
+                        <div id="asal-eksternal-row" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Nama Instansi</label>
+                                    <input type="text" class="form-input" name="instansi" id="instansi" 
+                                        placeholder="Nama instansi/perusahaan">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Nama Pengirim</label>
+                                    <input type="text" class="form-input" name="pengirim_eksternal" 
+                                        id="pengirim-eksternal" placeholder="Nama pengirim">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Alamat Pengirim</label>
+                                <textarea class="form-textarea" name="alamat_pengirim" id="alamat-pengirim" 
+                                    rows="2" placeholder="Alamat lengkap pengirim"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Kota</label>
+                                    <input type="text" class="form-input" name="kota_pengirim" id="kota-pengirim">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">No. Telepon</label>
+                                    <input type="tel" class="form-input" name="telepon_pengirim" id="telepon-pengirim">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dokumen & Lampiran -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Dokumen & Isi Ringkas</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Isi Ringkas Surat</label>
+                            <textarea class="form-textarea" name="isi_ringkas" id="isi-ringkas" 
+                                rows="4" placeholder="Masukkan ringkasan isi surat..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Upload Dokumen Surat</label>
+                            <div id="dokumen-upload"></div>
+                            <div class="form-help">Format: PDF, JPG, PNG (Maks. 10MB)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Lampiran</label>
+                            <div id="lampiran-upload"></div>
+                            <div class="form-help">Format: PDF, JPG, PNG, DOC (Maks. 5MB per file)</div>
+                        </div>
+                        
+                        <!-- Preview -->
+                        <iframe class="preview-frame" id="preview-frame"></iframe>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div style="display:flex;justify-content:flex-end;gap:12px;padding:20px 0;">
+                    <button type="button" class="btn btn-outline" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i> Batal
+                    </button>
+                    <button type="button" class="btn btn-outline" id="draft-btn">
+                        <i class="fas fa-save"></i> Simpan Draft
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Simpan Surat Masuk
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '../js/auth.js';
+        import FormValidator from '../js/validator.js';
+        import FileUploader from '../js/upload.js';
+        import notifications from '../js/notifications.js';
+        import apiService from '../js/api.js';
+        import logger from '../js/logger.js';
+        
+        // Check auth
+        if (!authService.isAuthenticated) window.location.href = '../login.html';
+        
+        let formValidator;
+        let dokumenUploader;
+        let lampiranUploader;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initFormValidation();
+            initFileUploaders();
+            initEventListeners();
+            logger.info('Surat masuk form initialized');
+        });
+        
+        function initFormValidation() {
+            const form = document.getElementById('surat-masuk-form');
+            formValidator = new FormValidator(form, {
+                validateOnInput: true,
+                validateOnBlur: true
+            });
+        }
+        
+        function initFileUploaders() {
+            dokumenUploader = new FileUploader({
+                maxFiles: 1,
+                maxFileSize: 10485760,
+                allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+                autoUpload: false
+            });
+            dokumenUploader.mount('#dokumen-upload');
+            
+            lampiranUploader = new FileUploader({
+                maxFiles: 5,
+                maxFileSize: 5242880,
+                allowedTypes: ['application/pdf', 'image/jpeg', 'image/png', 
+                    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                multiple: true,
+                autoUpload: false
+            });
+            lampiranUploader.mount('#lampiran-upload');
+        }
+        
+        function initEventListeners() {
+            // QR Scanner
+            document.getElementById('scan-area')?.addEventListener('click', () => {
+                document.getElementById('qr-input')?.click();
+            });
+            
+            document.getElementById('qr-input')?.addEventListener('change', handleQRScan);
+            
+            // Asal tipe
+            document.getElementById('asal-tipe')?.addEventListener('change', (e) => {
+                document.getElementById('asal-internal-row').style.display = 
+                    e.target.value === 'internal' ? 'grid' : 'none';
+                document.getElementById('asal-eksternal-row').style.display = 
+                    e.target.value === 'eksternal' ? 'block' : 'none';
+            });
+            
+            // Perihal counter
+            document.getElementById('perihal')?.addEventListener('input', (e) => {
+                document.getElementById('perihal-count').textContent = 200 - e.target.value.length;
+            });
+            
+            // Draft
+            document.getElementById('draft-btn')?.addEventListener('click', saveDraft);
+            
+            // Submit
+            document.getElementById('surat-masuk-form')?.addEventListener('submit', handleSubmit);
+            
+            // Preview dokumen
+            dokumenUploader?.onFileAdded = (fileData) => {
+                if (fileData.file.type === 'application/pdf') {
+                    const preview = document.getElementById('preview-frame');
+                    preview.src = URL.createObjectURL(fileData.file);
+                    preview.classList.add('show');
+                }
+            };
+        }
+        
+        async function handleQRScan(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const scanResult = document.getElementById('scan-result');
+            const scanMessage = document.getElementById('scan-message');
+            
+            try {
+                scanResult.className = 'scan-result show';
+                scanMessage.textContent = 'Memproses QR Code...';
+                
+                // In production, use QR code reader library
+                const formData = new FormData();
+                formData.append('qr_image', file);
+                
+                const response = await apiService.uploadFile('/api/qr/decode', file);
+                
+                if (response.data?.surat) {
+                    const data = response.data.surat;
+                    
+                    // Auto-fill form
+                    document.getElementById('nomor-surat').value = data.nomor || '';
+                    document.getElementById('perihal').value = data.perihal || '';
+                    document.getElementById('tanggal-surat').value = data.tanggal || '';
+                    
+                    if (data.pengirim) {
+                        document.getElementById('asal-tipe').value = 'eksternal';
+                        document.getElementById('asal-eksternal-row').style.display = 'block';
+                        document.getElementById('instansi').value = data.pengirim || '';
+                    }
+                    
+                    scanResult.className = 'scan-result show';
+                    scanMessage.textContent = 'Data berhasil diekstrak dari QR Code';
+                    notifications.success('Data QR Code berhasil diproses');
+                } else {
+                    scanResult.className = 'scan-result show error';
+                    scanMessage.textContent = 'QR Code tidak dikenali atau bukan surat resmi';
+                    notifications.warning('QR Code tidak valid');
+                }
+            } catch (error) {
+                scanResult.className = 'scan-result show error';
+                scanMessage.textContent = 'Gagal memproses QR Code';
+                logger.error('QR scan failed', error);
+            }
+        }
+        
+        async function saveDraft() {
+            const formData = collectFormData();
+            
+            try {
+                const response = await apiService.post('/api/surat-masuk/draft', formData);
+                notifications.success('Draft berhasil disimpan');
+                
+                if (response.data?.id) {
+                    setTimeout(() => {
+                        window.location.href = `/surat-masuk/list.html`;
+                    }, 1000);
+                }
+            } catch (error) {
+                notifications.error('Gagal menyimpan draft');
+            }
+        }
+        
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            if (!formValidator?.validate()) return;
+            
+            const formData = collectFormData();
+            
+            try {
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+                
+                const response = await apiService.post('/api/surat-masuk/create', formData);
+                
+                notifications.success('Surat masuk berhasil dicatat');
+                
+                setTimeout(() => {
+                    window.location.href = `/surat-masuk/list.html`;
+                }, 1000);
+                
+            } catch (error) {
+                notifications.error('Gagal menyimpan surat masuk: ' + error.message);
+            }
+        }
+        
+        function collectFormData() {
+            const form = document.getElementById('surat-masuk-form');
+            const formData = new FormData(form);
+            const data = {};
+            
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            
+            return data;
+        }
+    </script>
+</body>
+</html>

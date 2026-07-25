@@ -1,0 +1,410 @@
+<!-- notifikasi/index.html - Notification Center 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script>
+        (function () {
+            const getAppBasePath = () => {
+                const pathname = window.location.pathname || '/';
+                const segments = pathname.split('/').filter(Boolean);
+                if (segments.length === 0) return '/';
+                const repoSegment = segments[0];
+                const isLikelySubfolder = pathname.includes(`/${repoSegment}/`) || pathname.endsWith(`/${repoSegment}`);
+                if (isLikelySubfolder && repoSegment !== 'dashboard' && repoSegment !== 'surat-masuk' && repoSegment !== 'surat-keluar') {
+                    return `/${repoSegment}/`;
+                }
+                return '/';
+            };
+            const appBasePath = getAppBasePath();
+            const rewrite = (value) => {
+                if (!value || !value.startsWith('/')) return value;
+                const clean = value.replace(/^\/+/, '');
+                return `${appBasePath}${clean}`.replace(/\/+/g, '/');
+            };
+            document.querySelectorAll('link[href], script[src], img[src], a[href]').forEach((el) => {
+                ['href', 'src'].forEach((attr) => {
+                    if (!el.hasAttribute(attr)) return;
+                    const value = el.getAttribute(attr);
+                    if (value && value.startsWith('/')) {
+                        el.setAttribute(attr, rewrite(value));
+                    }
+                });
+            });
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Notifikasi - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .notif-container { max-width: 700px; margin: 0 auto; }
+        
+        .notif-list { list-style: none; padding: 0; }
+        
+        .notif-item {
+            display: flex;
+            gap: 14px;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .notif-item:hover {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+        
+        .notif-item.unread {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        
+        .notif-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .notif-icon.info { background: #eff6ff; color: #2563eb; }
+        .notif-icon.success { background: #f0fdf4; color: #16a34a; }
+        .notif-icon.warning { background: #fffbeb; color: #d97706; }
+        .notif-icon.error { background: #fef2f2; color: #dc2626; }
+        
+        .notif-content { flex: 1; min-width: 0; }
+        .notif-title { font-weight: 600; margin-bottom: 4px; font-size: 14px; }
+        .notif-title .unread-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2563eb;
+            margin-right: 6px;
+        }
+        .notif-message { font-size: 13px; color: #64748b; }
+        .notif-time { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+        
+        .notif-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+        
+        .filter-tab {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        
+        .filter-tab:hover { color: #2563eb; }
+        .filter-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+        
+        .filter-tab .count {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 6px;
+            background: #e2e8f0;
+            color: #64748b;
+        }
+        
+        .filter-tab.active .count {
+            background: #2563eb;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/notifikasi/" class="nav-item active"><i class="fas fa-bell"></i> Notifikasi</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="notif-container">
+            <div class="page-header">
+                <div>
+                    <h2>Notifikasi</h2>
+                    <p style="color:#64748b;font-size:14px;">Pusat notifikasi dan pemberitahuan</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-sm btn-outline" id="mark-all-btn">
+                        <i class="fas fa-check-double"></i> Tandai Semua Dibaca
+                    </button>
+                    <button class="btn btn-sm btn-outline" id="clear-all-btn">
+                        <i class="fas fa-trash"></i> Hapus Semua
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">
+                    Semua <span class="count" id="count-all">0</span>
+                </button>
+                <button class="filter-tab" data-filter="unread">
+                    Belum Dibaca <span class="count" id="count-unread">0</span>
+                </button>
+                <button class="filter-tab" data-filter="info">
+                    Info <span class="count" id="count-info">0</span>
+                </button>
+                <button class="filter-tab" data-filter="warning">
+                    Peringatan <span class="count" id="count-warning">0</span>
+                </button>
+            </div>
+            
+            <!-- Notification List -->
+            <ul class="notif-list" id="notif-list">
+                <li style="text-align:center;padding:40px;color:#94a3b8;">
+                    <i class="fas fa-bell-slash" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+                    Tidak ada notifikasi
+                </li>
+            </ul>
+            
+            <!-- Load More -->
+            <div style="text-align:center;margin-top:16px;" id="load-more-container">
+                <button class="btn btn-outline btn-sm" id="load-more-btn" style="display:none;">
+                    Muat Lebih Banyak
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        let notifList = [];
+        let currentFilter = 'all';
+        let currentPage = 1;
+        let hasMore = false;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEvents();
+            loadNotifications();
+            logger.info('Notification page loaded');
+        });
+        
+        function initEvents() {
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentFilter = tab.dataset.filter;
+                    currentPage = 1;
+                    loadNotifications();
+                });
+            });
+            
+            document.getElementById('mark-all-btn')?.addEventListener('click', markAllRead);
+            document.getElementById('clear-all-btn')?.addEventListener('click', clearAll);
+            document.getElementById('load-more-btn')?.addEventListener('click', loadMore);
+        }
+        
+        async function loadNotifications() {
+            try {
+                const params = {
+                    page: currentPage,
+                    limit: 20,
+                    filter: currentFilter !== 'all' ? currentFilter : undefined
+                };
+                
+                const response = await apiService.get('/api/notifications', params);
+                
+                if (currentPage === 1) {
+                    notifList = response.data?.notifications || [];
+                } else {
+                    notifList = [...notifList, ...(response.data?.notifications || [])];
+                }
+                
+                hasMore = response.data?.hasMore || false;
+                
+                updateCounts(response.data?.counts || {});
+                renderList();
+                updateLoadMore();
+                
+            } catch (error) {
+                logger.error('Failed to load notifications', error);
+                // Show sample data for demo
+                if (currentPage === 1) {
+                    notifList = generateSampleNotifications();
+                    renderList();
+                }
+            }
+        }
+        
+        function generateSampleNotifications() {
+            return [
+                { id: '1', type: 'info', title: 'Surat Baru Disetujui', message: 'Surat No. 045/UN.01/UM/XI/2026 telah disetujui oleh Dekan.', read: false, createdAt: new Date(Date.now() - 3600000).toISOString() },
+                { id: '2', type: 'success', title: 'Disposisi Selesai', message: 'Disposisi surat dari Wakil Dekan I telah ditindaklanjuti.', read: false, createdAt: new Date(Date.now() - 7200000).toISOString() },
+                { id: '3', type: 'warning', title: 'Batas Waktu Disposisi', message: 'Disposisi No. 123/UN.01 akan berakhir dalam 1 hari.', read: true, createdAt: new Date(Date.now() - 10800000).toISOString() },
+                { id: '4', type: 'info', title: 'Surat Masuk Baru', message: 'Surat masuk dari Kementerian Pendidikan telah dicatat.', read: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
+                { id: '5', type: 'error', title: 'Upload Gagal', message: 'Gagal mengupload lampiran. Ukuran file terlalu besar.', read: true, createdAt: new Date(Date.now() - 172800000).toISOString() }
+            ];
+        }
+        
+        function updateCounts(counts) {
+            document.getElementById('count-all').textContent = counts.total || notifList.length;
+            document.getElementById('count-unread').textContent = counts.unread || notifList.filter(n => !n.read).length;
+            document.getElementById('count-info').textContent = counts.info || notifList.filter(n => n.type === 'info' || n.type === 'success').length;
+            document.getElementById('count-warning').textContent = counts.warning || notifList.filter(n => n.type === 'warning' || n.type === 'error').length;
+        }
+        
+        function renderList() {
+            const container = document.getElementById('notif-list');
+            
+            if (notifList.length === 0) {
+                container.innerHTML = `<li style="text-align:center;padding:40px;color:#94a3b8;">
+                    <i class="fas fa-bell-slash" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+                    Tidak ada notifikasi
+                </li>`;
+                return;
+            }
+            
+            container.innerHTML = notifList.map(n => `
+                <li class="notif-item ${n.read ? '' : 'unread'}" onclick="openNotif('${n.id}')">
+                    <div class="notif-icon ${n.type}">
+                        <i class="fas fa-${getIcon(n.type)}"></i>
+                    </div>
+                    <div class="notif-content">
+                        <div class="notif-title">
+                            ${!n.read ? '<span class="unread-dot"></span>' : ''}${n.title}
+                        </div>
+                        <div class="notif-message">${n.message}</div>
+                        <div class="notif-time">${utils.timeAgo(n.createdAt)}</div>
+                    </div>
+                    <div class="notif-actions">
+                        ${!n.read ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();markRead('${n.id}')" title="Tandai Dibaca">
+                            <i class="fas fa-check"></i></button>` : ''}
+                        <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();deleteNotif('${n.id}')" title="Hapus">
+                            <i class="fas fa-times" style="color:#dc2626;"></i></button>
+                    </div>
+                </li>
+            `).join('');
+        }
+        
+        function updateLoadMore() {
+            const btn = document.getElementById('load-more-btn');
+            btn.style.display = hasMore ? 'inline-flex' : 'none';
+        }
+        
+        async function loadMore() {
+            currentPage++;
+            await loadNotifications();
+        }
+        
+        async function markRead(id) {
+            try {
+                await apiService.patch(`/api/notifications/${id}/read`);
+                const notif = notifList.find(n => n.id === id);
+                if (notif) notif.read = true;
+                renderList();
+                updateCounts();
+            } catch (error) {
+                // Optimistic update
+                const notif = notifList.find(n => n.id === id);
+                if (notif) { notif.read = true; renderList(); }
+            }
+        }
+        
+        async function markAllRead() {
+            try {
+                await apiService.post('/api/notifications/mark-all-read');
+                notifList.forEach(n => n.read = true);
+                renderList();
+                updateCounts();
+                notifications.success('Semua notifikasi ditandai dibaca');
+            } catch (error) {
+                notifList.forEach(n => n.read = true);
+                renderList();
+            }
+        }
+        
+        async function deleteNotif(id) {
+            try {
+                await apiService.delete(`/api/notifications/${id}`);
+                notifList = notifList.filter(n => n.id !== id);
+                renderList();
+                updateCounts();
+            } catch (error) {
+                notifList = notifList.filter(n => n.id !== id);
+                renderList();
+            }
+        }
+        
+        async function clearAll() {
+            if (!confirm('Hapus semua notifikasi?')) return;
+            
+            try {
+                await apiService.delete('/api/notifications');
+                notifList = [];
+                renderList();
+                updateCounts({ total: 0, unread: 0, info: 0, warning: 0 });
+                notifications.success('Semua notifikasi dihapus');
+            } catch (error) {
+                notifications.error('Gagal menghapus notifikasi');
+            }
+        }
+        
+        async function openNotif(id) {
+            await markRead(id);
+            
+            const notif = notifList.find(n => n.id === id);
+            if (notif?.link) {
+                window.location.href = notif.link;
+            }
+        }
+        
+        function getIcon(type) {
+            const icons = { info: 'info-circle', success: 'check-circle', warning: 'exclamation-triangle', error: 'times-circle' };
+            return icons[type] || 'bell';
+        }
+        
+        window.openNotif = openNotif;
+        window.markRead = markRead;
+        window.deleteNotif = deleteNotif;
+    </script>
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!-- FILE: dashboard/mahasiswa/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Mahasiswa - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary: #0288d1;
+            --secondary: #039be5;
+            --accent: #03a9f4;
+            --gold: #ffd700;
+            --light: #f5f6fa;
+            --dark: #2c3e50;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #01579b, #0288d1);
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h5 { font-weight: 700; margin-bottom: 5px; }
+        .sidebar-header small { opacity: 0.8; }
+        
+        .sidebar-menu { padding: 20px 0; }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--gold);
+        }
+        
+        .sidebar-menu .nav-link i { width: 25px; margin-right: 10px; text-align: center; }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+        
+        .top-navbar {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .content-area { padding: 25px; }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #01579b, #039be5);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .badge-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .surat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #03a9f4;
+            transition: all 0.3s;
+        }
+        
+        .surat-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            .sidebar.active { margin-left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
+            <h5>E-Arsip Digital</h5>
+            <small>Mahasiswa Panel</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="buat-surat">
+                        <i class="fas fa-plus-circle"></i> Buat Surat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-saya">
+                        <i class="fas fa-envelope"></i> Surat Saya
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="status-surat">
+                        <i class="fas fa-info-circle"></i> Status Surat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <i class="fas fa-user-circle"></i> Profil Saya
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a href="#" class="nav-link text-danger" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none me-3" id="toggleSidebarBtn">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Dashboard Mahasiswa</h5>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentTime" class="text-muted"></span>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <div class="avatar-circle me-2" id="userAvatar">M</div>
+                        <span id="displayName">Mahasiswa</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-page="profile"><i class="fas fa-user me-2"></i>Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area" id="contentArea">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="../../config/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    
+    <script>
+        if (!auth.requireRole('mahasiswa')) {
+            // Redirect handled
+        }
+        
+        const currentUser = auth.getCurrentUser();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            loadDashboard();
+            setupEventListeners();
+            updateClock();
+            setInterval(updateClock, 60000);
+        });
+        
+        function initializeUI() {
+            if (currentUser) {
+                document.getElementById('displayName').textContent = currentUser.name || 'Mahasiswa';
+                document.getElementById('userAvatar').textContent = (currentUser.name || 'M').charAt(0).toUpperCase();
+            }
+            AOS.init({ duration: 800, once: true });
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('shifted');
+            });
+            
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateTo(this.dataset.page);
+                });
+            });
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleDateString('id-ID', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+        }
+        
+        function navigateTo(page) {
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) link.classList.add('active');
+            });
+            
+            const titles = {
+                'dashboard': 'Dashboard Mahasiswa',
+                'buat-surat': 'Buat Surat',
+                'surat-saya': 'Surat Saya',
+                'status-surat': 'Status Surat',
+                'profile': 'Profil Saya'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'buat-surat': window.location.href = '../../surat-keluar/form.html'; break;
+                case 'surat-saya': loadSuratSaya(); break;
+                case 'status-surat': loadStatusSurat(); break;
+                case 'profile': window.location.href = '../../profile/index.html'; break;
+            }
+        }
+        
+        function loadDashboard() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-xl-4 col-md-6 mb-3" data-aos="fade-up">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Total Surat</p>
+                                    <h3 class="mb-0" id="statTotalSurat">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #0288d1, #039be5);">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-4 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Dalam Proses</p>
+                                    <h3 class="mb-0" id="statDalamProses">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #03a9f4, #29b6f6);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-4 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Surat Selesai</p>
+                                    <h3 class="mb-0" id="statSelesai">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #4fc3f7, #81d4fa);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4"><i class="fas fa-envelope me-2"></i>Surat Terbaru Saya</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr><th>No</th><th>Jenis Surat</th><th>No Surat</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr>
+                                    </thead>
+                                    <tbody id="suratTerbaru">
+                                        <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">Aksi Cepat</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-primary w-100" onclick="navigateTo('buat-surat')">
+                                        <i class="fas fa-plus-circle me-2"></i>Buat Surat Baru
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-success w-100" onclick="buatSuratAktif()">
+                                        <i class="fas fa-id-card me-2"></i>Surat Aktif Kuliah
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-info w-100" onclick="buatSuratKeterangan()">
+                                        <i class="fas fa-file-alt me-2"></i>Surat Keterangan
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-warning w-100" onclick="navigateTo('status-surat')">
+                                        <i class="fas fa-info-circle me-2"></i>Cek Status
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadDashboardStats();
+            loadSuratTerbaru();
+        }
+        
+        async function loadDashboardStats() {
+            try {
+                const stats = await api.sendRequest({ 
+                    action: 'getUserStats',
+                    userId: currentUser.id 
+                });
+                
+                if (stats && stats.success) {
+                    document.getElementById('statTotalSurat').textContent = stats.data?.totalSurat || 0;
+                    document.getElementById('statDalamProses').textContent = stats.data?.dalamProses || 0;
+                    document.getElementById('statSelesai').textContent = stats.data?.selesai || 0;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        async function loadSuratTerbaru() {
+            const tbody = document.getElementById('suratTerbaru');
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    userId: currentUser.id,
+                    limit: 5
+                });
+                
+                if (data && data.success && data.data) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.kategori || 'Surat'}</td>
+                            <td>${item.nomorSurat || 'Belum ada'}</td>
+                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                            <td><span class="badge bg-info">${item.status || 'Proses'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${item.status === 'completed' ? `
+                                    <button class="btn btn-sm btn-success" onclick="downloadSurat('${item.nomorSurat}')">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function loadSuratSaya() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Surat Saya</h5>
+                        <button class="btn btn-primary" onclick="navigateTo('buat-surat')">
+                            <i class="fas fa-plus me-2"></i>Buat Surat Baru
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>No</th><th>Jenis</th><th>No Surat</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr>
+                            </thead>
+                            <tbody id="suratSayaTable">
+                                <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            loadSuratSayaData();
+        }
+        
+        async function loadSuratSayaData() {
+            const tbody = document.getElementById('suratSayaTable');
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    userId: currentUser.id 
+                });
+                
+                if (data && data.success && data.data) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.kategori || '-'}</td>
+                            <td>${item.nomorSurat || 'Belum ada'}</td>
+                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                            <td><span class="badge bg-${getStatusColor(item.status)}">${item.status || '-'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${item.status === 'completed' ? `
+                                    <button class="btn btn-sm btn-success" onclick="downloadSurat('${item.nomorSurat}')">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function loadStatusSurat() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Status Surat Saya</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>No</th><th>No Surat</th><th>Status</th><th>Progress</th><th>Keterangan</th></tr>
+                            </thead>
+                            <tbody id="statusSuratTable">
+                                <tr><td colspan="5" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            loadStatusSuratData();
+        }
+        
+        async function loadStatusSuratData() {
+            const tbody = document.getElementById('statusSuratTable');
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    userId: currentUser.id 
+                });
+                
+                if (data && data.success && data.data) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.nomorSurat || 'Belum ada'}</td>
+                            <td><span class="badge bg-${getStatusColor(item.status)}">${item.status || '-'}</span></td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" style="width: ${getProgress(item)}%">
+                                        ${getProgress(item)}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td><small class="text-muted">${getStatusKeterangan(item.status)}</small></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        // Helper Functions
+        function getStatusColor(status) {
+            const colors = {
+                'draft': 'secondary',
+                'pending_admin': 'info',
+                'pending_kasubag': 'primary',
+                'pending_wadek': 'warning',
+                'pending_dekan': 'warning',
+                'completed': 'success',
+                'rejected': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+        
+        function getProgress(item) {
+            const steps = ['adminApproval', 'kasubagApproval', 'wadekApproval', 'dekanApproval'];
+            const completed = steps.filter(step => item[step]).length;
+            return Math.round((completed / steps.length) * 100);
+        }
+        
+        function getStatusKeterangan(status) {
+            const keterangan = {
+                'draft': 'Surat masih draft',
+                'pending_admin': 'Menunggu persetujuan Admin',
+                'pending_kasubag': 'Menunggu review Kasubag',
+                'pending_wadek': 'Menunggu paraf Wakil Dekan',
+                'pending_dekan': 'Menunggu tanda tangan Dekan',
+                'completed': 'Surat sudah selesai dan bisa diunduh',
+                'rejected': 'Surat ditolak, silakan revisi'
+            };
+            return keterangan[status] || '-';
+        }
+        
+        function handleLogout() {
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                auth.logout();
+            }
+        }
+        
+        // Global functions
+        window.navigateTo = navigateTo;
+        window.handleLogout = handleLogout;
+        window.viewSurat = function(id) { alert('Lihat surat ID: ' + id); };
+        window.downloadSurat = function(nomor) { alert('Download surat: ' + nomor); };
+        window.buatSuratAktif = function() { 
+            window.location.href = '../../surat-keluar/form.html?jenis=aktif_kuliah'; 
+        };
+        window.buatSuratKeterangan = function() { 
+            window.location.href = '../../surat-keluar/form.html?jenis=keterangan'; 
+        };
+    </script>
+</body>
+</html>

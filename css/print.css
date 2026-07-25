@@ -1,0 +1,395 @@
+/* css/print.css - Print Stylesheet 2026 */
+/**
+ * E-Arsip Digital - Print Styles
+ * Version: 2026.1.0
+ * Optimized for printing documents and reports
+ */
+
+@media print {
+    /* ============================================ */
+    /* RESET & BASE                                */
+    /* ============================================ */
+    *,
+    *::before,
+    *::after {
+        background: transparent !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        transition: none !important;
+    }
+    
+    body {
+        font-size: 12pt;
+        line-height: 1.5;
+        margin: 0;
+        padding: 15mm;
+    }
+    
+    /* ============================================ */
+    /* HIDE ELEMENTS                               */
+    /* ============================================ */
+    .sidebar,
+    .sidebar *,
+    .loading-screen,
+    .loading-screen *,
+    .no-print,
+    .no-print *,
+    .toast-container,
+    .notification-center,
+    .theme-toggle-container,
+    .a11y-tools,
+    .modal-overlay,
+    .password-toggle,
+    .btn-action,
+    .action-buttons,
+    .bulk-actions-bar,
+    .filter-bar,
+    .table-toolbar,
+    .pagination-top,
+    .export-dropdown,
+    .draw-tools,
+    .profile-tabs,
+    .upload-progress,
+    .progress-bar-container,
+    .quick-view-panel,
+    .quick-view-overlay,
+    .search-clear,
+    .backup-actions,
+    .notif-actions,
+    .signature-actions,
+    .wizard-line,
+    nav,
+    footer,
+    button:not(.keep-print),
+    input[type="file"],
+    input[type="checkbox"],
+    input[type="radio"],
+    select,
+    .btn:not(.keep-print),
+    .form-help,
+    .form-error,
+    .breadcrumb,
+    .page-header .btn,
+    .dashboard-actions,
+    .hero-buttons,
+    .watermark {
+        display: none !important;
+    }
+    
+    /* ============================================ */
+    /* LAYOUT                                      */
+    /* ============================================ */
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    
+    .container,
+    .form-container,
+    .preview-container,
+    .disposisi-container,
+    .agenda-container,
+    .profile-container,
+    .settings-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .card {
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+        margin-bottom: 10mm !important;
+    }
+    
+    .card-header {
+        border-bottom: 1px solid #ccc !important;
+        padding: 5mm 0 !important;
+    }
+    
+    .card-body {
+        padding: 5mm 0 !important;
+    }
+    
+    /* ============================================ */
+    /* TYPOGRAPHY                                  */
+    /* ============================================ */
+    h1 { font-size: 18pt; margin-bottom: 5mm; }
+    h2 { font-size: 16pt; margin-bottom: 4mm; }
+    h3 { font-size: 14pt; margin-bottom: 3mm; }
+    h4 { font-size: 12pt; margin-bottom: 2mm; }
+    
+    p {
+        orphans: 3;
+        widows: 3;
+    }
+    
+    a {
+        text-decoration: underline;
+    }
+    
+    a[href]:after {
+        content: " (" attr(href) ")";
+        font-size: 9pt;
+        color: #666 !important;
+    }
+    
+    a[href^="#"]:after,
+    a[href^="javascript:"]:after {
+        content: "";
+    }
+    
+    /* ============================================ */
+    /* TABLES                                      */
+    /* ============================================ */
+    .data-table,
+    .agenda-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+    }
+    
+    .data-table thead,
+    .agenda-table thead {
+        display: table-header-group;
+    }
+    
+    .data-table th,
+    .agenda-table th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        border: 1px solid #ccc !important;
+        padding: 3mm 4mm !important;
+        text-align: left !important;
+        font-size: 10pt !important;
+    }
+    
+    .data-table td,
+    .agenda-table td {
+        border: 1px solid #ccc !important;
+        padding: 2mm 4mm !important;
+        font-size: 10pt !important;
+    }
+    
+    .data-table tr,
+    .agenda-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    .table-scroll {
+        overflow-x: visible !important;
+    }
+    
+    /* ============================================ */
+    /* SURAT PREVIEW                               */
+    /* ============================================ */
+    .preview-paper {
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+    }
+    
+    .preview-header {
+        border-bottom: 2px solid #000 !important;
+        text-align: center !important;
+        padding-bottom: 10mm !important;
+        margin-bottom: 10mm !important;
+    }
+    
+    .preview-header h2 {
+        font-size: 14pt !important;
+        letter-spacing: 1px !important;
+    }
+    
+    .preview-meta table {
+        width: 100% !important;
+    }
+    
+    .preview-meta .label {
+        width: 100px !important;
+    }
+    
+    .preview-signature {
+        margin-top: 30mm !important;
+        text-align: right !important;
+    }
+    
+    .preview-signature .name {
+        text-decoration: underline !important;
+        margin-top: 20mm !important;
+    }
+    
+    .preview-qr canvas {
+        width: 20mm !important;
+        height: 20mm !important;
+    }
+    
+    /* ============================================ */
+    /* DISPOSISI                                   */
+    /* ============================================ */
+    .disposisi-item {
+        border: 1px solid #ccc !important;
+        padding: 3mm !important;
+        margin-bottom: 3mm !important;
+        page-break-inside: avoid;
+    }
+    
+    .disposisi-item::before {
+        display: none !important;
+    }
+    
+    /* ============================================ */
+    /* AGENDA                                      */
+    /* ============================================ */
+    .agenda-table {
+        font-size: 9pt !important;
+    }
+    
+    .agenda-table th {
+        background: #000 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    /* ============================================ */
+    /* PROFILE                                     */
+    /* ============================================ */
+    .profile-header {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        padding: 10mm !important;
+        border: 1px solid #ccc !important;
+    }
+    
+    .profile-header h2,
+    .profile-header p {
+        color: #000 !important;
+    }
+    
+    .profile-avatar {
+        border: 2px solid #ccc !important;
+    }
+    
+    /* ============================================ */
+    /* LOGS                                        */
+    /* ============================================ */
+    .timeline::before {
+        background: #ccc !important;
+    }
+    
+    .timeline-item::before {
+        background: #000 !important;
+        box-shadow: 0 0 0 2px #000 !important;
+        border: 1px solid #fff !important;
+    }
+    
+    /* ============================================ */
+    /* CHARTS                                      */
+    /* ============================================ */
+    .chart-container {
+        max-height: 400px;
+        page-break-inside: avoid;
+    }
+    
+    canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    /* ============================================ */
+    /* PAGE BREAKS                                 */
+    /* ============================================ */
+    .page-break-before {
+        page-break-before: always;
+    }
+    
+    .page-break-after {
+        page-break-after: always;
+    }
+    
+    .avoid-break {
+        page-break-inside: avoid;
+    }
+    
+    h2, h3 {
+        page-break-after: avoid;
+    }
+    
+    /* ============================================ */
+    /* MARGINS & PAGE                              */
+    /* ============================================ */
+    @page {
+        margin: 15mm;
+        size: A4;
+    }
+    
+    @page :first {
+        margin-top: 20mm;
+    }
+    
+    @page :left {
+        margin-left: 20mm;
+        margin-right: 15mm;
+    }
+    
+    @page :right {
+        margin-left: 15mm;
+        margin-right: 20mm;
+    }
+    
+    /* ============================================ */
+    /* WATERMARK (HIDDEN IN PRINT)                 */
+    /* ============================================ */
+    .watermark {
+        display: none !important;
+    }
+    
+    /* ============================================ */
+    /* QR CODE                                     */
+    /* ============================================ */
+    .preview-qr img,
+    .preview-qr canvas {
+        max-width: 25mm !important;
+        max-height: 25mm !important;
+    }
+    
+    /* ============================================ */
+    /* BADGES & STATUS                             */
+    /* ============================================ */
+    .badge {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    /* ============================================ */
+    /* FORMS                                       */
+    /* ============================================ */
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select {
+        border: 1px solid #ccc !important;
+        background: #fff !important;
+        color: #000 !important;
+        padding: 2mm !important;
+    }
+    
+    /* ============================================ */
+    /* ALERTS                                      */
+    /* ============================================ */
+    .alert {
+        border: 1px solid #000 !important;
+        padding: 3mm !important;
+        margin-bottom: 3mm !important;
+    }
+}

@@ -1,0 +1,651 @@
+<!-- login.html - Login Page 2026 (FIXED - CONNECTED TO GOOGLE APPS SCRIPT) -->
+<!DOCTYPE html>
+<html lang="id" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Login ke Sistem E-Arsip Digital">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- 
+    ⬇️ CSP DIPERBAIKI: 
+    - Tambahkan https://cdn.jsdelivr.net untuk Font Awesome
+    - Tambahkan https://script.google.com dan https://script.googleusercontent.com untuk Google Apps Script
+    - Hapus frame-ancestors (tidak didukung di meta tag)
+    - style-src tambahkan https://cdn.jsdelivr.net dan 'unsafe-inline'
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net https://script.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; form-action 'self'; base-uri 'self';">
+    
+    <title>Login - E-Arsip Digital</title>
+    
+    <!-- 
+    ⬇️ PATH DIPERBAIKI: Gunakan path relatif (tanpa / di depan)
+    Karena GitHub Pages deploy di subfolder /arsip-surat-digital-enterprise/
+    -->
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        /* ============================================ */
+        /* CRITICAL CSS INLINE - NO EXTERNAL DEPENDENCY  */
+        /* ============================================ */
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.3s ease;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; color: var(--text-primary);
+        }
+        
+        .login-container {
+            width: 100%; max-width: 440px;
+            animation: fadeInUp 0.6s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .login-card {
+            background: var(--bg-primary); border-radius: var(--radius);
+            box-shadow: var(--shadow-lg); padding: 40px;
+            position: relative; overflow: hidden;
+        }
+        .login-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), #764ba2);
+        }
+        
+        .login-header { text-align: center; margin-bottom: 32px; }
+        .login-logo {
+            width: 80px; height: 80px; margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--primary-color), #764ba2);
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 36px; color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .login-title { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .login-subtitle { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+        
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-label { display: block; font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; }
+        .input-wrapper { position: relative; }
+        
+        .form-input {
+            width: 100%; padding: 12px 16px; padding-left: 44px;
+            font-size: 14px; border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm); background: var(--bg-secondary);
+            color: var(--text-primary); transition: var(--transition);
+            outline: none; font-family: inherit;
+        }
+        .form-input:focus {
+            border-color: var(--primary-color); background: var(--bg-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .form-input.error { border-color: var(--error-color); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); }
+        
+        .input-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-secondary); font-size: 16px; pointer-events: none;
+        }
+        
+        .password-toggle {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; padding: 4px; font-size: 16px;
+        }
+        
+        .error-message { font-size: 12px; color: var(--error-color); margin-top: 6px; display: none; }
+        .error-message.show { display: block; }
+        
+        .form-options {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; font-size: 13px;
+        }
+        .remember-me { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-secondary); }
+        .forgot-password { color: var(--primary-color); text-decoration: none; font-weight: 500; }
+        
+        .login-button {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white; border: none; border-radius: var(--radius-sm);
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: var(--transition); font-family: inherit;
+        }
+        .login-button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+        .login-button:disabled { background: var(--text-secondary); cursor: not-allowed; }
+        
+        .login-button .spinner {
+            display: none; width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+        }
+        .login-button.loading .spinner { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .alert {
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            margin-bottom: 20px; font-size: 13px; display: none;
+        }
+        .alert.show { display: flex; align-items: center; gap: 8px; }
+        .alert-error { background: #fef2f2; color: var(--error-color); border: 1px solid #fecaca; }
+        .alert-success { background: #f0fdf4; color: var(--success-color); border: 1px solid #bbf7d0; }
+        .alert-warning { background: #fffbeb; color: var(--warning-color); border: 1px solid #fde68a; }
+        
+        .footer-text { text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary); }
+        .footer-text a { color: var(--primary-color); text-decoration: none; font-weight: 500; }
+        
+        .connection-status {
+            text-align: center; padding: 8px; margin-bottom: 16px;
+            border-radius: 8px; font-size: 12px; font-weight: 500;
+        }
+        .connection-status.checking { background: #f8fafc; color: #64748b; }
+        .connection-status.online { background: #f0fdf4; color: #16a34a; }
+        .connection-status.offline { background: #fef2f2; color: #dc2626; }
+        
+        @media (max-width: 480px) {
+            .login-card { padding: 24px; }
+            .login-title { font-size: 20px; }
+            .form-options { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <div class="login-logo">📁</div>
+                <h1 class="login-title">E-Arsip Digital</h1>
+                <p class="login-subtitle">Masuk ke sistem manajemen arsip digital</p>
+            </div>
+            
+            <!-- Connection Status -->
+            <div class="connection-status checking" id="connection-status">
+                🔄 Mengecek koneksi ke server...
+            </div>
+            
+            <!-- Alert Messages -->
+            <div class="alert alert-error" id="alert-error" role="alert">
+                <span>⚠️</span> <span id="alert-error-message"></span>
+            </div>
+            <div class="alert alert-success" id="alert-success" role="alert">
+                <span>✅</span> <span id="alert-success-message"></span>
+            </div>
+            <div class="alert alert-warning" id="alert-warning" role="alert">
+                <span>⚠️</span> <span id="alert-warning-message"></span>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" novalidate autocomplete="on">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="username" class="form-input" 
+                            placeholder="Masukkan username" autocomplete="username" required autofocus>
+                    </div>
+                    <div class="error-message" id="username-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" class="form-input" 
+                            placeholder="Masukkan password" autocomplete="current-password" required>
+                        <button type="button" class="password-toggle" id="password-toggle">👁️</button>
+                    </div>
+                    <div class="error-message" id="password-error"></div>
+                </div>
+                
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="remember-me">
+                        <span>Ingat saya</span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="login-button" id="login-button">
+                    <span class="button-text">Masuk</span>
+                    <span class="spinner"></span>
+                </button>
+            </form>
+            
+            <div class="footer-text">
+                <p>Default: <strong>admin</strong> / <strong>admin123</strong></p>
+                <p style="margin-top: 4px; font-size: 11px;">v2026.1.0</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 
+    ⬇️ SCRIPT TANPA ES MODULE - LANGSUNG FETCH KE GOOGLE APPS SCRIPT
+    Ini menghindari masalah path dan CORS module loading
+    -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // ============================================
+        // GOOGLE APPS SCRIPT CONFIGURATION
+        // ============================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec';
+        
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('login-button');
+        const passwordToggle = document.getElementById('password-toggle');
+        const alertError = document.getElementById('alert-error');
+        const alertSuccess = document.getElementById('alert-success');
+        const alertWarning = document.getElementById('alert-warning');
+        const connectionStatus = document.getElementById('connection-status');
+        
+        // ============================================
+        // STATE
+        // ============================================
+        let loginAttempts = 0;
+        const maxAttempts = 5;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            console.log('Login page initialized - v2026.1.0');
+            
+            // Check connection to Google Apps Script
+            checkConnection();
+            
+            // Check if already logged in
+            checkExistingSession();
+            
+            // Load saved username
+            loadSavedCredentials();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Focus username
+            setTimeout(function() { usernameInput.focus(); }, 500);
+            
+            // Check URL params
+            checkSessionMessage();
+        }
+        
+        // ============================================
+        // CONNECTION CHECK
+        // ============================================
+        function checkConnection() {
+            updateConnectionStatus('checking', 'Mengecek koneksi...');
+            
+            // ⬇️ KIRIM REQUEST KE GOOGLE APPS SCRIPT (GET untuk health check)
+            fetch(API_URL + '?action=health', {
+                method: 'GET',
+                mode: 'cors' // ⬇️ PENTING: CORS mode
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Server not responding');
+            })
+            .then(function(data) {
+                console.log('Server connected:', data);
+                updateConnectionStatus('online', '✅ Server terhubung - v' + (data.version || '?'));
+            })
+            .catch(function(error) {
+                console.warn('Connection check failed:', error.message);
+                // ⬇️ Google Apps Script kadang return HTML untuk GET request
+                // Coba dengan POST sebagai fallback
+                return fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'health', data: {} })
+                })
+                .then(function(response) {
+                    if (response.ok) return response.json();
+                    throw new Error('POST also failed');
+                })
+                .then(function(data) {
+                    console.log('Server connected via POST:', data);
+                    updateConnectionStatus('online', '✅ Server terhubung');
+                })
+                .catch(function() {
+                    updateConnectionStatus('offline', '⚠️ Server tidak terjangkau - login tetap bisa dicoba');
+                });
+            });
+        }
+        
+        function updateConnectionStatus(status, message) {
+            connectionStatus.className = 'connection-status ' + status;
+            connectionStatus.textContent = message;
+        }
+        
+        // ============================================
+        // EXISTING SESSION CHECK
+        // ============================================
+        function checkExistingSession() {
+            try {
+                var session = localStorage.getItem('auth_session');
+                if (session) {
+                    var data = JSON.parse(session);
+                    if (data.user && data.expiresAt && Date.now() < data.expiresAt) {
+                        redirectToDashboard(data.user.role);
+                    }
+                }
+            } catch(e) {
+                // Session invalid, continue to login
+            }
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        function setupEventListeners() {
+            loginForm.addEventListener('submit', handleLogin);
+            passwordToggle.addEventListener('click', togglePasswordVisibility);
+        }
+        
+        // ============================================
+        // LOGIN HANDLER
+        // ============================================
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            var username = usernameInput.value.trim();
+            var password = passwordInput.value;
+            
+            // Validate
+            if (!username || username.length < 3) {
+                showFieldError('username-error', 'Username minimal 3 karakter');
+                return;
+            }
+            if (!password || password.length < 6) {
+                showFieldError('password-error', 'Password minimal 6 karakter');
+                return;
+            }
+            
+            // Clear errors
+            hideAllErrors();
+            
+            // Check lockout
+            if (loginAttempts >= maxAttempts) {
+                showAlert('error', 'Terlalu banyak percobaan. Silakan coba lagi nanti.');
+                return;
+            }
+            
+            // Show loading
+            setLoading(true);
+            
+            // ⬇️ KIRIM LOGIN KE GOOGLE APPS SCRIPT
+            var requestData = {
+                username: username,
+                password: password,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Build URL dengan action parameter
+            var url = API_URL + '?action=login';
+            
+            console.log('Sending login request to:', url);
+            
+            fetch(url, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(function(response) {
+                console.log('Response status:', response.status);
+                
+                // ⬇️ BACA RESPONSE SEBAGAI TEXT DULU (Google Apps Script kadang return format aneh)
+                return response.text().then(function(text) {
+                    console.log('Raw response:', text.substring(0, 200));
+                    
+                    try {
+                        return JSON.parse(text);
+                    } catch(e) {
+                        // Coba parse ulang dengan membersihkan text
+                        var cleaned = text.trim();
+                        if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+                            cleaned = JSON.parse(cleaned);
+                            return JSON.parse(cleaned);
+                        }
+                        throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+                    }
+                });
+            })
+            .then(function(data) {
+                console.log('Login response:', data);
+                
+                // ⬇️ GOOGLE APPS SCRIPT MEMBUNGKUS RESPONSE
+                // Response bisa dalam format: { success: true, data: { token, user } }
+                // Atau langsung: { token, user }
+                
+                if (data.success === false) {
+                    throw new Error(data.error || 'Login gagal');
+                }
+                
+                // Ambil data user
+                var responseData = data.data || data;
+                
+                if (!responseData.token || !responseData.user) {
+                    throw new Error('Response tidak valid: token atau user tidak ditemukan');
+                }
+                
+                // Login berhasil
+                handleLoginSuccess(responseData);
+            })
+            .catch(function(error) {
+                console.error('Login error:', error);
+                handleLoginError(error);
+            })
+            .finally(function() {
+                setLoading(false);
+            });
+        }
+        
+        function handleLoginSuccess(data) {
+            console.log('Login successful:', data.user.username);
+            
+            // ⬇️ SIMPAN SESSION
+            var sessionData = {
+                token: data.token,
+                refreshToken: data.refreshToken || '',
+                user: data.user,
+                expiresAt: Date.now() + 3600000, // 1 jam
+                lastActivity: Date.now()
+            };
+            
+            try {
+                localStorage.setItem('auth_session', JSON.stringify(sessionData));
+                localStorage.setItem('auth_token', data.token);
+                if (data.refreshToken) {
+                    localStorage.setItem('auth_refresh_token', data.refreshToken);
+                }
+            } catch(e) {
+                console.warn('Failed to save session:', e);
+            }
+            
+            // Save username if remember me
+            if (document.getElementById('remember-me').checked) {
+                try {
+                    localStorage.setItem('saved_username', data.user.username);
+                } catch(e) {}
+            }
+            
+            showAlert('success', 'Login berhasil! Mengalihkan...');
+            
+            // Redirect
+            setTimeout(function() {
+                redirectToDashboard(data.user.role);
+            }, 800);
+        }
+        
+        function handleLoginError(error) {
+            loginAttempts++;
+            console.warn('Login failed (' + loginAttempts + '/' + maxAttempts + '):', error.message);
+            
+            var remainingAttempts = maxAttempts - loginAttempts;
+            
+            if (remainingAttempts <= 0) {
+                showAlert('error', 'Akun terkunci. Silakan coba lagi nanti.');
+                loginButton.disabled = true;
+                setTimeout(function() {
+                    loginAttempts = 0;
+                    loginButton.disabled = false;
+                }, 900000);
+            } else if (remainingAttempts <= 2) {
+                showAlert('warning', 'Login gagal. Percobaan tersisa: ' + remainingAttempts);
+            } else {
+                showAlert('error', error.message || 'Login gagal. Periksa username dan password.');
+            }
+            
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+        
+        // ============================================
+        // UI HELPERS
+        // ============================================
+        function setLoading(isLoading) {
+            loginButton.disabled = isLoading;
+            if (isLoading) {
+                loginButton.classList.add('loading');
+            } else {
+                loginButton.classList.remove('loading');
+            }
+        }
+        
+        function showAlert(type, message) {
+            [alertError, alertSuccess, alertWarning].forEach(function(a) {
+                a.classList.remove('show');
+            });
+            
+            var alertEl, messageEl;
+            switch(type) {
+                case 'error':
+                    alertEl = alertError;
+                    messageEl = document.getElementById('alert-error-message');
+                    break;
+                case 'success':
+                    alertEl = alertSuccess;
+                    messageEl = document.getElementById('alert-success-message');
+                    break;
+                case 'warning':
+                    alertEl = alertWarning;
+                    messageEl = document.getElementById('alert-warning-message');
+                    break;
+            }
+            
+            if (alertEl && messageEl) {
+                messageEl.textContent = message;
+                alertEl.classList.add('show');
+            }
+        }
+        
+        function showFieldError(errorId, message) {
+            var el = document.getElementById(errorId);
+            if (el) {
+                el.textContent = message;
+                el.classList.add('show');
+            }
+        }
+        
+        function hideAllErrors() {
+            document.querySelectorAll('.error-message').forEach(function(el) {
+                el.classList.remove('show');
+            });
+            document.querySelectorAll('.form-input').forEach(function(el) {
+                el.classList.remove('error');
+            });
+        }
+        
+        function togglePasswordVisibility() {
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordToggle.textContent = passwordInput.type === 'password' ? '👁️' : '🙈';
+        }
+        
+        function loadSavedCredentials() {
+            try {
+                var saved = localStorage.getItem('saved_username');
+                if (saved) {
+                    usernameInput.value = saved;
+                    document.getElementById('remember-me').checked = true;
+                }
+            } catch(e) {}
+        }
+        
+        function checkSessionMessage() {
+            var params = new URLSearchParams(window.location.search);
+            var message = params.get('message');
+            
+            if (message === 'session_expired') {
+                showAlert('warning', 'Sesi telah berakhir. Silakan login kembali.');
+            } else if (message === 'logged_out') {
+                showAlert('success', 'Berhasil logout.');
+            }
+        }
+        
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function redirectToDashboard(role) {
+            var routes = {
+                'super_admin': 'dashboard/super-admin/index.html',
+                'admin': 'dashboard/admin/index.html',
+                'kaprodi': 'dashboard/kaprodi/index.html',
+                'wadek': 'dashboard/wadek/index.html',
+                'dekan': 'dashboard/dekan/index.html',
+                'staf': 'dashboard/staf/index.html',
+                'dosen': 'dashboard/dosen/index.html',
+                'mahasiswa': 'dashboard/mahasiswa/index.html',
+                'user': 'dashboard/user/index.html'
+            };
+            
+            var url = routes[role] || 'dashboard/';
+            console.log('Redirecting to:', url);
+            window.location.href = url;
+        }
+        
+        // ============================================
+        // START
+        // ============================================
+        init();
+        
+    })();
+    </script>
+</body>
+</html>

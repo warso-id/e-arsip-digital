@@ -1,0 +1,189 @@
+/* css/themes/blue.css - Ocean Blue Theme 2026 */
+[data-theme="blue"] {
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bae6fd;
+    --color-primary-300: #7dd3fc;
+    --color-primary-400: #38bdf8;
+    --color-primary-500: #0ea5e9;
+    --color-primary-600: #0284c7;
+    --color-primary-700: #0369a1;
+    --color-primary-800: #075985;
+    --color-primary-900: #0c4a6e;
+    
+    --color-bg-primary: #f0f9ff;
+    --color-bg-secondary: #e0f2fe;
+    --color-bg-tertiary: #bae6fd;
+    --color-text-primary: #0c4a6e;
+    --color-text-secondary: #0369a1;
+    --color-text-muted: #64748b;
+    --color-border: #bae6fd;
+    --color-border-light: #e0f2fe;
+    --color-shadow: rgba(2, 132, 199, 0.1);
+    
+    --color-sidebar-bg: #0c4a6e;
+    --color-sidebar-text: #bae6fd;
+    --color-sidebar-hover: rgba(255,255,255,0.08);
+    --color-sidebar-active: #38bdf8;
+    --color-sidebar-active-bg: rgba(56, 189, 248, 0.15);
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #bae6fd;
+    --color-input-bg: #ffffff;
+    --color-input-border: #bae6fd;
+    --color-input-focus: #0ea5e9;
+    --color-table-header: #f0f9ff;
+    --color-table-hover: #e0f2fe;
+}
+
+/* css/themes/green.css - Forest Green Theme 2026 */
+[data-theme="green"] {
+    --color-primary-50: #f0fdf4;
+    --color-primary-100: #dcfce7;
+    --color-primary-200: #bbf7d0;
+    --color-primary-300: #86efac;
+    --color-primary-400: #4ade80;
+    --color-primary-500: #22c55e;
+    --color-primary-600: #16a34a;
+    --color-primary-700: #15803d;
+    --color-primary-800: #166534;
+    --color-primary-900: #14532d;
+    
+    --color-bg-primary: #f0fdf4;
+    --color-bg-secondary: #dcfce7;
+    --color-bg-tertiary: #bbf7d0;
+    --color-text-primary: #14532d;
+    --color-text-secondary: #15803d;
+    --color-text-muted: #64748b;
+    --color-border: #bbf7d0;
+    --color-border-light: #dcfce7;
+    --color-shadow: rgba(22, 163, 74, 0.1);
+    
+    --color-sidebar-bg: #14532d;
+    --color-sidebar-text: #bbf7d0;
+    --color-sidebar-hover: rgba(255,255,255,0.08);
+    --color-sidebar-active: #4ade80;
+    --color-sidebar-active-bg: rgba(74, 222, 128, 0.15);
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #bbf7d0;
+    --color-input-bg: #ffffff;
+    --color-input-border: #bbf7d0;
+    --color-input-focus: #22c55e;
+    --color-table-header: #f0fdf4;
+    --color-table-hover: #dcfce7;
+}
+
+/* css/themes/purple.css - Royal Purple Theme 2026 */
+[data-theme="purple"] {
+    --color-primary-50: #faf5ff;
+    --color-primary-100: #f3e8ff;
+    --color-primary-200: #e9d5ff;
+    --color-primary-300: #d8b4fe;
+    --color-primary-400: #c084fc;
+    --color-primary-500: #a855f7;
+    --color-primary-600: #9333ea;
+    --color-primary-700: #7e22ce;
+    --color-primary-800: #6b21a8;
+    --color-primary-900: #581c87;
+    
+    --color-bg-primary: #faf5ff;
+    --color-bg-secondary: #f3e8ff;
+    --color-bg-tertiary: #e9d5ff;
+    --color-text-primary: #3b0764;
+    --color-text-secondary: #581c87;
+    --color-text-muted: #64748b;
+    --color-border: #e9d5ff;
+    --color-border-light: #f3e8ff;
+    --color-shadow: rgba(147, 51, 234, 0.1);
+    
+    --color-sidebar-bg: #3b0764;
+    --color-sidebar-text: #e9d5ff;
+    --color-sidebar-hover: rgba(255,255,255,0.08);
+    --color-sidebar-active: #c084fc;
+    --color-sidebar-active-bg: rgba(192, 132, 252, 0.15);
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #e9d5ff;
+    --color-input-bg: #ffffff;
+    --color-input-border: #e9d5ff;
+    --color-input-focus: #a855f7;
+    --color-table-header: #faf5ff;
+    --color-table-hover: #f3e8ff;
+}
+
+/* css/themes/orange.css - Sunset Orange Theme 2026 */
+[data-theme="orange"] {
+    --color-primary-50: #fff7ed;
+    --color-primary-100: #ffedd5;
+    --color-primary-200: #fed7aa;
+    --color-primary-300: #fdba74;
+    --color-primary-400: #fb923c;
+    --color-primary-500: #f97316;
+    --color-primary-600: #ea580c;
+    --color-primary-700: #c2410c;
+    --color-primary-800: #9a3412;
+    --color-primary-900: #7c2d12;
+    
+    --color-bg-primary: #fff7ed;
+    --color-bg-secondary: #ffedd5;
+    --color-bg-tertiary: #fed7aa;
+    --color-text-primary: #431407;
+    --color-text-secondary: #7c2d12;
+    --color-text-muted: #64748b;
+    --color-border: #fed7aa;
+    --color-border-light: #ffedd5;
+    --color-shadow: rgba(234, 88, 12, 0.1);
+    
+    --color-sidebar-bg: #431407;
+    --color-sidebar-text: #fed7aa;
+    --color-sidebar-hover: rgba(255,255,255,0.08);
+    --color-sidebar-active: #fb923c;
+    --color-sidebar-active-bg: rgba(251, 146, 60, 0.15);
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #fed7aa;
+    --color-input-bg: #ffffff;
+    --color-input-border: #fed7aa;
+    --color-input-focus: #f97316;
+    --color-table-header: #fff7ed;
+    --color-table-hover: #ffedd5;
+}
+
+/* css/themes/red.css - Ruby Red Theme 2026 */
+[data-theme="red"] {
+    --color-primary-50: #fef2f2;
+    --color-primary-100: #fee2e2;
+    --color-primary-200: #fecaca;
+    --color-primary-300: #fca5a5;
+    --color-primary-400: #f87171;
+    --color-primary-500: #ef4444;
+    --color-primary-600: #dc2626;
+    --color-primary-700: #b91c1c;
+    --color-primary-800: #991b1b;
+    --color-primary-900: #7f1d1d;
+    
+    --color-bg-primary: #fef2f2;
+    --color-bg-secondary: #fee2e2;
+    --color-bg-tertiary: #fecaca;
+    --color-text-primary: #450a0a;
+    --color-text-secondary: #7f1d1d;
+    --color-text-muted: #64748b;
+    --color-border: #fecaca;
+    --color-border-light: #fee2e2;
+    --color-shadow: rgba(220, 38, 38, 0.1);
+    
+    --color-sidebar-bg: #450a0a;
+    --color-sidebar-text: #fecaca;
+    --color-sidebar-hover: rgba(255,255,255,0.08);
+    --color-sidebar-active: #f87171;
+    --color-sidebar-active-bg: rgba(248, 113, 113, 0.15);
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #fecaca;
+    --color-input-bg: #ffffff;
+    --color-input-border: #fecaca;
+    --color-input-focus: #ef4444;
+    --color-table-header: #fef2f2;
+    --color-table-hover: #fee2e2;
+}

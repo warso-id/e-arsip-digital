@@ -1,0 +1,51 @@
+/* FILE: css/themes/purple.css */
+/* ============================================ */
+/* PURPLE THEME - E-ARSIP DIGITAL               */
+/* ============================================ */
+
+.theme-purple {
+    --primary: #4a148c;
+    --primary-light: #7c43bd;
+    --primary-dark: #12005e;
+    --secondary: #6a1b9a;
+    --secondary-light: #9c4dcc;
+    --secondary-dark: #38006b;
+    --accent: #d500f9;
+    --accent-light: #ff5bff;
+    --accent-dark: #9e00c5;
+    --gold: #ffd700;
+    --bg-primary: #f3e5f5;
+    --bg-secondary: #e1bee7;
+    --bg-card: #ffffff;
+    --text-primary: #4a148c;
+    --text-secondary: #6a1b9a;
+    --text-muted: #ab47bc;
+}
+
+.theme-purple .sidebar {
+    background: linear-gradient(180deg, #4a148c, #6a1b9a) !important;
+}
+
+.theme-purple .btn-primary {
+    background: linear-gradient(135deg, #d500f9, #4a148c);
+}
+
+.theme-purple .btn-primary:hover {
+    background: linear-gradient(135deg, #9e00c5, #12005e);
+}
+
+.theme-purple .stat-icon {
+    background: linear-gradient(135deg, #d500f9, #6a1b9a) !important;
+}
+
+.theme-purple .avatar-circle {
+    background: linear-gradient(135deg, #4a148c, #d500f9);
+}
+
+.theme-purple .badge-primary {
+    background: #d500f9;
+}
+
+.theme-purple .nav-link.active {
+    border-left-color: #ffd700 !important;
+}

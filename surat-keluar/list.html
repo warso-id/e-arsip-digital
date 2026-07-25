@@ -1,0 +1,439 @@
+<!-- surat-keluar/list.html - Daftar Surat Keluar 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Daftar Surat Keluar - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .filter-bar .form-group { margin-bottom: 0; min-width: 160px; }
+        
+        .status-draft { color: #94a3b8; }
+        .status-proses { color: #f59e0b; }
+        .status-terkirim { color: #2563eb; }
+        .status-disetujui { color: #16a34a; }
+        .status-ditolak { color: #dc2626; }
+        
+        .bulk-actions-bar {
+            display: none;
+            padding: 10px 16px;
+            background: #eff6ff;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .bulk-actions-bar.visible { display: flex; }
+        
+        .quick-view-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+            z-index: 1100;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .quick-view-panel.open {
+            transform: translateX(0);
+        }
+        
+        .quick-view-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 1090;
+            display: none;
+        }
+        
+        .quick-view-overlay.visible { display: block; }
+        
+        .quick-view-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+        
+        .quick-view-body { padding: 20px; }
+        
+        @media (max-width: 768px) {
+            .filter-bar { flex-direction: column; }
+            .filter-bar .form-group { min-width: auto; }
+            .quick-view-panel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="../dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="./list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="../surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="../laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="../pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h2>Daftar Surat Keluar</h2>
+                <p style="color:#64748b;font-size:14px;">Kelola surat keluar yang telah dibuat</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a href="./form.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Buat Surat
+                </a>
+                <a href="./draft.html" class="btn btn-outline">
+                    <i class="fas fa-file-alt"></i> Draft
+                </a>
+            </div>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div class="bulk-actions-bar" id="bulk-actions">
+            <span id="bulk-count">0 surat dipilih</span>
+            <button class="btn btn-sm btn-outline" id="bulk-approve-btn"><i class="fas fa-check"></i> Setujui</button>
+            <button class="btn btn-sm btn-outline" id="bulk-export-btn"><i class="fas fa-download"></i> Export</button>
+            <button class="btn btn-sm btn-outline" style="color:#dc2626;" id="bulk-delete-btn"><i class="fas fa-trash"></i> Hapus</button>
+            <button class="btn btn-sm btn-ghost" id="clear-selection-btn">Batal Pilih</button>
+        </div>
+        
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="form-group">
+                <label class="form-label">Cari</label>
+                <input type="text" class="form-input" id="search-input" placeholder="No. surat, perihal...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="filter-status">
+                    <option value="">Semua Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="proses">Proses</option>
+                    <option value="terkirim">Terkirim</option>
+                    <option value="disetujui">Disetujui</option>
+                    <option value="ditolak">Ditolak</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jenis</label>
+                <select class="form-select" id="filter-jenis">
+                    <option value="">Semua Jenis</option>
+                    <option value="biasa">Biasa</option>
+                    <option value="penting">Penting</option>
+                    <option value="rahasia">Rahasia</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tanggal</label>
+                <input type="date" class="form-input" id="filter-date">
+            </div>
+            <div class="form-group">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary btn-sm" id="apply-filter"><i class="fas fa-filter"></i> Filter</button>
+            </div>
+        </div>
+        
+        <!-- Data Table -->
+        <div class="card">
+            <div class="card-body" style="padding:0;">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"><input type="checkbox" id="select-all"></th>
+                                <th>No. Surat</th>
+                                <th>Perihal</th>
+                                <th>Tujuan</th>
+                                <th>Tanggal</th>
+                                <th>Jenis</th>
+                                <th>Status</th>
+                                <th style="width:120px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr><td colspan="8" style="text-align:center;padding:30px;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="table-footer">
+                <div class="table-info" id="table-info">Menampilkan 0 data</div>
+                <div class="table-pagination" id="pagination"></div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Quick View Panel -->
+    <div class="quick-view-overlay" id="quick-view-overlay"></div>
+    <div class="quick-view-panel" id="quick-view-panel">
+        <div class="quick-view-header">
+            <h3>Detail Surat</h3>
+            <button class="modal-close" id="close-quick-view"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="quick-view-body" id="quick-view-body"></div>
+    </div>
+    
+    <script type="module">
+        import authService from '../js/auth.js';
+        import apiService from '../js/api.js';
+        import notifications from '../js/notifications.js';
+        import exportHandler from '../js/export.js';
+        import utils from '../js/utils.js';
+        import logger from '../js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '../login.html';
+        
+        let suratList = [];
+        let selectedIds = new Set();
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEvents();
+            loadData();
+            logger.info('Surat keluar list loaded');
+        });
+        
+        function initEvents() {
+            document.getElementById('apply-filter')?.addEventListener('click', () => { currentPage = 1; loadData(); });
+            document.getElementById('search-input')?.addEventListener('input', utils.debounce(() => { currentPage = 1; loadData(); }, 400));
+            document.getElementById('select-all')?.addEventListener('change', toggleSelectAll);
+            document.getElementById('clear-selection-btn')?.addEventListener('click', clearSelection);
+            document.getElementById('bulk-delete-btn')?.addEventListener('click', bulkDelete);
+            document.getElementById('bulk-export-btn')?.addEventListener('click', bulkExport);
+            document.getElementById('close-quick-view')?.addEventListener('click', closeQuickView);
+            document.getElementById('quick-view-overlay')?.addEventListener('click', closeQuickView);
+        }
+        
+        async function loadData() {
+            try {
+                const params = {
+                    page: currentPage, limit: 15,
+                    search: document.getElementById('search-input').value,
+                    status: document.getElementById('filter-status').value,
+                    jenis: document.getElementById('filter-jenis').value,
+                    date: document.getElementById('filter-date').value
+                };
+                
+                const response = await apiService.get('/api/surat-keluar', params);
+                suratList = response.data?.data || [];
+                totalPages = response.data?.totalPages || 1;
+                
+                renderTable();
+                renderPagination();
+                document.getElementById('table-info').textContent = 
+                    `Menampilkan ${suratList.length} dari ${response.data?.total || 0} surat`;
+            } catch (error) {
+                logger.error('Failed to load surat list', error);
+                notifications.error('Gagal memuat data surat');
+            }
+        }
+        
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            
+            if (suratList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;">
+                    <i class="fas fa-envelope" style="font-size:40px;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
+                    Tidak ada surat keluar ditemukan
+                    <br><a href="./form.html" class="btn btn-primary btn-sm" style="margin-top:12px;">Buat Surat Baru</a>
+                </td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = suratList.map(s => `
+                <tr>
+                    <td><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${selectedIds.has(s.id) ? 'checked' : ''}></td>
+                    <td><strong>${s.nomor_surat || '-'}</strong></td>
+                    <td>${s.perihal || '-'}</td>
+                    <td>${s.tujuan || '-'}</td>
+                    <td>${utils.formatDate(s.tanggal_surat, 'medium')}</td>
+                    <td><span class="badge badge-${s.jenis === 'rahasia' ? 'danger' : s.jenis === 'penting' ? 'warning' : 'info'}">${s.jenis || 'Biasa'}</span></td>
+                    <td><span class="status-${s.status}"><i class="fas fa-circle" style="font-size:7px;"></i> ${formatStatus(s.status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action" title="Lihat" onclick="quickView('${s.id}')"><i class="fas fa-eye" style="color:#2563eb;"></i></button>
+                            <a href="./preview.html?id=${s.id}" class="btn-action" title="Preview"><i class="fas fa-file-alt" style="color:#16a34a;"></i></a>
+                            ${s.status === 'draft' ? `<a href="./form.html?edit=${s.id}" class="btn-action" title="Edit"><i class="fas fa-edit" style="color:#d97706;"></i></a>` : ''}
+                            <button class="btn-action" title="Hapus" onclick="deleteSurat('${s.id}')"><i class="fas fa-trash" style="color:#dc2626;"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Row checkbox events
+            tbody.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.addEventListener('change', () => toggleRowSelect(cb.dataset.id, cb.checked));
+            });
+        }
+        
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            
+            let html = `<button class="btn-page" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="btn-page ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += '<span class="page-ellipsis">...</span>';
+                }
+            }
+            
+            html += `<button class="btn-page" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            container.innerHTML = html;
+        }
+        
+        function toggleSelectAll(e) {
+            if (e.target.checked) suratList.forEach(s => selectedIds.add(s.id));
+            else selectedIds.clear();
+            updateBulkUI();
+            renderTable();
+        }
+        
+        function toggleRowSelect(id, checked) {
+            checked ? selectedIds.add(id) : selectedIds.delete(id);
+            updateBulkUI();
+        }
+        
+        function clearSelection() {
+            selectedIds.clear();
+            document.getElementById('select-all').checked = false;
+            updateBulkUI();
+            renderTable();
+        }
+        
+        function updateBulkUI() {
+            const bar = document.getElementById('bulk-actions');
+            const count = document.getElementById('bulk-count');
+            
+            if (selectedIds.size > 0) {
+                bar.classList.add('visible');
+                count.textContent = `${selectedIds.size} surat dipilih`;
+            } else {
+                bar.classList.remove('visible');
+            }
+        }
+        
+        async function bulkDelete() {
+            if (!confirm(`Hapus ${selectedIds.size} surat terpilih?`)) return;
+            try {
+                await apiService.post('/api/surat-keluar/bulk-delete', { ids: [...selectedIds] });
+                notifications.success('Surat berhasil dihapus');
+                clearSelection();
+                loadData();
+            } catch (error) {
+                notifications.error('Gagal menghapus surat');
+            }
+        }
+        
+        async function bulkExport() {
+            try {
+                const response = await apiService.get('/api/surat-keluar', { ids: [...selectedIds].join(','), limit: 1000 });
+                await exportHandler.exportExcel(response.data?.data || [], { filename: `surat-keluar-${Date.now()}.xlsx`, sheetName: 'Surat Keluar' });
+                notifications.success('Surat berhasil diexport');
+            } catch (error) {
+                notifications.error('Gagal mengexport surat');
+            }
+        }
+        
+        async function quickView(id) {
+            try {
+                const response = await apiService.get(`/api/surat-keluar/${id}`);
+                const surat = response.data;
+                
+                document.getElementById('quick-view-body').innerHTML = `
+                    <table style="width:100%;font-size:14px;">
+                        <tr><td style="padding:6px 0;color:#64748b;width:100px;">No. Surat</td><td><strong>${surat.nomor_surat || '-'}</strong></td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Perihal</td><td>${surat.perihal || '-'}</td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Tanggal</td><td>${utils.formatDate(surat.tanggal_surat, 'full')}</td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Jenis</td><td>${surat.jenis || '-'}</td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Sifat</td><td>${surat.sifat || '-'}</td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Tujuan</td><td>${surat.tujuan || '-'}</td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Status</td><td>${formatStatus(surat.status)}</td></tr>
+                        <tr><td style="padding:6px 0;color:#64748b;">Dibuat</td><td>${utils.timeAgo(surat.createdAt)}</td></tr>
+                    </table>
+                    <div style="margin-top:16px;display:flex;gap:8px;">
+                        <a href="/surat-keluar/preview.html?id=${surat.id}" class="btn btn-primary btn-sm"><i class="fas fa-eye"></i> Preview</a>
+                        ${surat.status === 'draft' ? `<a href="/surat-keluar/form.html?edit=${surat.id}" class="btn btn-outline btn-sm"><i class="fas fa-edit"></i> Edit</a>` : ''}
+                        <a href="/surat-keluar/generate.html?id=${surat.id}" class="btn btn-outline btn-sm"><i class="fas fa-file-pdf"></i> Generate</a>
+                    </div>
+                `;
+                
+                document.getElementById('quick-view-panel').classList.add('open');
+                document.getElementById('quick-view-overlay').classList.add('visible');
+            } catch (error) {
+                notifications.error('Gagal memuat detail surat');
+            }
+        }
+        
+        function closeQuickView() {
+            document.getElementById('quick-view-panel').classList.remove('open');
+            document.getElementById('quick-view-overlay').classList.remove('visible');
+        }
+        
+        function formatStatus(status) {
+            const m = { draft: 'Draft', proses: 'Proses', terkirim: 'Terkirim', disetujui: 'Disetujui', ditolak: 'Ditolak' };
+            return m[status] || status;
+        }
+        
+        async function deleteSurat(id) {
+            if (!confirm('Hapus surat ini?')) return;
+            try {
+                await apiService.delete(`/api/surat-keluar/${id}`);
+                notifications.success('Surat berhasil dihapus');
+                loadData();
+            } catch (error) {
+                notifications.error('Gagal menghapus surat');
+            }
+        }
+        
+        window.goToPage = (p) => { currentPage = p; loadData(); };
+        window.quickView = quickView;
+        window.deleteSurat = deleteSurat;
+    </script>
+</body>
+</html>

@@ -1,0 +1,1629 @@
+<!-- FILE: dashboard/super-admin/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Super Admin - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary: #1a237e;
+            --secondary: #0d47a1;
+            --accent: #2962ff;
+            --gold: #ffd700;
+            --light: #f5f6fa;
+            --dark: #2c3e50;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+        }
+        
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h5 {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-header small {
+            opacity: 0.8;
+        }
+        
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+        
+        .sidebar-menu .nav-item {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--gold);
+        }
+        
+        .sidebar-menu .nav-link i {
+            width: 25px;
+            margin-right: 10px;
+            text-align: center;
+        }
+        
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+        
+        /* TOP NAVBAR */
+        .top-navbar {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        /* CONTENT AREA */
+        .content-area {
+            padding: 25px;
+        }
+        
+        /* STAT CARDS */
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        /* TABLE */
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .table th {
+            background: var(--light);
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .badge-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            
+            .sidebar.active {
+                margin-left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .main-content.shifted {
+                margin-left: var(--sidebar-width);
+            }
+        }
+        
+        /* LOADING */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--light);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Memuat data...</p>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
+            <h5>E-Arsip Digital</h5>
+            <small>Super Admin Panel</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-masuk">
+                        <i class="fas fa-inbox"></i>
+                        <span>Surat Masuk</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-keluar">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Surat Keluar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="disposisi">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Disposisi</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="users">
+                        <i class="fas fa-users"></i>
+                        <span>Manajemen User</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Pengaturan</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="reports">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Laporan</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="logs">
+                        <i class="fas fa-history"></i>
+                        <span>Log Aktivitas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Profil Saya</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-footer">
+            <a href="#" class="btn btn-outline-light btn-sm w-100" onclick="auth.logout()">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+        <!-- TOP NAVBAR -->
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none me-3" id="toggleSidebar">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Dashboard</h5>
+            </div>
+            
+            <div class="user-menu">
+                <div class="dropdown">
+                    <button class="btn btn-light position-relative" data-bs-toggle="dropdown">
+                        <i class="fas fa-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifBadge">
+                            0
+                        </span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-3" style="width: 320px;">
+                        <h6 class="mb-3">Notifikasi</h6>
+                        <div id="notificationList">
+                            <p class="text-muted text-center">Tidak ada notifikasi</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <div class="avatar-circle me-2" id="userInitial">SA</div>
+                        <span id="userNameDisplay">Super Admin</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" data-page="profile">
+                                <i class="fas fa-user me-2"></i>Profil
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-page="settings">
+                                <i class="fas fa-cog me-2"></i>Pengaturan
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="auth.logout()">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT AREA -->
+        <div class="content-area" id="contentArea">
+            <!-- Dashboard Content akan dimuat disini -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="../../config/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/navigation.js"></script>
+    
+    <script>
+        // ============================================
+        // DASHBOARD SUPER ADMIN CONTROLLER
+        // ============================================
+        
+        // Check authentication
+        if (!auth.requireRole('super_admin')) {
+            // Redirect handled by requireRole
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            setupEventListeners();
+            loadDashboardData();
+        });
+        
+        // Initialize
+        function initializeDashboard() {
+            const user = auth.getCurrentUser();
+            if (user) {
+                document.getElementById('userNameDisplay').textContent = user.name;
+                document.getElementById('userInitial').textContent = user.name.charAt(0).toUpperCase();
+            }
+            
+            AOS.init({
+                duration: 800,
+                once: true
+            });
+        }
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Toggle sidebar
+            document.getElementById('toggleSidebar').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('shifted');
+            });
+            
+            // Navigation
+            document.querySelectorAll('.sidebar-menu .nav-link[data-page], .dropdown-item[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.dataset.page;
+                    navigateToPage(page);
+                });
+            });
+        }
+        
+        // Navigate to page
+        function navigateToPage(page) {
+            // Update active menu
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'surat-masuk': 'Manajemen Surat Masuk',
+                'surat-keluar': 'Manajemen Surat Keluar',
+                'disposisi': 'Manajemen Disposisi',
+                'users': 'Manajemen User',
+                'settings': 'Pengaturan Sistem',
+                'reports': 'Laporan',
+                'logs': 'Log Aktivitas',
+                'profile': 'Profil Saya'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            // Load page content
+            loadPageContent(page);
+        }
+        
+        // Load page content
+        function loadPageContent(page) {
+            const contentArea = document.getElementById('contentArea');
+            
+            switch(page) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'surat-masuk':
+                    loadSuratMasuk();
+                    break;
+                case 'surat-keluar':
+                    loadSuratKeluar();
+                    break;
+                case 'disposisi':
+                    loadDisposisi();
+                    break;
+                case 'users':
+                    loadUserManagement();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+                case 'logs':
+                    loadLogs();
+                    break;
+                case 'profile':
+                    loadProfile();
+                    break;
+                default:
+                    contentArea.innerHTML = '<p>Halaman tidak ditemukan</p>';
+            }
+        }
+        
+        // ============================================
+        // DASHBOARD DATA
+        // ============================================
+        
+        async function loadDashboardData() {
+            const contentArea = document.getElementById('contentArea');
+            
+            // Show loading
+            showLoading(true);
+            
+            try {
+                const stats = await api.getStatistics();
+                
+                contentArea.innerHTML = `
+                    <!-- STATISTIK CARDS -->
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label">Total Surat Masuk</p>
+                                        <h3 class="stat-value">${stats.data?.totalSuratMasuk || 0}</h3>
+                                    </div>
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                        <i class="fas fa-inbox"></i>
+                                    </div>
+                                </div>
+                                <small class="text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>12% dari bulan lalu
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label">Total Surat Keluar</p>
+                                        <h3 class="stat-value">${stats.data?.totalSuratKeluar || 0}</h3>
+                                    </div>
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </div>
+                                </div>
+                                <small class="text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>8% dari bulan lalu
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label">Surat Pending</p>
+                                        <h3 class="stat-value">${stats.data?.pendingSurat || 0}</h3>
+                                    </div>
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                </div>
+                                <small class="text-warning">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Perlu perhatian
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="300">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="stat-label">Total Users</p>
+                                        <h3 class="stat-value">${stats.data?.totalUsers || 0}</h3>
+                                    </div>
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                </div>
+                                <small class="text-info">
+                                    <i class="fas fa-user-check me-1"></i>${stats.data?.activeUsers || 0} aktif
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CHARTS ROW -->
+                    <div class="row mb-4">
+                        <div class="col-lg-8 mb-3" data-aos="fade-up">
+                            <div class="table-container">
+                                <h5 class="mb-4">Statistik Surat Bulanan</h5>
+                                <canvas id="monthlyChart" height="100"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 mb-3" data-aos="fade-up" data-aos-delay="100">
+                            <div class="table-container">
+                                <h5 class="mb-4">Status Surat</h5>
+                                <canvas id="statusChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- RECENT ACTIVITIES -->
+                    <div class="row">
+                        <div class="col-12" data-aos="fade-up">
+                            <div class="table-container">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5>Aktivitas Terbaru</h5>
+                                    <button class="btn btn-primary btn-sm" onclick="navigateToPage('logs')">
+                                        <i class="fas fa-eye me-2"></i>Lihat Semua
+                                    </button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Waktu</th>
+                                                <th>User</th>
+                                                <th>Aksi</th>
+                                                <th>Deskripsi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentActivities">
+                                            <tr>
+                                                <td colspan="4" class="text-center">Memuat data...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Initialize charts
+                initializeCharts();
+                
+                // Load recent activities
+                loadRecentActivities();
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                contentArea.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Gagal memuat data dashboard: ${error.message}
+                    </div>
+                `;
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Initialize Charts
+        function initializeCharts() {
+            // Monthly Chart
+            const monthlyCtx = document.getElementById('monthlyChart')?.getContext('2d');
+            if (monthlyCtx) {
+                new Chart(monthlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                        datasets: [{
+                            label: 'Surat Masuk',
+                            data: [12, 19, 3, 5, 2, 3, 10, 15, 8, 12, 20, 7],
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgb(102, 126, 234)',
+                            borderWidth: 1
+                        }, {
+                            label: 'Surat Keluar',
+                            data: [8, 15, 5, 7, 4, 6, 12, 10, 6, 9, 15, 5],
+                            backgroundColor: 'rgba(240, 147, 251, 0.8)',
+                            borderColor: 'rgb(240, 147, 251)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Status Chart
+            const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+            if (statusCtx) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Selesai', 'Proses', 'Pending', 'Ditolak'],
+                        datasets: [{
+                            data: [45, 25, 20, 10],
+                            backgroundColor: [
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(0, 123, 255, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(220, 53, 69, 0.8)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+        
+        // Load Recent Activities
+        async function loadRecentActivities() {
+            const tbody = document.getElementById('recentActivities');
+            if (!tbody) return;
+            
+            try {
+                // Simulasi data (dalam implementasi real, ambil dari API)
+                const activities = [
+                    { waktu: '2024-07-15 14:30', user: 'Admin', aksi: 'Approve', deskripsi: 'Surat Keluar 001/A/SEK/FIKOM/VII/2024' },
+                    { waktu: '2024-07-15 13:15', user: 'User', aksi: 'Submit', deskripsi: 'Surat Masuk M.UM-001' },
+                    { waktu: '2024-07-15 11:00', user: 'Kasubag', aksi: 'Review', deskripsi: 'Surat Keluar 002/KEU/FIKOM/VII/2024' }
+                ];
+                
+                tbody.innerHTML = activities.map(activity => `
+                    <tr>
+                        <td>${activity.waktu}</td>
+                        <td>${activity.user}</td>
+                        <td><span class="badge bg-primary">${activity.aksi}</span></td>
+                        <td>${activity.deskripsi}</td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        // ============================================
+        // SURAT MASUK MANAGEMENT
+        // ============================================
+        
+        function loadSuratMasuk() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Daftar Surat Masuk</h5>
+                        <div>
+                            <button class="btn btn-success me-2" onclick="exportData('surat-masuk')">
+                                <i class="fas fa-download me-2"></i>Export Excel
+                            </button>
+                            <button class="btn btn-primary" onclick="window.location.href='/surat-masuk/form.html'">
+                                <i class="fas fa-plus me-2"></i>Tambah Surat Masuk
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- FILTER -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" placeholder="Cari nomor surat..." id="searchSuratMasuk">
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="filterKategoriMasuk">
+                                <option value="">Semua Kategori</option>
+                                <option value="M.UM">M.UM - Umum</option>
+                                <option value="M.KEU">M.KEU - Keuangan</option>
+                                <option value="M.LGL">M.LGL - Legal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="filterStatusMasuk">
+                                <option value="">Semua Status</option>
+                                <option value="diterima">Diterima</option>
+                                <option value="diagendakan">Diagendakan</option>
+                                <option value="disposisi">Disposisi</option>
+                                <option value="selesai">Selesai</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filterTanggalMasuk">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" onclick="filterSuratMasuk()">
+                                <i class="fas fa-filter me-2"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabelSuratMasuk">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Agenda</th>
+                                    <th>Tanggal Terima</th>
+                                    <th>Pengirim</th>
+                                    <th>Perihal</th>
+                                    <th>Status</th>
+                                    <th>Disposisi</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" class="text-center">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- PAGINATION -->
+                    <nav>
+                        <ul class="pagination justify-content-center" id="paginationSuratMasuk"></ul>
+                    </nav>
+                </div>
+            `;
+            
+            // Load data
+            loadSuratMasukData();
+        }
+        
+        async function loadSuratMasukData() {
+            try {
+                // Implementasi loading data dari API
+                const data = await api.sendRequest({ action: 'getSuratMasuk' });
+                
+                if (data && data.success) {
+                    renderSuratMasukTable(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading surat masuk:', error);
+            }
+        }
+        
+        function renderSuratMasukTable(data) {
+            const tbody = document.querySelector('#tabelSuratMasuk tbody');
+            if (!tbody) return;
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.nomorAgenda || '-'}</td>
+                    <td>${Utils.formatDate(item.tanggalTerima, 'date')}</td>
+                    <td>${item.pengirim || '-'}</td>
+                    <td>${item.perihal || '-'}</td>
+                    <td><span class="badge bg-${getStatusColor(item.status)}">${item.status || '-'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="viewDisposisi('${item.nomorAgenda}')">
+                            <i class="fas fa-eye"></i> Lihat
+                        </button>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="editSuratMasuk('${item.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSuratMasuk('${item.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function getStatusColor(status) {
+            const colors = {
+                'diterima': 'info',
+                'diagendakan': 'primary',
+                'disposisi': 'warning',
+                'selesai': 'success',
+                'ditolak': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+        
+        // ============================================
+        // SURAT KELUAR MANAGEMENT
+        // ============================================
+        
+        function loadSuratKeluar() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Daftar Surat Keluar</h5>
+                        <div>
+                            <button class="btn btn-success me-2" onclick="exportData('surat-keluar')">
+                                <i class="fas fa-download me-2"></i>Export Excel
+                            </button>
+                            <button class="btn btn-primary" onclick="window.location.href='/surat-keluar/form.html'">
+                                <i class="fas fa-plus me-2"></i>Buat Surat Keluar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- FILTER -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" placeholder="Cari nomor surat..." id="searchSuratKeluar">
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="filterKategoriKeluar">
+                                <option value="">Semua Kategori</option>
+                                <option value="K.UM">K.UM - Umum</option>
+                                <option value="K.UM.S1">K.UM.S1 - Umum S1</option>
+                                <option value="K.UM.S2">K.UM.S2 - Umum S2</option>
+                                <option value="K.KEU">K.KEU - Keuangan</option>
+                                <option value="K.LGL">K.LGL - Legal</option>
+                                <option value="K.LGL.S1">K.LGL.S1 - Legal S1</option>
+                                <option value="K.LGL.S2">K.LGL.S2 - Legal S2</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="filterStatusKeluar">
+                                <option value="">Semua Status</option>
+                                <option value="draft">Draft</option>
+                                <option value="pending_admin">Pending Admin</option>
+                                <option value="pending_kasubag">Pending Kasubag</option>
+                                <option value="pending_wadek">Pending Wadek</option>
+                                <option value="pending_dekan">Pending Dekan</option>
+                                <option value="completed">Selesai</option>
+                                <option value="rejected">Ditolak</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filterTanggalKeluar">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" onclick="filterSuratKeluar()">
+                                <i class="fas fa-filter me-2"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabelSuratKeluar">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Surat</th>
+                                    <th>Tanggal</th>
+                                    <th>Perihal</th>
+                                    <th>Tujuan</th>
+                                    <th>Status</th>
+                                    <th>Approval</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" class="text-center">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- PAGINATION -->
+                    <nav>
+                        <ul class="pagination justify-content-center" id="paginationSuratKeluar"></ul>
+                    </nav>
+                </div>
+            `;
+            
+            loadSuratKeluarData();
+        }
+        
+        async function loadSuratKeluarData() {
+            try {
+                const data = await api.sendRequest({ action: 'getSuratKeluar' });
+                
+                if (data && data.success) {
+                    renderSuratKeluarTable(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading surat keluar:', error);
+            }
+        }
+        
+        function renderSuratKeluarTable(data) {
+            const tbody = document.querySelector('#tabelSuratKeluar tbody');
+            if (!tbody) return;
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><strong>${item.nomorSurat || '-'}</strong></td>
+                    <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                    <td>${item.perihal || '-'}</td>
+                    <td>${item.tujuan || '-'}</td>
+                    <td><span class="badge bg-${getStatusKeluarColor(item.status)}">${item.status || '-'}</span></td>
+                    <td>
+                        ${getApprovalBadges(item)}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-info" onclick="viewSurat('${item.nomorSurat}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="editSurat('${item.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${item.status === 'completed' ? 
+                                `<button class="btn btn-sm btn-success" onclick="downloadSurat('${item.nomorSurat}')">
+                                    <i class="fas fa-download"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function getStatusKeluarColor(status) {
+            const colors = {
+                'draft': 'secondary',
+                'pending_admin': 'info',
+                'pending_kasubag': 'primary',
+                'pending_wadek': 'warning',
+                'pending_dekan': 'warning',
+                'completed': 'success',
+                'rejected': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+        
+        function getApprovalBadges(item) {
+            let badges = '';
+            
+            if (item.adminApproval) {
+                badges += '<i class="fas fa-check-circle text-success me-1" title="Admin: Disetujui"></i>';
+            } else if (item.status === 'pending_admin') {
+                badges += '<i class="fas fa-clock text-warning me-1" title="Admin: Menunggu"></i>';
+            }
+            
+            if (item.kasubagApproval) {
+                badges += '<i class="fas fa-check-circle text-success me-1" title="Kasubag: Disetujui"></i>';
+            } else if (item.status === 'pending_kasubag') {
+                badges += '<i class="fas fa-clock text-warning me-1" title="Kasubag: Menunggu"></i>';
+            }
+            
+            if (item.wadekApproval) {
+                badges += '<i class="fas fa-check-circle text-success me-1" title="Wadek: Disetujui"></i>';
+            } else if (item.status === 'pending_wadek') {
+                badges += '<i class="fas fa-clock text-warning me-1" title="Wadek: Menunggu"></i>';
+            }
+            
+            if (item.dekanApproval) {
+                badges += '<i class="fas fa-check-circle text-success me-1" title="Dekan: Disetujui"></i>';
+            } else if (item.status === 'pending_dekan') {
+                badges += '<i class="fas fa-clock text-warning me-1" title="Dekan: Menunggu"></i>';
+            }
+            
+            return badges;
+        }
+        
+        // ============================================
+        // USER MANAGEMENT
+        // ============================================
+        
+        function loadUserManagement() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Manajemen User</h5>
+                        <button class="btn btn-primary" onclick="showAddUserModal()">
+                            <i class="fas fa-user-plus me-2"></i>Tambah User
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabelUsers">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Unit</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- MODAL TAMBAH USER -->
+                <div class="modal fade" id="userModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Tambah User</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="userForm">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nama Lengkap</label>
+                                            <input type="text" class="form-control" id="userName" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Username</label>
+                                            <input type="text" class="form-control" id="userUsername" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="userEmail" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="userPassword" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Role</label>
+                                            <select class="form-select" id="userRole" required>
+                                                <option value="">Pilih Role</option>
+                                                <option value="super_admin">Super Admin</option>
+                                                <option value="admin">Admin</option>
+                                                <option value="user">User</option>
+                                                <option value="kasubag">Kasubag</option>
+                                                <option value="kaprodi">Kaprodi</option>
+                                                <option value="wadek">Wakil Dekan</option>
+                                                <option value="dekan">Dekan</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Unit</label>
+                                            <select class="form-select" id="userUnit">
+                                                <option value="">Pilih Unit</option>
+                                                ${CONFIG.UNIT.map(unit => `<option value="${unit}">${unit}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">No. Telepon</label>
+                                        <input type="text" class="form-control" id="userPhone">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" onclick="saveUser()">
+                                    <i class="fas fa-save me-2"></i>Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadUsers();
+        }
+        
+        async function loadUsers() {
+            try {
+                const data = await api.getUsers();
+                
+                if (data && data.success) {
+                    renderUserTable(data.users);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+        
+        function renderUserTable(users) {
+            const tbody = document.getElementById('userTableBody');
+            if (!tbody) return;
+            
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada user</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map((user, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${user.name || '-'}</td>
+                    <td>${user.username || '-'}</td>
+                    <td>${user.email || '-'}</td>
+                    <td><span class="badge bg-primary">${user.role || '-'}</span></td>
+                    <td>${user.unit || '-'}</td>
+                    <td><span class="badge bg-${user.status === 'active' ? 'success' : 'danger'}">${user.status || '-'}</span></td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="editUser('${user.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function showAddUserModal() {
+            const modal = new bootstrap.Modal(document.getElementById('userModal'));
+            modal.show();
+        }
+        
+        async function saveUser() {
+            const userData = {
+                name: document.getElementById('userName').value,
+                username: document.getElementById('userUsername').value,
+                email: document.getElementById('userEmail').value,
+                password: document.getElementById('userPassword').value,
+                role: document.getElementById('userRole').value,
+                unit: document.getElementById('userUnit').value,
+                phone: document.getElementById('userPhone').value
+            };
+            
+            // Validasi
+            if (!userData.name || !userData.username || !userData.email || !userData.password || !userData.role) {
+                Utils.showAlert('error', 'Semua field wajib diisi', 'alertContainer');
+                return;
+            }
+            
+            try {
+                const result = await api.register(userData);
+                
+                if (result.success) {
+                    Utils.showAlert('success', 'User berhasil ditambahkan', 'alertContainer');
+                    bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                    loadUsers();
+                } else {
+                    Utils.showAlert('error', result.message, 'alertContainer');
+                }
+            } catch (error) {
+                Utils.showAlert('error', 'Gagal menyimpan user: ' + error.message, 'alertContainer');
+            }
+        }
+        
+        async function deleteUser(userId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return;
+            
+            try {
+                const result = await api.deleteUser(userId);
+                
+                if (result.success) {
+                    Utils.showAlert('success', 'User berhasil dihapus', 'alertContainer');
+                    loadUsers();
+                } else {
+                    Utils.showAlert('error', result.message, 'alertContainer');
+                }
+            } catch (error) {
+                Utils.showAlert('error', 'Gagal menghapus user: ' + error.message, 'alertContainer');
+            }
+        }
+        
+        // ============================================
+        // SETTINGS
+        // ============================================
+        
+        function loadSettings() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="table-container mb-4">
+                            <h5 class="mb-4">Pengaturan Sistem</h5>
+                            
+                            <form id="settingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Nama Instansi</label>
+                                    <input type="text" class="form-control" id="instansiNama" 
+                                           value="${CONFIG.INSTANSI.nama}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Singkatan Instansi</label>
+                                    <input type="text" class="form-control" id="instansiSingkatan" 
+                                           value="${CONFIG.INSTANSI.singkatan}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Alamat</label>
+                                    <textarea class="form-control" id="instansiAlamat" rows="2">${CONFIG.INSTANSI.alamat}</textarea>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Telepon</label>
+                                        <input type="text" class="form-control" id="instansiTelepon" 
+                                               value="${CONFIG.INSTANSI.telepon}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="instansiEmail" 
+                                               value="${CONFIG.INSTANSI.email}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Google Script URL</label>
+                                    <input type="text" class="form-control" id="googleScriptUrl" 
+                                           value="${CONFIG.GOOGLE_SCRIPT_URL}" readonly>
+                                    <small class="text-muted">URL ini tidak dapat diubah dari sini</small>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Simpan Pengaturan
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="table-container mb-4">
+                            <h5 class="mb-4">Informasi Sistem</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><strong>Versi:</strong> 1.0.0</li>
+                                <li class="mb-2"><strong>Database:</strong> Google Sheets</li>
+                                <li class="mb-2"><strong>Storage:</strong> Google Drive</li>
+                                <li class="mb-2"><strong>Last Backup:</strong> -</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Handle settings form
+            document.getElementById('settingsForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const settings = {
+                    instansi: {
+                        nama: document.getElementById('instansiNama').value,
+                        singkatan: document.getElementById('instansiSingkatan').value,
+                        alamat: document.getElementById('instansiAlamat').value,
+                        telepon: document.getElementById('instansiTelepon').value,
+                        email: document.getElementById('instansiEmail').value
+                    }
+                };
+                
+                try {
+                    const result = await api.updateSettings(settings);
+                    
+                    if (result.success) {
+                        Utils.showAlert('success', 'Pengaturan berhasil disimpan', 'alertContainer');
+                    }
+                } catch (error) {
+                    Utils.showAlert('error', 'Gagal menyimpan pengaturan', 'alertContainer');
+                }
+            });
+        }
+        
+        // ============================================
+        // REPORTS
+        // ============================================
+        
+        function loadReports() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="table-container">
+                            <h5 class="mb-4">Laporan Surat</h5>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <label class="form-label">Jenis Laporan</label>
+                                    <select class="form-select" id="reportType">
+                                        <option value="surat-masuk">Surat Masuk</option>
+                                        <option value="surat-keluar">Surat Keluar</option>
+                                        <option value="disposisi">Disposisi</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tanggal Mulai</label>
+                                    <input type="date" class="form-control" id="reportStartDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tanggal Akhir</label>
+                                    <input type="date" class="form-control" id="reportEndDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-primary w-100" onclick="generateReport()">
+                                        <i class="fas fa-chart-bar me-2"></i>Generate
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="reportResult">
+                                <p class="text-muted text-center py-5">
+                                    <i class="fas fa-chart-line fa-3x mb-3"></i><br>
+                                    Pilih filter dan klik Generate untuk melihat laporan
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateReport() {
+            const type = document.getElementById('reportType').value;
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            
+            // Implementasi generate report
+            alert('Fitur laporan akan menampilkan data berdasarkan filter yang dipilih');
+        }
+        
+        // ============================================
+        // LOGS
+        // ============================================
+        
+        function loadLogs() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Log Aktivitas</h5>
+                        <button class="btn btn-danger btn-sm" onclick="clearLogs()">
+                            <i class="fas fa-trash me-2"></i>Bersihkan Log
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>User</th>
+                                    <th>Aksi</th>
+                                    <th>Deskripsi</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody">
+                                <tr>
+                                    <td colspan="5" class="text-center">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadLogData();
+        }
+        
+        async function loadLogData() {
+            // Implementasi loading log
+        }
+        
+        // ============================================
+        // PROFILE
+        // ============================================
+        
+        function loadProfile() {
+            const contentArea = document.getElementById('contentArea');
+            const user = auth.getCurrentUser();
+            
+            contentArea.innerHTML = `
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="table-container text-center">
+                            <div class="avatar-circle mx-auto mb-3" style="width: 100px; height: 100px; font-size: 36px;">
+                                ${user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <h5>${user.name}</h5>
+                            <p class="text-muted">${user.role}</p>
+                            <button class="btn btn-primary btn-sm">
+                                <i class="fas fa-camera me-2"></i>Ganti Foto
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-8">
+                        <div class="table-container">
+                            <h5 class="mb-4">Edit Profil</h5>
+                            
+                            <form id="profileForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nama Lengkap</label>
+                                        <input type="text" class="form-control" id="profileName" 
+                                               value="${user.name}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="profileEmail" 
+                                               value="${user.email || ''}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">No. Telepon</label>
+                                        <input type="text" class="form-control" id="profilePhone" 
+                                               value="${user.phone || ''}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Unit</label>
+                                        <input type="text" class="form-control" id="profileUnit" 
+                                               value="${user.unit || ''}" readonly>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Simpan Perubahan
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="table-container mt-4">
+                            <h5 class="mb-4">Ganti Password</h5>
+                            
+                            <form id="passwordForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Password Lama</label>
+                                    <input type="password" class="form-control" id="oldPassword" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password Baru</label>
+                                    <input type="password" class="form-control" id="newPassword" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Konfirmasi Password Baru</label>
+                                    <input type="password" class="form-control" id="confirmPassword" required>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-key me-2"></i>Ganti Password
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = show ? 'flex' : 'none';
+            }
+        }
+        
+        function exportData(type) {
+            // Implementasi export data
+            alert('Fitur export akan mengunduh data dalam format Excel');
+        }
+        
+        // Make functions globally available
+        window.navigateToPage = navigateToPage;
+        window.showAddUserModal = showAddUserModal;
+        window.saveUser = saveUser;
+        window.editUser = function(id) { alert('Edit user: ' + id); };
+        window.deleteUser = deleteUser;
+        window.generateReport = generateReport;
+        window.viewSurat = function(nomor) { alert('Lihat surat: ' + nomor); };
+        window.editSurat = function(id) { alert('Edit surat: ' + id); };
+        window.downloadSurat = function(nomor) { alert('Download surat: ' + nomor); };
+        window.viewDisposisi = function(nomor) { alert('Lihat disposisi: ' + nomor); };
+        window.editSuratMasuk = function(id) { alert('Edit surat masuk: ' + id); };
+        window.deleteSuratMasuk = function(id) { 
+            if (confirm('Hapus surat masuk ini?')) {
+                alert('Surat masuk dihapus: ' + id);
+            }
+        };
+    </script>
+</body>
+</html>

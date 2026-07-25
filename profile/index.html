@@ -1,0 +1,708 @@
+<!-- profile/index.html - Profile Page 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Profile - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .profile-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 16px;
+            padding: 40px;
+            color: white;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        
+        .profile-header-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 700;
+            color: #667eea;
+            border: 4px solid rgba(255,255,255,0.5);
+            flex-shrink: 0;
+        }
+        
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .profile-info h2 {
+            font-size: 28px;
+            margin: 0 0 4px 0;
+            color: white;
+        }
+        
+        .profile-info .role-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 16px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .profile-info p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .profile-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+        
+        .profile-tab {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        
+        .profile-tab:hover {
+            color: #2563eb;
+        }
+        
+        .profile-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        .profile-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .profile-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .info-item {
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        
+        .activity-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .activity-timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 24px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px #2563eb;
+        }
+        
+        .timeline-time {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        
+        .timeline-content {
+            font-size: 14px;
+            color: #1e293b;
+        }
+        
+        .security-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .security-status.good {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+        
+        .security-status.warning {
+            background: #fffbeb;
+            color: #d97706;
+        }
+        
+        .security-status.danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        @media (max-width: 768px) {
+            .profile-header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/profile/" class="nav-item active"><i class="fas fa-user"></i> Profile</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="profile-container">
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-header-content">
+                    <div class="profile-avatar" id="profile-avatar">
+                        <span id="avatar-text">?</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profile-name">Loading...</h2>
+                        <span class="role-badge" id="profile-role">-</span>
+                        <p><i class="fas fa-envelope"></i> <span id="profile-email">-</span></p>
+                        <p><i class="fas fa-building"></i> <span id="profile-unit">-</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="profile-tabs">
+                <button class="profile-tab active" data-tab="info">
+                    <i class="fas fa-info-circle"></i> Informasi
+                </button>
+                <button class="profile-tab" data-tab="edit">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+                <button class="profile-tab" data-tab="security">
+                    <i class="fas fa-shield-alt"></i> Keamanan
+                </button>
+                <button class="profile-tab" data-tab="activity">
+                    <i class="fas fa-history"></i> Aktivitas
+                </button>
+            </div>
+            
+            <!-- Tab Content: Informasi -->
+            <div class="profile-section active" data-section="info">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Informasi Pribadi</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-grid" id="info-grid">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Edit Profile -->
+            <div class="profile-section" data-section="edit">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Edit Profile</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="profile-form" novalidate>
+                            <div class="form-group">
+                                <label class="form-label">Foto Profile</label>
+                                <div style="display:flex;align-items:center;gap:16px;">
+                                    <div class="profile-avatar" style="width:80px;height:80px;font-size:28px;" id="edit-avatar">
+                                        <span id="edit-avatar-text">?</span>
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-outline btn-sm" id="upload-photo-btn">
+                                            <i class="fas fa-camera"></i> Upload Foto
+                                        </button>
+                                        <input type="file" id="photo-input" accept="image/*" style="display:none;">
+                                        <div class="form-help" style="margin-top:4px;">JPG, PNG maks. 2MB</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Nama Lengkap</label>
+                                    <input type="text" class="form-input" id="edit-fullname" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">NIP</label>
+                                    <input type="text" class="form-input" id="edit-nip">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Email</label>
+                                    <input type="email" class="form-input" id="edit-email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">No. Telepon</label>
+                                    <input type="tel" class="form-input" id="edit-phone">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Bio</label>
+                                <textarea class="form-textarea" id="edit-bio" rows="3" 
+                                    placeholder="Ceritakan sedikit tentang diri Anda..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Simpan Perubahan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Keamanan -->
+            <div class="profile-section" data-section="security">
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h3>Status Keamanan</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="security-status good">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Keamanan akun Anda baik</span>
+                        </div>
+                        
+                        <div class="info-grid" style="margin-top:16px;">
+                            <div class="info-item">
+                                <div class="info-label">Login Terakhir</div>
+                                <div class="info-value" id="last-login">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">IP Terakhir</div>
+                                <div class="info-value" id="last-ip">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Browser</div>
+                                <div class="info-value" id="last-browser">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Login Gagal</div>
+                                <div class="info-value" id="failed-logins">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Ubah Password</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="password-form" novalidate>
+                            <div class="form-group">
+                                <label class="form-label form-label-required">Password Saat Ini</label>
+                                <input type="password" class="form-input" id="current-password" 
+                                    autocomplete="current-password" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Password Baru</label>
+                                    <input type="password" class="form-input" id="new-password" 
+                                        autocomplete="new-password" required>
+                                    <div class="form-help">Minimal 8 karakter, harus mengandung huruf besar dan angka</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label form-label-required">Konfirmasi Password</label>
+                                    <input type="password" class="form-input" id="confirm-password" 
+                                        autocomplete="new-password" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Ubah Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Aktivitas -->
+            <div class="profile-section" data-section="activity">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Aktivitas Terbaru</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="activity-timeline" id="activity-timeline">
+                            <p style="color:#94a3b8;">Memuat aktivitas...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import FormValidator from '/js/validator.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        // Check auth
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        let userData = null;
+        let profileValidator = null;
+        let passwordValidator = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initTabs();
+            await loadProfile();
+            initForms();
+            initEventListeners();
+            logger.info('Profile page loaded');
+        });
+        
+        function initTabs() {
+            document.querySelectorAll('.profile-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Update active tab
+                    document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show corresponding section
+                    const sectionName = tab.dataset.tab;
+                    document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
+                    document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
+                });
+            });
+        }
+        
+        async function loadProfile() {
+            try {
+                const response = await apiService.get('/api/profile');
+                userData = response.data;
+                
+                updateProfileHeader();
+                updateInfoGrid();
+                updateSecurityInfo();
+                loadActivityTimeline();
+                
+            } catch (error) {
+                logger.error('Failed to load profile', error);
+                notifications.error('Gagal memuat data profile');
+            }
+        }
+        
+        function updateProfileHeader() {
+            const initials = getInitials(userData.fullname);
+            
+            document.getElementById('avatar-text').textContent = initials;
+            document.getElementById('edit-avatar-text').textContent = initials;
+            
+            if (userData.avatar) {
+                document.getElementById('profile-avatar').innerHTML = 
+                    `<img src="${userData.avatar}" alt="${userData.fullname}">`;
+                document.getElementById('edit-avatar').innerHTML = 
+                    `<img src="${userData.avatar}" alt="${userData.fullname}">`;
+            }
+            
+            document.getElementById('profile-name').textContent = userData.fullname;
+            document.getElementById('profile-role').textContent = formatRole(userData.role);
+            document.getElementById('profile-email').textContent = userData.email;
+            document.getElementById('profile-unit').textContent = userData.unit || '-';
+        }
+        
+        function updateInfoGrid() {
+            const grid = document.getElementById('info-grid');
+            const info = [
+                { label: 'Nama Lengkap', value: userData.fullname },
+                { label: 'Username', value: userData.username },
+                { label: 'Email', value: userData.email },
+                { label: 'NIP', value: userData.nip || '-' },
+                { label: 'Role', value: formatRole(userData.role) },
+                { label: 'Unit', value: userData.unit || '-' },
+                { label: 'No. Telepon', value: userData.phone || '-' },
+                { label: 'Bergabung Sejak', value: utils.formatDate(userData.createdAt, 'full') }
+            ];
+            
+            grid.innerHTML = info.map(item => `
+                <div class="info-item">
+                    <div class="info-label">${item.label}</div>
+                    <div class="info-value">${item.value}</div>
+                </div>
+            `).join('');
+            
+            // Populate edit form
+            document.getElementById('edit-fullname').value = userData.fullname || '';
+            document.getElementById('edit-nip').value = userData.nip || '';
+            document.getElementById('edit-email').value = userData.email || '';
+            document.getElementById('edit-phone').value = userData.phone || '';
+            document.getElementById('edit-bio').value = userData.bio || '';
+        }
+        
+        function updateSecurityInfo() {
+            document.getElementById('last-login').textContent = 
+                utils.formatDate(userData.lastLogin, 'datetime');
+            document.getElementById('last-ip').textContent = userData.lastIp || '-';
+            document.getElementById('last-browser').textContent = userData.lastBrowser || '-';
+            document.getElementById('failed-logins').textContent = userData.failedLogins || '0';
+        }
+        
+        async function loadActivityTimeline() {
+            try {
+                const response = await apiService.get('/api/profile/activity', { limit: 10 });
+                const activities = response.data || [];
+                
+                const timeline = document.getElementById('activity-timeline');
+                
+                if (activities.length === 0) {
+                    timeline.innerHTML = '<p style="color:#94a3b8;">Belum ada aktivitas</p>';
+                    return;
+                }
+                
+                timeline.innerHTML = activities.map(activity => `
+                    <div class="timeline-item">
+                        <div class="timeline-time">${utils.timeAgo(activity.timestamp)}</div>
+                        <div class="timeline-content">${activity.description}</div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                logger.warn('Failed to load activity', error);
+            }
+        }
+        
+        function initForms() {
+            profileValidator = new FormValidator(document.getElementById('profile-form'));
+            passwordValidator = new FormValidator(document.getElementById('password-form'));
+        }
+        
+        function initEventListeners() {
+            // Profile form
+            document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!profileValidator?.validate()) return;
+                await updateProfile();
+            });
+            
+            // Password form
+            document.getElementById('password-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!passwordValidator?.validate()) return;
+                await changePassword();
+            });
+            
+            // Photo upload
+            document.getElementById('upload-photo-btn')?.addEventListener('click', () => {
+                document.getElementById('photo-input')?.click();
+            });
+            
+            document.getElementById('photo-input')?.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await uploadPhoto(file);
+                }
+            });
+        }
+        
+        async function updateProfile() {
+            try {
+                const data = {
+                    fullname: document.getElementById('edit-fullname').value.trim(),
+                    nip: document.getElementById('edit-nip').value.trim(),
+                    email: document.getElementById('edit-email').value.trim(),
+                    phone: document.getElementById('edit-phone').value.trim(),
+                    bio: document.getElementById('edit-bio').value.trim()
+                };
+                
+                await apiService.put('/api/profile', data);
+                
+                // Update auth service user data
+                if (authService.currentUser) {
+                    authService.currentUser = { ...authService.currentUser, ...data };
+                }
+                
+                notifications.success('Profile berhasil diperbarui');
+                await loadProfile();
+                
+            } catch (error) {
+                notifications.error('Gagal memperbarui profile');
+            }
+        }
+        
+        async function changePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                notifications.error('Password baru dan konfirmasi tidak cocok');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                notifications.error('Password minimal 8 karakter');
+                return;
+            }
+            
+            try {
+                await authService.changePassword(currentPassword, newPassword);
+                notifications.success('Password berhasil diubah');
+                document.getElementById('password-form').reset();
+            } catch (error) {
+                notifications.error(error.message || 'Gagal mengubah password');
+            }
+        }
+        
+        async function uploadPhoto(file) {
+            if (file.size > 2097152) {
+                notifications.error('Ukuran foto maksimal 2MB');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                const response = await apiService.uploadFile('/api/profile/photo', file);
+                
+                if (response.data?.url) {
+                    userData.avatar = response.data.url;
+                    updateProfileHeader();
+                    notifications.success('Foto profile berhasil diupload');
+                }
+            } catch (error) {
+                notifications.error('Gagal mengupload foto');
+            }
+        }
+        
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        }
+        
+        function formatRole(role) {
+            const roles = {
+                super_admin: 'Super Admin',
+                admin: 'Admin',
+                kaprodi: 'Kaprodi',
+                wadek: 'Wadek',
+                dekan: 'Dekan',
+                staf: 'Staf',
+                dosen: 'Dosen',
+                mahasiswa: 'Mahasiswa'
+            };
+            return roles[role] || role;
+        }
+    </script>
+</body>
+</html>

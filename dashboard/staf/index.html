@@ -1,0 +1,980 @@
+<!-- FILE: dashboard/staf/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Staf - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary: #37474f;
+            --secondary: #455a64;
+            --accent: #546e7a;
+            --gold: #ffd700;
+            --light: #f5f6fa;
+            --dark: #2c3e50;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #263238, #37474f);
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h5 { font-weight: 700; margin-bottom: 5px; }
+        .sidebar-header small { opacity: 0.8; }
+        
+        .sidebar-menu { padding: 20px 0; }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--gold);
+        }
+        
+        .sidebar-menu .nav-link i { width: 25px; margin-right: 10px; text-align: center; }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+        
+        .top-navbar {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .content-area { padding: 25px; }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #37474f, #546e7a);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .badge-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .task-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #546e7a;
+            transition: all 0.3s;
+        }
+        
+        .task-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        
+        .task-card.urgent {
+            border-left-color: #dc3545;
+        }
+        
+        .task-card.completed {
+            border-left-color: #28a745;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            .sidebar.active { margin-left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
+            <h5>E-Arsip Digital</h5>
+            <small>Staf Panel</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-masuk">
+                        <i class="fas fa-inbox"></i> Surat Masuk
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-keluar">
+                        <i class="fas fa-paper-plane"></i> Surat Keluar
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="tugas-saya">
+                        <i class="fas fa-tasks"></i> Tugas Saya
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="agenda">
+                        <i class="fas fa-calendar-alt"></i> Agenda
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <i class="fas fa-user-circle"></i> Profil Saya
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a href="#" class="nav-link text-danger" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none me-3" id="toggleSidebarBtn">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Dashboard Staf</h5>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentTime" class="text-muted"></span>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <div class="avatar-circle me-2" id="userAvatar">S</div>
+                        <span id="displayName">Staf</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-page="profile"><i class="fas fa-user me-2"></i>Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area" id="contentArea">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <!-- TASK DETAIL MODAL -->
+    <div class="modal fade" id="taskModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail Tugas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="taskDetailContent">
+                    <!-- Task detail loaded dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-success" onclick="completeTask()">
+                        <i class="fas fa-check me-2"></i>Selesaikan Tugas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="../../config/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    
+    <script>
+        // Check authentication
+        if (!auth.requireRole('staf')) {
+            // Redirect handled
+        }
+        
+        const currentUser = auth.getCurrentUser();
+        let currentTaskId = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            loadDashboard();
+            setupEventListeners();
+            updateClock();
+            setInterval(updateClock, 60000);
+        });
+        
+        function initializeUI() {
+            if (currentUser) {
+                document.getElementById('displayName').textContent = currentUser.name || 'Staf';
+                document.getElementById('userAvatar').textContent = (currentUser.name || 'S').charAt(0).toUpperCase();
+            }
+            AOS.init({ duration: 800, once: true });
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('shifted');
+            });
+            
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateTo(this.dataset.page);
+                });
+            });
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleDateString('id-ID', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+        }
+        
+        function navigateTo(page) {
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) link.classList.add('active');
+            });
+            
+            const titles = {
+                'dashboard': 'Dashboard Staf',
+                'surat-masuk': 'Surat Masuk',
+                'surat-keluar': 'Surat Keluar',
+                'tugas-saya': 'Tugas Saya',
+                'agenda': 'Agenda',
+                'profile': 'Profil Saya'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'surat-masuk': loadSuratMasuk(); break;
+                case 'surat-keluar': loadSuratKeluar(); break;
+                case 'tugas-saya': loadTugasSaya(); break;
+                case 'agenda': loadAgenda(); break;
+                case 'profile': window.location.href = '../../profile/index.html'; break;
+            }
+        }
+        
+        async function loadDashboard() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <!-- Stats Row -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Tugas Hari Ini</p>
+                                    <h3 class="mb-0" id="statTugasHariIni">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #37474f, #455a64);">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Surat Diproses</p>
+                                    <h3 class="mb-0" id="statSuratDiproses">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #546e7a, #607d8b);">
+                                    <i class="fas fa-paper-plane"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Tugas Selesai</p>
+                                    <h3 class="mb-0" id="statTugasSelesai">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #78909c, #90a4ae);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="300">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Agenda Hari Ini</p>
+                                    <h3 class="mb-0" id="statAgenda">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #b0bec5, #cfd8dc);">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tugas Hari Ini -->
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-3" data-aos="fade-up">
+                        <div class="table-container">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5><i class="fas fa-tasks me-2"></i>Tugas Hari Ini</h5>
+                                <button class="btn btn-primary btn-sm" onclick="navigateTo('tugas-saya')">
+                                    Lihat Semua
+                                </button>
+                            </div>
+                            <div id="tugasHariIniList">
+                                <p class="text-muted text-center">Memuat tugas...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="table-container">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5><i class="fas fa-calendar-alt me-2"></i>Agenda Hari Ini</h5>
+                                <button class="btn btn-primary btn-sm" onclick="navigateTo('agenda')">
+                                    Lihat Semua
+                                </button>
+                            </div>
+                            <div id="agendaHariIniList">
+                                <p class="text-muted text-center">Memuat agenda...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">Aksi Cepat</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-primary w-100" onclick="inputSuratMasuk()">
+                                        <i class="fas fa-inbox me-2"></i>Input Surat Masuk
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-success w-100" onclick="prosesSuratKeluar()">
+                                        <i class="fas fa-paper-plane me-2"></i>Proses Surat Keluar
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-info w-100" onclick="navigateTo('tugas-saya')">
+                                        <i class="fas fa-tasks me-2"></i>Lihat Tugas
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-warning w-100" onclick="navigateTo('agenda')">
+                                        <i class="fas fa-calendar-alt me-2"></i>Lihat Agenda
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            await loadDashboardStats();
+            await loadTugasHariIni();
+            await loadAgendaHariIni();
+        }
+        
+        async function loadDashboardStats() {
+            try {
+                const stats = await api.sendRequest({ 
+                    action: 'getUserStats',
+                    userId: currentUser.id 
+                });
+                
+                if (stats && stats.success) {
+                    document.getElementById('statTugasHariIni').textContent = stats.data?.tugasHariIni || 0;
+                    document.getElementById('statSuratDiproses').textContent = stats.data?.suratDiproses || 0;
+                    document.getElementById('statTugasSelesai').textContent = stats.data?.tugasSelesai || 0;
+                    document.getElementById('statAgenda').textContent = stats.data?.agendaHariIni || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadTugasHariIni() {
+            const container = document.getElementById('tugasHariIniList');
+            if (!container) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getTugas',
+                    userId: currentUser.id,
+                    tanggal: new Date().toISOString().split('T')[0]
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(task => `
+                        <div class="task-card ${task.prioritas === 'tinggi' ? 'urgent' : ''} ${task.status === 'selesai' ? 'completed' : ''}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${task.judul || 'Tugas'}</h6>
+                                    <small class="text-muted">
+                                        ${task.deskripsi || ''}<br>
+                                        <strong>Deadline:</strong> ${Utils.formatDate(task.deadline, 'date')}
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-${getPriorityColor(task.prioritas)}">${task.prioritas || 'Normal'}</span>
+                                    ${task.status !== 'selesai' ? `
+                                        <button class="btn btn-sm btn-success mt-1" onclick="selesaikanTugas('${task.id}')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">Tidak ada tugas hari ini</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p class="text-danger text-center">Gagal memuat tugas</p>';
+            }
+        }
+        
+        async function loadAgendaHariIni() {
+            const container = document.getElementById('agendaHariIniList');
+            if (!container) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getAgenda',
+                    userId: currentUser.id,
+                    tanggal: new Date().toISOString().split('T')[0]
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(agenda => `
+                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                            <div>
+                                <strong>${agenda.jam || ''}</strong> - ${agenda.kegiatan || ''}
+                            </div>
+                            <span class="badge bg-info">${agenda.lokasi || ''}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">Tidak ada agenda hari ini</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p class="text-danger text-center">Gagal memuat agenda</p>';
+            }
+        }
+        
+        function loadSuratMasuk() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Daftar Surat Masuk</h5>
+                        <button class="btn btn-primary" onclick="window.location.href='/surat-masuk/form.html'">
+                            <i class="fas fa-plus me-2"></i>Input Surat Masuk
+                        </button>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchMasuk" placeholder="Cari surat...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterKategoriMasuk">
+                                <option value="">Semua Kategori</option>
+                                <option value="M.UM">Umum</option>
+                                <option value="M.KEU">Keuangan</option>
+                                <option value="M.LGL">Legal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filterTanggalMasuk">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" onclick="filterSuratMasuk()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Agenda</th>
+                                    <th>Tanggal</th>
+                                    <th>Pengirim</th>
+                                    <th>Perihal</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suratMasukTable">
+                                <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadSuratMasukData();
+        }
+        
+        async function loadSuratMasukData() {
+            const tbody = document.getElementById('suratMasukTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ action: 'getSuratMasuk' });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorAgenda || '-'}</strong></td>
+                            <td>${Utils.formatDate(item.tanggalTerima, 'date')}</td>
+                            <td>${item.pengirim || '-'}</td>
+                            <td>${item.perihal || '-'}</td>
+                            <td><span class="badge bg-info">${item.status || 'Baru'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada surat masuk</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        function loadSuratKeluar() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Daftar Surat Keluar (Perlu Diproses)</h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Surat</th>
+                                    <th>Perihal</th>
+                                    <th>Pemohon</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suratKeluarTable">
+                                <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadSuratKeluarData();
+        }
+        
+        async function loadSuratKeluarData() {
+            const tbody = document.getElementById('suratKeluarTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: 'pending_admin'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorSurat || '-'}</strong></td>
+                            <td>${item.perihal || '-'}</td>
+                            <td>${item.createdBy || '-'}</td>
+                            <td><span class="badge bg-warning">Perlu Diproses</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="prosesSurat('${item.id}')">
+                                    <i class="fas fa-check me-1"></i>Proses
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada surat yang perlu diproses</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        function loadTugasSaya() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Tugas Saya</h5>
+                        <button class="btn btn-primary" onclick="tambahTugas()">
+                            <i class="fas fa-plus me-2"></i>Tambah Tugas
+                        </button>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterPrioritas">
+                                <option value="">Semua Prioritas</option>
+                                <option value="tinggi">Tinggi</option>
+                                <option value="sedang">Sedang</option>
+                                <option value="rendah">Rendah</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterStatusTugas">
+                                <option value="">Semua Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="proses">Dalam Proses</option>
+                                <option value="selesai">Selesai</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="date" class="form-control" id="filterDeadline">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" onclick="filterTugas()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="tugasList">
+                        <p class="text-muted text-center">Memuat tugas...</p>
+                    </div>
+                </div>
+            `;
+            
+            loadTugasData();
+        }
+        
+        async function loadTugasData() {
+            const container = document.getElementById('tugasList');
+            if (!container) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getTugas',
+                    userId: currentUser.id
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(task => `
+                        <div class="task-card ${task.prioritas === 'tinggi' ? 'urgent' : ''} ${task.status === 'selesai' ? 'completed' : ''}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${task.judul || 'Tugas'}</h6>
+                                    <p class="mb-1 text-muted">${task.deskripsi || ''}</p>
+                                    <small>
+                                        <strong>Deadline:</strong> ${Utils.formatDate(task.deadline, 'date')} |
+                                        <strong>Dari:</strong> ${task.dari || '-'}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-${getPriorityColor(task.prioritas)}">${task.prioritas || 'Normal'}</span>
+                                    <br>
+                                    <span class="badge bg-${getTaskStatusColor(task.status)} mt-1">${task.status || 'Pending'}</span>
+                                    <br>
+                                    <div class="btn-group mt-2">
+                                        ${task.status !== 'selesai' ? `
+                                            <button class="btn btn-sm btn-success" onclick="selesaikanTugas('${task.id}')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        ` : ''}
+                                        <button class="btn btn-sm btn-info" onclick="detailTugas('${task.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">Tidak ada tugas</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p class="text-danger text-center">Gagal memuat tugas</p>';
+            }
+        }
+        
+        function loadAgenda() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Agenda Kegiatan</h5>
+                        <button class="btn btn-primary" onclick="tambahAgenda()">
+                            <i class="fas fa-plus me-2"></i>Tambah Agenda
+                        </button>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Tanggal</th>
+                                            <th>Jam</th>
+                                            <th>Kegiatan</th>
+                                            <th>Lokasi</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="agendaTable">
+                                        <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadAgendaData();
+        }
+        
+        async function loadAgendaData() {
+            const tbody = document.getElementById('agendaTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getAgenda',
+                    userId: currentUser.id
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${Utils.formatDate(item.tanggal, 'date')}</td>
+                            <td>${item.jam || '-'}</td>
+                            <td>${item.kegiatan || '-'}</td>
+                            <td>${item.lokasi || '-'}</td>
+                            <td><span class="badge bg-info">${item.status || 'Terjadwal'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewAgenda('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada agenda</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        // Helper Functions
+        function getPriorityColor(priority) {
+            const colors = {
+                'tinggi': 'danger',
+                'sedang': 'warning',
+                'rendah': 'info'
+            };
+            return colors[priority] || 'secondary';
+        }
+        
+        function getTaskStatusColor(status) {
+            const colors = {
+                'pending': 'warning',
+                'proses': 'info',
+                'selesai': 'success'
+            };
+            return colors[status] || 'secondary';
+        }
+        
+        async function selesaikanTugas(taskId) {
+            try {
+                const result = await api.sendRequest({
+                    action: 'updateTugas',
+                    taskId: taskId,
+                    status: 'selesai'
+                });
+                
+                if (result.success) {
+                    alert('Tugas berhasil diselesaikan');
+                    loadTugasSaya();
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function detailTugas(taskId) {
+            currentTaskId = taskId;
+            const modal = new bootstrap.Modal(document.getElementById('taskModal'));
+            document.getElementById('taskDetailContent').innerHTML = '<p>Memuat detail tugas...</p>';
+            modal.show();
+        }
+        
+        function completeTask() {
+            if (currentTaskId) {
+                selesaikanTugas(currentTaskId);
+                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+            }
+        }
+        
+        function handleLogout() {
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                auth.logout();
+            }
+        }
+        
+        // Global functions
+        window.navigateTo = navigateTo;
+        window.handleLogout = handleLogout;
+        window.inputSuratMasuk = function() { window.location.href = '../../surat-masuk/form.html'; };
+        window.prosesSuratKeluar = function() { navigateTo('surat-keluar'); };
+        window.viewSurat = function(id) { alert('Lihat surat ID: ' + id); };
+        window.prosesSurat = function(id) { alert('Proses surat ID: ' + id); };
+        window.filterSuratMasuk = function() { loadSuratMasukData(); };
+        window.tambahTugas = function() { alert('Tambah tugas baru'); };
+        window.selesaikanTugas = selesaikanTugas;
+        window.detailTugas = detailTugas;
+        window.completeTask = completeTask;
+        window.filterTugas = function() { loadTugasData(); };
+        window.tambahAgenda = function() { alert('Tambah agenda baru'); };
+        window.viewAgenda = function(id) { alert('Lihat agenda ID: ' + id); };
+    </script>
+</body>
+</html>

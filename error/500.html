@@ -1,0 +1,339 @@
+<!-- error/500.html - Internal Server Error 2026 -->
+<!DOCTYPE html>
+<html lang="id" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#dc2626">
+    <title>500 - Kesalahan Server | E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .error-container {
+            text-align: center;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .error-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 550px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .error-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #dc2626, #ef4444, #f97316);
+        }
+        
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+            color: #dc2626;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
+        }
+        
+        .error-code {
+            font-size: 100px;
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #dc2626, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        
+        .error-message {
+            font-size: 15px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        
+        .error-details {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            color: #64748b;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .error-details.visible {
+            display: block;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .btn-primary {
+            background: #1e293b;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #334155;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background: white;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+        }
+        
+        .error-id {
+            margin-top: 20px;
+            font-size: 11px;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+        
+        .version {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        @media (max-width: 480px) {
+            .error-card { padding: 32px 24px; }
+            .error-code { font-size: 72px; }
+            .error-actions { flex-direction: column; }
+            .btn { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="error-code">500</div>
+            <h1 class="error-title">Kesalahan Server Internal</h1>
+            <p class="error-message">
+                Maaf, terjadi kesalahan pada server. Tim teknis kami telah diberitahu 
+                dan sedang bekerja untuk memperbaikinya. Silakan coba lagi nanti.
+            </p>
+            
+            <div class="error-details" id="error-details">
+                <strong>Informasi Error:</strong><br>
+                <span id="error-info">Memuat informasi error...</span>
+            </div>
+            
+            <div class="error-actions">
+                <button class="btn btn-danger" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Muat Ulang
+                </button>
+                <a href="/dashboard/" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Kembali ke Dashboard
+                </a>
+                <button class="btn btn-outline" onclick="toggleDetails()">
+                    <i class="fas fa-bug"></i> Detail Error
+                </button>
+            </div>
+            
+            <div class="error-id">
+                Error ID: <span id="error-id">ERR-</span>
+            </div>
+            <div class="version">
+                E-Arsip Digital v2026.1.0
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        (function() {
+            // Generate error ID
+            const errorId = 'ERR-' + Date.now().toString(36) + '-' + 
+                Math.random().toString(36).substr(2, 9).toUpperCase();
+            
+            document.getElementById('error-id').textContent = errorId;
+            
+            // Collect error information
+            const errorInfo = {
+                errorId: errorId,
+                url: window.location.href,
+                referrer: document.referrer,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                screenResolution: `${window.screen.width}x${window.screen.height}`,
+                viewport: `${window.innerWidth}x${window.innerHeight}`,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled,
+                online: navigator.onLine
+            };
+            
+            // Try to get session info
+            try {
+                const session = localStorage.getItem('auth_session');
+                if (session) {
+                    const parsed = JSON.parse(session);
+                    errorInfo.userId = parsed?.user?.id;
+                    errorInfo.userRole = parsed?.user?.role;
+                    errorInfo.sessionAge = Date.now() - (parsed?.metadata?.createdAt || 0);
+                }
+            } catch (e) {
+                // Ignore
+            }
+            
+            // Try to get error logs
+            try {
+                const errorLogs = localStorage.getItem('error_logs');
+                if (errorLogs) {
+                    const logs = JSON.parse(errorLogs);
+                    errorInfo.recentErrors = logs.slice(-5);
+                }
+            } catch (e) {
+                // Ignore
+            }
+            
+            // Display error info
+            document.getElementById('error-info').textContent = 
+                JSON.stringify(errorInfo, null, 2);
+            
+            // Log error
+            console.error('500 Internal Server Error:', errorInfo);
+            
+            // Send to service worker
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'LOG_ERROR',
+                    payload: { type: '500', ...errorInfo }
+                });
+            }
+            
+            // Auto-reload after 30 seconds
+            let countdown = 30;
+            const messageEl = document.querySelector('.error-message');
+            const originalMessage = messageEl.textContent;
+            
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    location.reload();
+                } else {
+                    messageEl.textContent = originalMessage + 
+                        `\n\nMuat ulang otomatis dalam ${countdown} detik...`;
+                }
+            }, 1000);
+            
+            // Toggle details function
+            window.toggleDetails = function() {
+                const details = document.getElementById('error-details');
+                details.classList.toggle('visible');
+            };
+            
+            // Log to remote if available
+            try {
+                const remoteEndpoint = localStorage.getItem('log_endpoint');
+                if (remoteEndpoint) {
+                    fetch(remoteEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'client_error',
+                            errorId: errorId,
+                            errorType: '500',
+                            ...errorInfo
+                        }),
+                        keepalive: true
+                    }).catch(() => {});
+                }
+            } catch (e) {
+                // Ignore
+            }
+        })();
+    </script>
+</body>
+</html>

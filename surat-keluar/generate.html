@@ -1,0 +1,271 @@
+<!-- surat-keluar/generate.html - Generate Surat Final 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Generate Surat - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .generate-container { max-width: 700px; margin: 0 auto; }
+        
+        .option-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .option-card:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+        
+        .option-card.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .option-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .option-icon.blue { background: #eff6ff; color: #2563eb; }
+        .option-icon.green { background: #f0fdf4; color: #16a34a; }
+        .option-icon.purple { background: #faf5ff; color: #9333ea; }
+        
+        .option-info { flex: 1; }
+        .option-info h4 { margin: 0 0 4px 0; font-size: 15px; }
+        .option-info p { margin: 0; font-size: 13px; color: #64748b; }
+        
+        .generated-info {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .generated-info.show { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .nomor-generated {
+            font-size: 32px;
+            font-weight: 800;
+            color: #16a34a;
+            letter-spacing: 1px;
+            font-family: 'SF Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="generate-container">
+            <h2 style="margin-bottom:8px;">Generate Surat Final</h2>
+            <p style="color:#64748b;margin-bottom:24px;">Pilih format output untuk surat yang telah disetujui</p>
+            
+            <!-- Format Options -->
+            <div class="option-card selected" data-format="pdf" id="opt-pdf">
+                <div class="option-icon blue"><i class="fas fa-file-pdf"></i></div>
+                <div class="option-info">
+                    <h4>PDF Document</h4>
+                    <p>Format standar dengan kop surat dan tanda tangan digital</p>
+                </div>
+                <i class="fas fa-check-circle" style="color:#2563eb;font-size:20px;"></i>
+            </div>
+            
+            <div class="option-card" data-format="word" id="opt-word">
+                <div class="option-icon green"><i class="fas fa-file-word"></i></div>
+                <div class="option-info">
+                    <h4>Word Document</h4>
+                    <p>Format editable untuk revisi lebih lanjut</p>
+                </div>
+                <i class="fas fa-circle" style="color:#e2e8f0;font-size:20px;"></i>
+            </div>
+            
+            <div class="option-card" data-format="print" id="opt-print">
+                <div class="option-icon purple"><i class="fas fa-print"></i></div>
+                <div class="option-info">
+                    <h4>Cetak Langsung</h4>
+                    <p>Cetak surat dengan printer yang terhubung</p>
+                </div>
+                <i class="fas fa-circle" style="color:#e2e8f0;font-size:20px;"></i>
+            </div>
+            
+            <!-- Settings -->
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header"><h3>Pengaturan Generate</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Kertas</label>
+                            <select class="form-select" id="paper-size">
+                                <option value="A4">A4</option>
+                                <option value="F4">F4 (Folio)</option>
+                                <option value="Legal">Legal</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Jumlah Salinan</label>
+                            <input type="number" class="form-input" id="copies" value="1" min="1" max="10">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" id="include-qr" checked>
+                            Sertakan QR Code verifikasi
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" id="include-ttd" checked>
+                            Sertakan tanda tangan digital
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Generated Info -->
+            <div class="generated-info" id="generated-info">
+                <i class="fas fa-check-circle" style="font-size:40px;color:#16a34a;margin-bottom:12px;"></i>
+                <h3>Surat Berhasil Digenerate!</h3>
+                <p style="color:#64748b;">Nomor surat final:</p>
+                <div class="nomor-generated" id="final-nomor">-</div>
+                <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;">
+                    <button class="btn btn-primary" id="download-btn">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn btn-outline" id="print-btn">
+                        <i class="fas fa-print"></i> Cetak
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action -->
+            <div style="text-align:center;margin-top:20px;">
+                <button class="btn btn-primary btn-lg" id="generate-btn">
+                    <i class="fas fa-cog"></i> Generate Surat
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '../js/auth.js';
+        import apiService from '../js/api.js';
+        import notifications from '../js/notifications.js';
+        import logger from '../js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '../login.html';
+        
+        const params = new URLSearchParams(window.location.search);
+        const suratId = params.get('id');
+        let selectedFormat = 'pdf';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEvents();
+            logger.info('Generate page loaded', { suratId });
+        });
+        
+        function initEvents() {
+            // Format selection
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+                    document.querySelectorAll('.option-card i.fa-check-circle').forEach(i => {
+                        i.className = 'fas fa-circle';
+                        i.style.color = '#e2e8f0';
+                    });
+                    
+                    card.classList.add('selected');
+                    card.querySelector('i:last-child').className = 'fas fa-check-circle';
+                    card.querySelector('i:last-child').style.color = '#2563eb';
+                    
+                    selectedFormat = card.dataset.format;
+                });
+            });
+            
+            document.getElementById('generate-btn')?.addEventListener('click', generateSurat);
+            document.getElementById('download-btn')?.addEventListener('click', downloadSurat);
+            document.getElementById('print-btn')?.addEventListener('click', () => window.print());
+        }
+        
+        async function generateSurat() {
+            const btn = document.getElementById('generate-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Generating...';
+            
+            try {
+                const response = await apiService.post(`/api/surat-keluar/${suratId}/generate`, {
+                    format: selectedFormat,
+                    paperSize: document.getElementById('paper-size').value,
+                    copies: document.getElementById('copies').value,
+                    includeQR: document.getElementById('include-qr').checked,
+                    includeTTD: document.getElementById('include-ttd').checked
+                });
+                
+                // Show generated info
+                document.getElementById('final-nomor').textContent = response.data?.nomor_final || '-';
+                document.getElementById('generated-info').classList.add('show');
+                document.getElementById('generated-info').scrollIntoView({ behavior: 'smooth' });
+                
+                notifications.success('Surat berhasil digenerate');
+                
+                // Store download URL
+                window._downloadUrl = response.data?.downloadUrl;
+                
+            } catch (error) {
+                notifications.error('Gagal generate surat: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-cog"></i> Generate Surat';
+            }
+        }
+        
+        function downloadSurat() {
+            if (window._downloadUrl) {
+                window.open(window._downloadUrl, '_blank');
+            } else {
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>

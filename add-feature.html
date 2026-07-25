@@ -1,0 +1,262 @@
+<!-- add-feature.html - Add Feature Wizard ONE-CLICK 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script>
+        (function () {
+            const getAppBasePath = () => {
+                const pathname = window.location.pathname || '/';
+                const segments = pathname.split('/').filter(Boolean);
+                if (segments.length === 0) return '/';
+                const repoSegment = segments[0];
+                const isLikelySubfolder = pathname.includes(`/${repoSegment}/`) || pathname.endsWith(`/${repoSegment}`);
+                if (isLikelySubfolder && repoSegment !== 'dashboard' && repoSegment !== 'surat-masuk' && repoSegment !== 'surat-keluar') {
+                    return `/${repoSegment}/`;
+                }
+                return '/';
+            };
+            const appBasePath = getAppBasePath();
+            const rewrite = (value) => {
+                if (!value || !value.startsWith('/')) return value;
+                const clean = value.replace(/^\/+/, '');
+                return `${appBasePath}${clean}`.replace(/\/+/g, '/');
+            };
+            document.querySelectorAll('link[href], script[src], img[src], a[href]').forEach((el) => {
+                ['href', 'src'].forEach((attr) => {
+                    if (!el.hasAttribute(attr)) return;
+                    const value = el.getAttribute(attr);
+                    if (value && value.startsWith('/')) {
+                        el.setAttribute(attr, rewrite(value));
+                    }
+                });
+            });
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Add Feature - E-Arsip Digital</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #f1f5f9;
+        }
+        .container { max-width: 700px; width: 100%; }
+        .card {
+            background: #334155;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 16px;
+        }
+        h1 { font-size: 24px; margin-bottom: 4px; }
+        .subtitle { color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
+        
+        .feature-list { list-style: none; }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #1e293b;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .feature-item:hover { border-color: #2563eb; background: #1e3a5f; }
+        .feature-item.selected { border-color: #16a34a; background: #1a3a2a; }
+        .feature-icon { font-size: 24px; width: 40px; text-align: center; }
+        .feature-info { flex: 1; }
+        .feature-info h4 { font-size: 14px; margin-bottom: 2px; }
+        .feature-info p { font-size: 12px; color: #94a3b8; }
+        .feature-check {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            border: 2px solid #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .feature-item.selected .feature-check {
+            background: #16a34a;
+            border-color: #16a34a;
+            color: white;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: white;
+        }
+        .btn-apply { background: #2563eb; }
+        .btn-apply:hover { background: #1d4ed8; }
+        .btn-apply:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .result {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+        .result.show { display: block; }
+        .result.success { border-left: 4px solid #16a34a; }
+        .result.error { border-left: 4px solid #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>➕ Add Feature Wizard</h1>
+            <p class="subtitle">Tambahkan fitur baru ke dashboard Anda dengan satu klik</p>
+            
+            <ul class="feature-list" id="feature-list">
+                <li class="feature-item" data-feature="quick_actions">
+                    <span class="feature-icon">⚡</span>
+                    <div class="feature-info">
+                        <h4>Quick Actions Panel</h4>
+                        <p>Panel aksi cepat di dashboard</p>
+                    </div>
+                    <div class="feature-check">✓</div>
+                </li>
+                <li class="feature-item" data-feature="recent_docs">
+                    <span class="feature-icon">📄</span>
+                    <div class="feature-info">
+                        <h4>Recent Documents</h4>
+                        <p>Daftar dokumen terbaru di sidebar</p>
+                    </div>
+                    <div class="feature-check">✓</div>
+                </li>
+                <li class="feature-item" data-feature="calendar_view">
+                    <span class="feature-icon">📅</span>
+                    <div class="feature-info">
+                        <h4>Calendar View</h4>
+                        <p>Tampilan kalender surat</p>
+                    </div>
+                    <div class="feature-check"></div>
+                </li>
+                <li class="feature-item" data-feature="dark_mode_toggle">
+                    <span class="feature-icon">🌙</span>
+                    <div class="feature-info">
+                        <h4>Dark Mode Toggle</h4>
+                        <p>Tombol cepat ganti tema gelap/terang</p>
+                    </div>
+                    <div class="feature-check">✓</div>
+                </li>
+                <li class="feature-item" data-feature="email_digest">
+                    <span class="feature-icon">📧</span>
+                    <div class="feature-info">
+                        <h4>Email Digest</h4>
+                        <p>Ringkasan email harian</p>
+                    </div>
+                    <div class="feature-check"></div>
+                </li>
+                <li class="feature-item" data-feature="export_scheduler">
+                    <span class="feature-icon">📊</span>
+                    <div class="feature-info">
+                        <h4>Export Scheduler</h4>
+                        <p>Jadwal export laporan otomatis</p>
+                    </div>
+                    <div class="feature-check"></div>
+                </li>
+                <li class="feature-item" data-feature="chat_support">
+                    <span class="feature-icon">💬</span>
+                    <div class="feature-info">
+                        <h4>Live Chat Support</h4>
+                        <p>Chat langsung dengan tim support</p>
+                    </div>
+                    <div class="feature-check"></div>
+                </li>
+                <li class="feature-item" data-feature="signature_pad">
+                    <span class="feature-icon">✍️</span>
+                    <div class="feature-info">
+                        <h4>Signature Pad</h4>
+                        <p>Canvas tanda tangan digital</p>
+                    </div>
+                    <div class="feature-check">✓</div>
+                </li>
+            </ul>
+            
+            <button class="btn btn-apply" onclick="applyFeatures()" id="apply-btn">
+                🚀 Apply Selected Features
+            </button>
+            
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Toggle selection
+        document.querySelectorAll('.feature-item').forEach(item => {
+            item.addEventListener('click', () => {
+                item.classList.toggle('selected');
+                const check = item.querySelector('.feature-check');
+                check.textContent = item.classList.contains('selected') ? '✓' : '';
+            });
+        });
+        
+        async function applyFeatures() {
+            const btn = document.getElementById('apply-btn');
+            const result = document.getElementById('result');
+            
+            const selected = [];
+            document.querySelectorAll('.feature-item.selected').forEach(item => {
+                selected.push(item.dataset.feature);
+            });
+            
+            if (selected.length === 0) {
+                result.className = 'result show error';
+                result.innerHTML = '❌ Pilih minimal satu fitur untuk ditambahkan.';
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Applying...';
+            
+            result.className = 'result show';
+            result.innerHTML = '🔄 Menambahkan fitur...\n';
+            
+            // Simulate applying features
+            for (const feature of selected) {
+                result.innerHTML += `  ⏳ Processing: ${feature}...\n`;
+                await new Promise(r => setTimeout(r, 500));
+                
+                // Save feature flag to localStorage
+                const features = JSON.parse(localStorage.getItem('enabled_features') || '{}');
+                features[feature] = true;
+                localStorage.setItem('enabled_features', JSON.stringify(features));
+                
+                result.innerHTML += `  ✅ Completed: ${feature}\n`;
+            }
+            
+            result.innerHTML += `\n✅ ${selected.length} fitur berhasil ditambahkan!\n`;
+            result.innerHTML += '🔄 Redirecting ke dashboard dalam 3 detik...';
+            result.classList.add('success');
+            
+            setTimeout(() => {
+                window.location.href = '/dashboard/';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

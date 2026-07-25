@@ -1,0 +1,861 @@
+<!-- FILE: dashboard/dekan/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Dekan - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary: #1b5e20;
+            --secondary: #2e7d32;
+            --accent: #4caf50;
+            --gold: #ffd700;
+            --light: #f5f6fa;
+            --dark: #2c3e50;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1b5e20, #2e7d32);
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h5 { font-weight: 700; margin-bottom: 5px; }
+        .sidebar-header small { opacity: 0.8; }
+        
+        .sidebar-menu { padding: 20px 0; }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--gold);
+        }
+        
+        .sidebar-menu .nav-link i { width: 25px; margin-right: 10px; text-align: center; }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+        
+        .top-navbar {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .content-area { padding: 25px; }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1b5e20, #4caf50);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .signature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4caf50;
+            transition: all 0.3s;
+        }
+        
+        .signature-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        
+        .signature-card.final {
+            border-left-color: #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            .sidebar.active { margin-left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
+            <h5>E-Arsip Digital</h5>
+            <small>Dekan Panel</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="final-approval">
+                        <i class="fas fa-check-double"></i> Final Approval & TTD
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="disposisi-masuk">
+                        <i class="fas fa-clipboard-list"></i> Disposisi Masuk
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="semua-surat">
+                        <i class="fas fa-list"></i> Semua Surat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="laporan">
+                        <i class="fas fa-chart-bar"></i> Laporan Eksekutif
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <i class="fas fa-user-circle"></i> Profil Saya
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a href="#" class="nav-link text-danger" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none me-3" id="toggleSidebarBtn">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Dashboard Dekan</h5>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentTime" class="text-muted"></span>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <div class="avatar-circle me-2" id="userAvatar">D</div>
+                        <span id="displayName">Dekan</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-page="profile"><i class="fas fa-user me-2"></i>Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area" id="contentArea">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <!-- TTD MODAL -->
+    <div class="modal fade" id="ttdModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-signature me-2"></i>Tanda Tangan & Final Approval</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="ttdForm">
+                        <input type="hidden" id="ttdNomorSurat">
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Ini adalah approval final. Surat yang sudah ditandatangani akan di-generate dalam format PDF.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Status Final</label>
+                            <select class="form-select" id="ttdStatus" required>
+                                <option value="">-- Pilih Status --</option>
+                                <option value="disetujui">Setujui & Tanda Tangani</option>
+                                <option value="revisi">Perlu Revisi</option>
+                                <option value="ditolak">Tolak</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Catatan (Opsional)</label>
+                            <textarea class="form-control" id="ttdCatatan" rows="3" 
+                                      placeholder="Tambahkan catatan atau instruksi..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Tanda Tangan Digital</label>
+                            <input type="file" class="form-control" id="ttdFile" accept=".jpg,.jpeg,.png">
+                            <small class="text-muted">Upload file tanda tangan (JPG/PNG)</small>
+                            <div class="mt-2" id="ttdPreview" style="display: none;">
+                                <img id="ttdImage" style="max-height: 100px; border: 1px solid #ddd; padding: 5px;">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-success" onclick="submitTTD()">
+                        <i class="fas fa-signature me-2"></i>Tanda Tangani & Selesaikan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="../../config/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    
+    <script>
+        // Check authentication
+        if (!auth.requireRole('dekan')) {
+            // Redirect handled
+        }
+        
+        const currentUser = auth.getCurrentUser();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            loadDashboard();
+            setupEventListeners();
+            updateClock();
+            setInterval(updateClock, 60000);
+        });
+        
+        function initializeUI() {
+            if (currentUser) {
+                document.getElementById('displayName').textContent = currentUser.name || 'Dekan';
+                document.getElementById('userAvatar').textContent = (currentUser.name || 'D').charAt(0).toUpperCase();
+            }
+            
+            // Preview TTD
+            document.getElementById('ttdFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('ttdImage').src = e.target.result;
+                        document.getElementById('ttdPreview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            AOS.init({ duration: 800, once: true });
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('shifted');
+            });
+            
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateTo(this.dataset.page);
+                });
+            });
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleDateString('id-ID', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+        }
+        
+        function navigateTo(page) {
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) link.classList.add('active');
+            });
+            
+            const titles = {
+                'dashboard': 'Dashboard Dekan',
+                'final-approval': 'Final Approval & Tanda Tangan',
+                'disposisi-masuk': 'Disposisi Masuk',
+                'semua-surat': 'Semua Surat',
+                'laporan': 'Laporan Eksekutif',
+                'profile': 'Profil Saya'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'final-approval': loadFinalApproval(); break;
+                case 'disposisi-masuk': loadDisposisiMasuk(); break;
+                case 'semua-surat': loadSemuaSurat(); break;
+                case 'laporan': loadLaporan(); break;
+                case 'profile': window.location.href = '../../profile/index.html'; break;
+            }
+        }
+        
+        async function loadDashboard() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <!-- Stats Row -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Menunggu TTD</p>
+                                    <h3 class="mb-0" id="statPendingTTD">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                    <i class="fas fa-signature"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Disetujui Bulan Ini</p>
+                                    <h3 class="mb-0" id="statDisetujui">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Disposisi Masuk</p>
+                                    <h3 class="mb-0" id="statDisposisi">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="300">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Total Surat</p>
+                                    <h3 class="mb-0" id="statTotal">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pending Final Approval -->
+                <div class="row mb-4">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">
+                                <i class="fas fa-signature me-2"></i>Surat Menunggu Tanda Tangan
+                            </h5>
+                            <div id="pendingTTDList">
+                                <p class="text-muted text-center">Memuat data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">Aksi Cepat</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <button class="btn btn-success w-100" onclick="navigateTo('final-approval')">
+                                        <i class="fas fa-signature me-2"></i>Tanda Tangan Surat
+                                    </button>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button class="btn btn-info w-100" onclick="navigateTo('disposisi-masuk')">
+                                        <i class="fas fa-clipboard-list me-2"></i>Disposisi
+                                    </button>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button class="btn btn-primary w-100" onclick="navigateTo('laporan')">
+                                        <i class="fas fa-chart-bar me-2"></i>Laporan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            await loadDashboardStats();
+            await loadPendingTTD();
+        }
+        
+        async function loadDashboardStats() {
+            try {
+                const stats = await api.getStatistics();
+                if (stats && stats.success) {
+                    document.getElementById('statPendingTTD').textContent = stats.data?.pendingDekan || 0;
+                    document.getElementById('statDisetujui').textContent = stats.data?.disetujuiDekan || 0;
+                    document.getElementById('statDisposisi').textContent = stats.data?.disposisiDekan || 0;
+                    document.getElementById('statTotal').textContent = stats.data?.totalSurat || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadPendingTTD() {
+            const container = document.getElementById('pendingTTDList');
+            if (!container) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: 'pending_dekan'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(item => `
+                        <div class="signature-card ${item.sifat === 'segera' ? 'final' : ''}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${item.perihal || 'Tanpa perihal'}</h6>
+                                    <small class="text-muted">
+                                        <strong>No:</strong> ${item.nomorSurat || '-'}<br>
+                                        <strong>Pemohon:</strong> ${item.createdBy || '-'}<br>
+                                        <strong>Tanggal:</strong> ${Utils.formatDate(item.createdAt, 'date')}<br>
+                                        <strong>Progress:</strong>
+                                        <span class="badge bg-success">Admin ✓</span>
+                                        <span class="badge bg-success">Kasubag ✓</span>
+                                        <span class="badge bg-success">Wadek ✓</span>
+                                        <span class="badge bg-warning">Dekan ?</span>
+                                    </small>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-success" onclick="openTTDModal('${item.nomorSurat}')">
+                                        <i class="fas fa-signature me-1"></i>TTD
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="viewDetail('${item.id}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">Tidak ada surat menunggu TTD</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p class="text-danger text-center">Gagal memuat data</p>';
+            }
+        }
+        
+        function loadFinalApproval() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Final Approval & Tanda Tangan</h5>
+                    
+                    <div class="alert alert-success">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Surat yang sudah lengkap dan siap untuk ditandatangani oleh Dekan
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Surat</th>
+                                    <th>Perihal</th>
+                                    <th>Pemohon</th>
+                                    <th>Progress</th>
+                                    <th>Prioritas</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finalApprovalTable">
+                                <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadFinalApprovalData();
+        }
+        
+        async function loadFinalApprovalData() {
+            const tbody = document.getElementById('finalApprovalTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: 'pending_dekan'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorSurat || '-'}</strong></td>
+                            <td>${item.perihal || '-'}</td>
+                            <td>${item.createdBy || '-'}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" style="width: 75%">75%</div>
+                                </div>
+                            </td>
+                            <td>
+                                ${item.sifat === 'segera' ? 
+                                    '<span class="badge bg-danger">URGENT</span>' : 
+                                    '<span class="badge bg-secondary">Normal</span>'
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="openTTDModal('${item.nomorSurat}')">
+                                    <i class="fas fa-signature me-1"></i>TTD
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="viewDetail('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada surat</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        function openTTDModal(nomorSurat) {
+            document.getElementById('ttdNomorSurat').value = nomorSurat;
+            const modal = new bootstrap.Modal(document.getElementById('ttdModal'));
+            modal.show();
+        }
+        
+        async function submitTTD() {
+            const nomorSurat = document.getElementById('ttdNomorSurat').value;
+            const status = document.getElementById('ttdStatus').value;
+            const catatan = document.getElementById('ttdCatatan').value;
+            const ttdFile = document.getElementById('ttdFile').files[0];
+            
+            if (!status) {
+                alert('Pilih status');
+                return;
+            }
+            
+            try {
+                // Upload TTD
+                if (ttdFile && status === 'disetujui') {
+                    const uploadResult = await api.uploadTandaTangan(ttdFile, 'dekan');
+                    if (!uploadResult.success) {
+                        alert('Gagal upload TTD: ' + uploadResult.message);
+                        return;
+                    }
+                }
+                
+                // Submit approval
+                const result = await api.approveSuratKeluar(nomorSurat, 'dekan', status, catatan);
+                
+                if (result.success) {
+                    // Jika disetujui, generate surat final
+                    if (status === 'disetujui') {
+                        const genResult = await api.generateSuratFinal(nomorSurat);
+                        if (genResult.success) {
+                            alert('Surat telah ditandatangani dan file final telah di-generate');
+                        }
+                    }
+                    
+                    alert('Approval final berhasil');
+                    bootstrap.Modal.getInstance(document.getElementById('ttdModal')).hide();
+                    loadDashboard();
+                } else {
+                    alert('Gagal: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function loadDisposisiMasuk() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Disposisi Masuk - Dekan</h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Agenda</th>
+                                    <th>Dari</th>
+                                    <th>Instruksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="disposisiDekanTable">
+                                <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadDisposisiDekanData();
+        }
+        
+        async function loadDisposisiDekanData() {
+            const tbody = document.getElementById('disposisiDekanTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getDisposisi',
+                    tujuan: 'dekan'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorAgenda || '-'}</strong></td>
+                            <td>${item.disampaikanKepada || '-'}</td>
+                            <td>${item.instruksi || '-'}</td>
+                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                            <td><span class="badge bg-info">${item.status || 'Baru'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewDisposisi('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="beriInstruksi('${item.id}')">
+                                    <i class="fas fa-pen"></i> Instruksi
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada disposisi</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function loadSemuaSurat() {
+            window.location.href = '../../surat-keluar/list.html';
+        }
+        
+        function loadLaporan() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Laporan Eksekutif</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="stat-card text-center">
+                                <h3>128</h3>
+                                <p class="text-muted">Total Surat Tahun Ini</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card text-center">
+                                <h3>95%</h3>
+                                <p class="text-muted">Tingkat Penyelesaian</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card text-center">
+                                <h3>3.2 Hari</h3>
+                                <p class="text-muted">Rata-rata Waktu Proses</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <canvas id="trendChart" height="200"></canvas>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <canvas id="pieChart" height="200"></canvas>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="exportExecutiveReport()">
+                        <i class="fas fa-download me-2"></i>Export Laporan
+                    </button>
+                </div>
+            `;
+            
+            setTimeout(initExecutiveCharts, 500);
+        }
+        
+        function initExecutiveCharts() {
+            // Trend Chart
+            const ctx1 = document.getElementById('trendChart')?.getContext('2d');
+            if (ctx1) {
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                        datasets: [{
+                            label: 'Surat Keluar',
+                            data: [12, 19, 15, 25, 22, 30],
+                            borderColor: '#4caf50',
+                            tension: 0.3
+                        }]
+                    }
+                });
+            }
+            
+            // Pie Chart
+            const ctx2 = document.getElementById('pieChart')?.getContext('2d');
+            if (ctx2) {
+                new Chart(ctx2, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Umum', 'Keuangan', 'Legal', 'Lainnya'],
+                        datasets: [{
+                            data: [45, 20, 25, 10],
+                            backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#9c27b0']
+                        }]
+                    }
+                });
+            }
+        }
+        
+        function handleLogout() {
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                auth.logout();
+            }
+        }
+        
+        // Global functions
+        window.navigateTo = navigateTo;
+        window.openTTDModal = openTTDModal;
+        window.submitTTD = submitTTD;
+        window.handleLogout = handleLogout;
+        window.viewDetail = function(id) { alert('Detail surat ID: ' + id); };
+        window.viewDisposisi = function(id) { alert('Detail disposisi ID: ' + id); };
+        window.beriInstruksi = function(id) { alert('Beri instruksi untuk disposisi ID: ' + id); };
+        window.exportExecutiveReport = function() { alert('Export laporan eksekutif...'); };
+    </script>
+</body>
+</html>

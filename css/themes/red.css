@@ -1,0 +1,51 @@
+/* FILE: css/themes/red.css */
+/* ============================================ */
+/* RED THEME - E-ARSIP DIGITAL                  */
+/* ============================================ */
+
+.theme-red {
+    --primary: #b71c1c;
+    --primary-light: #f05545;
+    --primary-dark: #7f0000;
+    --secondary: #c62828;
+    --secondary-light: #ff5f52;
+    --secondary-dark: #8e0000;
+    --accent: #ff1744;
+    --accent-light: #ff616f;
+    --accent-dark: #c4001d;
+    --gold: #ffd700;
+    --bg-primary: #ffebee;
+    --bg-secondary: #ffcdd2;
+    --bg-card: #ffffff;
+    --text-primary: #b71c1c;
+    --text-secondary: #c62828;
+    --text-muted: #ef5350;
+}
+
+.theme-red .sidebar {
+    background: linear-gradient(180deg, #b71c1c, #c62828) !important;
+}
+
+.theme-red .btn-primary {
+    background: linear-gradient(135deg, #ff1744, #b71c1c);
+}
+
+.theme-red .btn-primary:hover {
+    background: linear-gradient(135deg, #c4001d, #7f0000);
+}
+
+.theme-red .stat-icon {
+    background: linear-gradient(135deg, #ff1744, #c62828) !important;
+}
+
+.theme-red .avatar-circle {
+    background: linear-gradient(135deg, #b71c1c, #ff1744);
+}
+
+.theme-red .badge-primary {
+    background: #ff1744;
+}
+
+.theme-red .nav-link.active {
+    border-left-color: #ffd700 !important;
+}

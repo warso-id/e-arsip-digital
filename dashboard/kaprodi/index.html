@@ -1,0 +1,922 @@
+<!-- FILE: dashboard/kaprodi/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Kaprodi - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary: #1a237e;
+            --secondary: #0d47a1;
+            --accent: #2962ff;
+            --gold: #ffd700;
+            --light: #f5f6fa;
+            --dark: #2c3e50;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #0d47a1, #1565c0);
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h5 { font-weight: 700; margin-bottom: 5px; }
+        .sidebar-header small { opacity: 0.8; }
+        
+        .sidebar-menu { padding: 20px 0; }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--gold);
+        }
+        
+        .sidebar-menu .nav-link i { width: 25px; margin-right: 10px; text-align: center; }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+        
+        .top-navbar {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .content-area { padding: 25px; }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .badge-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .approval-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+            transition: all 0.3s;
+        }
+        
+        .approval-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        
+        .approval-card.urgent {
+            border-left-color: #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            .sidebar.active { margin-left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
+            <h5>E-Arsip Digital</h5>
+            <small>Kaprodi Panel</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="disposisi-masuk">
+                        <i class="fas fa-clipboard-list"></i> Disposisi Masuk
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="approval-surat">
+                        <i class="fas fa-check-double"></i> Approval Surat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-keluar">
+                        <i class="fas fa-paper-plane"></i> Surat Keluar
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="surat-masuk">
+                        <i class="fas fa-inbox"></i> Surat Masuk
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="laporan">
+                        <i class="fas fa-chart-bar"></i> Laporan
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <i class="fas fa-user-circle"></i> Profil Saya
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a href="#" class="nav-link text-danger" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none me-3" id="toggleSidebarBtn">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Dashboard Kaprodi</h5>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentTime" class="text-muted"></span>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <div class="avatar-circle me-2" id="userAvatar">K</div>
+                        <span id="displayName">Kaprodi</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-page="profile"><i class="fas fa-user me-2"></i>Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area" id="contentArea">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <!-- APPROVAL MODAL -->
+    <div class="modal fade" id="approvalModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Approval Surat</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="approvalForm">
+                        <input type="hidden" id="approvalNomorSurat">
+                        <div class="mb-3">
+                            <label class="form-label">Status Approval</label>
+                            <select class="form-select" id="approvalStatus" required>
+                                <option value="">-- Pilih Status --</option>
+                                <option value="disetujui">Setujui</option>
+                                <option value="revisi">Perlu Revisi</option>
+                                <option value="ditolak">Tolak</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Catatan</label>
+                            <textarea class="form-control" id="approvalCatatan" rows="3" 
+                                      placeholder="Tambahkan catatan atau instruksi..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Upload Tanda Tangan (Opsional)</label>
+                            <input type="file" class="form-control" id="ttdFile" accept=".jpg,.jpeg,.png">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="submitApprovalKaprodi()">
+                        <i class="fas fa-check me-2"></i>Submit Approval
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="../../config/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    
+    <script>
+        // Check authentication
+        if (!auth.requireRole('kaprodi')) {
+            // Redirect handled
+        }
+        
+        const currentUser = auth.getCurrentUser();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            loadDashboard();
+            setupEventListeners();
+            updateClock();
+            setInterval(updateClock, 60000);
+        });
+        
+        function initializeUI() {
+            if (currentUser) {
+                document.getElementById('displayName').textContent = currentUser.name || 'Kaprodi';
+                document.getElementById('userAvatar').textContent = (currentUser.name || 'K').charAt(0).toUpperCase();
+            }
+            AOS.init({ duration: 800, once: true });
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('shifted');
+            });
+            
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateTo(this.dataset.page);
+                });
+            });
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleDateString('id-ID', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+        }
+        
+        function navigateTo(page) {
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) link.classList.add('active');
+            });
+            
+            const titles = {
+                'dashboard': 'Dashboard Kaprodi',
+                'disposisi-masuk': 'Disposisi Masuk',
+                'approval-surat': 'Approval Surat Keluar',
+                'surat-keluar': 'Daftar Surat Keluar',
+                'surat-masuk': 'Daftar Surat Masuk',
+                'laporan': 'Laporan',
+                'profile': 'Profil Saya'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'disposisi-masuk': loadDisposisiMasuk(); break;
+                case 'approval-surat': loadApprovalSurat(); break;
+                case 'surat-keluar': loadSuratKeluarList(); break;
+                case 'surat-masuk': loadSuratMasukList(); break;
+                case 'laporan': loadLaporan(); break;
+                case 'profile': window.location.href = '../../profile/index.html'; break;
+            }
+        }
+        
+        async function loadDashboard() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <!-- Stats Row -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Disposisi Masuk</p>
+                                    <h3 class="mb-0" id="statDisposisi">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Pending Approval</p>
+                                    <h3 class="mb-0" id="statPendingApproval">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Disetujui</p>
+                                    <h3 class="mb-0" id="statDisetujui">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="300">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Total Surat</p>
+                                    <h3 class="mb-0" id="statTotalSurat">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pending Approvals & Disposisi -->
+                <div class="row">
+                    <div class="col-lg-6 mb-4" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">
+                                <i class="fas fa-check-double me-2"></i>Approval Pending
+                            </h5>
+                            <div id="pendingApprovalList">
+                                <p class="text-muted text-center">Memuat data...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 mb-4" data-aos="fade-up" data-aos-delay="100">
+                        <div class="table-container">
+                            <h5 class="mb-4">
+                                <i class="fas fa-clipboard-list me-2"></i>Disposisi Terbaru
+                            </h5>
+                            <div id="recentDisposisiList">
+                                <p class="text-muted text-center">Memuat data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">Aksi Cepat</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <button class="btn btn-warning w-100" onclick="navigateTo('approval-surat')">
+                                        <i class="fas fa-check-circle me-2"></i>Approval Surat
+                                    </button>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button class="btn btn-info w-100" onclick="navigateTo('disposisi-masuk')">
+                                        <i class="fas fa-clipboard-list me-2"></i>Lihat Disposisi
+                                    </button>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button class="btn btn-success w-100" onclick="navigateTo('laporan')">
+                                        <i class="fas fa-chart-bar me-2"></i>Lihat Laporan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            await loadDashboardStats();
+            await loadPendingApprovals();
+            await loadRecentDisposisi();
+        }
+        
+        async function loadDashboardStats() {
+            try {
+                const stats = await api.getStatistics();
+                if (stats && stats.success) {
+                    document.getElementById('statDisposisi').textContent = stats.data?.disposisiKaprodi || 0;
+                    document.getElementById('statPendingApproval').textContent = stats.data?.pendingApproval || 0;
+                    document.getElementById('statDisetujui').textContent = stats.data?.disetujuiKaprodi || 0;
+                    document.getElementById('statTotalSurat').textContent = stats.data?.totalSurat || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadPendingApprovals() {
+            const container = document.getElementById('pendingApprovalList');
+            if (!container) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: 'pending_kaprodi'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(item => `
+                        <div class="approval-card ${item.sifat === 'segera' ? 'urgent' : ''}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${item.perihal || 'Tanpa perihal'}</h6>
+                                    <small class="text-muted">
+                                        <strong>No:</strong> ${item.nomorSurat || '-'}<br>
+                                        <strong>Pemohon:</strong> ${item.createdBy || '-'}<br>
+                                        <strong>Tanggal:</strong> ${Utils.formatDate(item.createdAt, 'date')}
+                                    </small>
+                                    ${item.sifat === 'segera' ? '<span class="badge bg-danger mt-1">URGENT</span>' : ''}
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-success" onclick="openApprovalModal('${item.nomorSurat}')">
+                                        <i class="fas fa-check me-1"></i>Approve
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="viewDetail('${item.id}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">Tidak ada approval pending</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p class="text-danger text-center">Gagal memuat data</p>';
+            }
+        }
+        
+        async function loadRecentDisposisi() {
+            const container = document.getElementById('recentDisposisiList');
+            if (!container) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getDisposisi',
+                    tujuan: 'kaprodi',
+                    limit: 5
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(item => `
+                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                            <div>
+                                <strong>${item.nomorAgenda || '-'}</strong>
+                                <br><small class="text-muted">${item.perihal || '-'}</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-info">${item.status || 'Baru'}</span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewDisposisi('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">Belum ada disposisi</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p class="text-danger text-center">Gagal memuat data</p>';
+            }
+        }
+        
+        function loadApprovalSurat() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Approval Surat Keluar</h5>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Surat yang memerlukan persetujuan Kaprodi sebelum diteruskan ke tingkat selanjutnya
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchApproval" placeholder="Cari surat...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterApprovalStatus">
+                                <option value="pending_kaprodi">Pending</option>
+                                <option value="all">Semua</option>
+                                <option value="disetujui">Disetujui</option>
+                                <option value="ditolak">Ditolak</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filterApprovalDate">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" onclick="filterApproval()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Surat</th>
+                                    <th>Perihal</th>
+                                    <th>Pemohon</th>
+                                    <th>Tanggal</th>
+                                    <th>Prioritas</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvalTable">
+                                <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadApprovalData();
+        }
+        
+        async function loadApprovalData() {
+            const tbody = document.getElementById('approvalTable');
+            if (!tbody) return;
+            
+            try {
+                const status = document.getElementById('filterApprovalStatus')?.value || 'pending_kaprodi';
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: status === 'all' ? '' : status
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorSurat || '-'}</strong></td>
+                            <td>${item.perihal || '-'}</td>
+                            <td>${item.createdBy || '-'}</td>
+                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                            <td>
+                                ${item.sifat === 'segera' ? 
+                                    '<span class="badge bg-danger">URGENT</span>' : 
+                                    '<span class="badge bg-secondary">Normal</span>'
+                                }
+                            </td>
+                            <td>
+                                ${item.status === 'pending_kaprodi' ? `
+                                    <button class="btn btn-sm btn-success" onclick="openApprovalModal('${item.nomorSurat}')">
+                                        <i class="fas fa-check me-1"></i>Approve
+                                    </button>
+                                ` : `
+                                    <span class="badge bg-${item.status === 'disetujui' ? 'success' : 'danger'}">
+                                        ${item.status === 'disetujui' ? 'Disetujui' : 'Ditolak'}
+                                    </span>
+                                `}
+                                <button class="btn btn-sm btn-info" onclick="viewDetail('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada surat</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        function openApprovalModal(nomorSurat) {
+            document.getElementById('approvalNomorSurat').value = nomorSurat;
+            const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+            modal.show();
+        }
+        
+        async function submitApprovalKaprodi() {
+            const nomorSurat = document.getElementById('approvalNomorSurat').value;
+            const status = document.getElementById('approvalStatus').value;
+            const catatan = document.getElementById('approvalCatatan').value;
+            const ttdFile = document.getElementById('ttdFile').files[0];
+            
+            if (!status) {
+                alert('Pilih status approval');
+                return;
+            }
+            
+            try {
+                // Upload tanda tangan jika ada
+                if (ttdFile) {
+                    const uploadResult = await api.uploadTandaTangan(ttdFile, 'kaprodi');
+                    if (!uploadResult.success) {
+                        alert('Gagal upload tanda tangan: ' + uploadResult.message);
+                        return;
+                    }
+                }
+                
+                const result = await api.approveSuratKeluar(nomorSurat, 'kaprodi', status, catatan);
+                
+                if (result.success) {
+                    alert('Approval berhasil disimpan');
+                    bootstrap.Modal.getInstance(document.getElementById('approvalModal')).hide();
+                    loadApprovalSurat();
+                    loadDashboard();
+                } else {
+                    alert('Gagal: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function loadDisposisiMasuk() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Disposisi Masuk</h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Agenda</th>
+                                    <th>Dari</th>
+                                    <th>Instruksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="disposisiTable">
+                                <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadDisposisiData();
+        }
+        
+        async function loadDisposisiData() {
+            const tbody = document.getElementById('disposisiTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getDisposisi',
+                    tujuan: 'kaprodi'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorAgenda || '-'}</strong></td>
+                            <td>${item.disampaikanKepada || '-'}</td>
+                            <td>${item.instruksi || '-'}</td>
+                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                            <td><span class="badge bg-info">${item.status || 'Baru'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewDisposisiDetail('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="tindakLanjuti('${item.id}')">
+                                    <i class="fas fa-check"></i> Tindak Lanjuti
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada disposisi</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        function loadSuratKeluarList() {
+            window.location.href = '../../surat-keluar/list.html';
+        }
+        
+        function loadSuratMasukList() {
+            window.location.href = '../../surat-masuk/list.html';
+        }
+        
+        function loadLaporan() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="table-container">
+                            <h5 class="mb-4">Laporan Surat</h5>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <label class="form-label">Jenis Laporan</label>
+                                    <select class="form-select" id="reportType">
+                                        <option value="surat-keluar">Surat Keluar</option>
+                                        <option value="surat-masuk">Surat Masuk</option>
+                                        <option value="disposisi">Disposisi</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Dari Tanggal</label>
+                                    <input type="date" class="form-control" id="reportStart">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Sampai Tanggal</label>
+                                    <input type="date" class="form-control" id="reportEnd">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-primary w-100" onclick="generateReport()">
+                                        <i class="fas fa-chart-bar me-2"></i>Generate
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="reportResult">
+                                <p class="text-muted text-center py-5">
+                                    <i class="fas fa-chart-line fa-3x mb-3"></i><br>
+                                    Pilih filter dan klik Generate
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateReport() {
+            const type = document.getElementById('reportType').value;
+            const start = document.getElementById('reportStart').value;
+            const end = document.getElementById('reportEnd').value;
+            
+            if (!start || !end) {
+                alert('Pilih rentang tanggal');
+                return;
+            }
+            
+            // Implementasi generate report
+            document.getElementById('reportResult').innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Generate laporan...
+                </div>
+            `;
+            
+            setTimeout(() => {
+                document.getElementById('reportResult').innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kategori</th>
+                                    <th>Jumlah</th>
+                                    <th>Persentase</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Surat Umum</td><td>15</td><td>35%</td></tr>
+                                <tr><td>Surat Keuangan</td><td>10</td><td>23%</td></tr>
+                                <tr><td>Surat Legal</td><td>8</td><td>19%</td></tr>
+                                <tr><td>Lainnya</td><td>10</td><td>23%</td></tr>
+                                <tr class="table-primary"><td><strong>Total</strong></td><td><strong>43</strong></td><td><strong>100%</strong></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }, 2000);
+        }
+        
+        function handleLogout() {
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                auth.logout();
+            }
+        }
+        
+        // Global functions
+        window.navigateTo = navigateTo;
+        window.openApprovalModal = openApprovalModal;
+        window.submitApprovalKaprodi = submitApprovalKaprodi;
+        window.handleLogout = handleLogout;
+        window.viewDetail = function(id) { alert('Detail surat ID: ' + id); };
+        window.viewDisposisi = function(id) { alert('Detail disposisi ID: ' + id); };
+        window.viewDisposisiDetail = function(id) { alert('Detail disposisi ID: ' + id); };
+        window.tindakLanjuti = function(id) { alert('Tindak lanjuti disposisi ID: ' + id); };
+        window.filterApproval = function() { loadApprovalData(); };
+        window.generateReport = generateReport;
+    </script>
+</body>
+</html>

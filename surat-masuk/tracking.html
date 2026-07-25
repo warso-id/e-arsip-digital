@@ -1,0 +1,277 @@
+<!-- surat-masuk/tracking.html - Tracking Surat Masuk 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tracking Surat Masuk - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .tracking-container { max-width: 800px; margin: 0 auto; }
+        
+        .track-search {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .track-search input {
+            flex: 1;
+        }
+        
+        .tracking-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .tracking-timeline::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+        
+        .tracking-node {
+            position: relative;
+            padding-bottom: 32px;
+        }
+        
+        .tracking-node::before {
+            content: '';
+            position: absolute;
+            left: -22px;
+            top: 4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 3px solid white;
+            z-index: 1;
+        }
+        
+        .tracking-node.completed::before {
+            background: #16a34a;
+            box-shadow: 0 0 0 3px #16a34a;
+        }
+        
+        .tracking-node.active::before {
+            background: #2563eb;
+            box-shadow: 0 0 0 3px #2563eb;
+            animation: pulse 2s infinite;
+        }
+        
+        .tracking-node.pending::before {
+            background: #94a3b8;
+            box-shadow: 0 0 0 3px #94a3b8;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 3px #2563eb; }
+            50% { box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+        }
+        
+        .node-content {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 18px;
+        }
+        
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .node-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .node-time {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        
+        .node-desc {
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .status-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .status-card {
+            text-align: center;
+            padding: 16px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .status-card .count {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .status-card .label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        @media (max-width: 768px) {
+            .track-search { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/surat-masuk/tracking.html" class="nav-item active"><i class="fas fa-search"></i> Tracking</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="tracking-container">
+            <h2 style="margin-bottom:8px;">Tracking Surat Masuk</h2>
+            <p style="color:#64748b;margin-bottom:20px;">Lacak status dan riwayat disposisi surat masuk</p>
+            
+            <!-- Search -->
+            <div class="track-search">
+                <input type="text" class="form-input" id="track-input" placeholder="Masukkan nomor surat atau ID tracking...">
+                <button class="btn btn-primary" id="track-btn">
+                    <i class="fas fa-search"></i> Lacak
+                </button>
+            </div>
+            
+            <!-- Status Summary -->
+            <div class="status-summary" id="status-summary"></div>
+            
+            <!-- Timeline -->
+            <div class="tracking-timeline" id="tracking-timeline">
+                <p style="color:#94a3b8;text-align:center;padding:20px;">
+                    Masukkan nomor surat untuk melihat status tracking
+                </p>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '../js/auth.js';
+        import apiService from '../js/api.js';
+        import notifications from '../js/notifications.js';
+        import utils from '../js/utils.js';
+        import logger from '../js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '../login.html';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            
+            document.getElementById('track-btn')?.addEventListener('click', trackSurat);
+            document.getElementById('track-input')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') trackSurat();
+            });
+            
+            // Auto-track if ID in URL
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('id')) {
+                document.getElementById('track-input').value = params.get('id');
+                trackSurat();
+            }
+            
+            logger.info('Tracking page loaded');
+        });
+        
+        async function trackSurat() {
+            const input = document.getElementById('track-input').value.trim();
+            if (!input) {
+                notifications.warning('Masukkan nomor surat');
+                return;
+            }
+            
+            try {
+                const response = await apiService.get('/api/surat-masuk/track', { q: input });
+                const data = response.data;
+                
+                if (!data || !data.tracking) {
+                    document.getElementById('tracking-timeline').innerHTML = `
+                        <div style="text-align:center;padding:40px;color:#94a3b8;">
+                            <i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+                            Surat tidak ditemukan
+                        </div>`;
+                    return;
+                }
+                
+                renderSummary(data.summary);
+                renderTimeline(data.tracking);
+                
+            } catch (error) {
+                notifications.error('Gagal melacak surat');
+            }
+        }
+        
+        function renderSummary(summary) {
+            if (!summary) return;
+            
+            document.getElementById('status-summary').innerHTML = `
+                <div class="status-card">
+                    <div class="count" style="color:#2563eb;">${summary.total_nodes || 0}</div>
+                    <div class="label">Total Tahapan</div>
+                </div>
+                <div class="status-card">
+                    <div class="count" style="color:#16a34a;">${summary.completed || 0}</div>
+                    <div class="label">Selesai</div>
+                </div>
+                <div class="status-card">
+                    <div class="count" style="color:#d97706;">${summary.in_progress || 0}</div>
+                    <div class="label">Dalam Proses</div>
+                </div>
+                <div class="status-card">
+                    <div class="count" style="color:#94a3b8;">${summary.pending || 0}</div>
+                    <div class="label">Menunggu</div>
+                </div>
+            `;
+        }
+        
+        function renderTimeline(nodes) {
+            const container = document.getElementById('tracking-timeline');
+            
+            if (!nodes || nodes.length === 0) {
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Tidak ada data tracking</p>';
+                return;
+            }
+            
+            container.innerHTML = nodes.map(node => `
+                <div class="tracking-node ${node.status || 'pending'}">
+                    <div class="node-content">
+                        <div class="node-header">
+                            <span class="node-title">${node.title}</span>
+                            <span class="node-time">${node.timestamp ? utils.timeAgo(node.timestamp) : '-'}</span>
+                        </div>
+                        <div class="node-desc">${node.description || '-'}</div>
+                        ${node.actor ? `<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Oleh: ${node.actor}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

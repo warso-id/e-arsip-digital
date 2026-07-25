@@ -1,0 +1,222 @@
+<!-- FILE: surat-masuk/disposisi-cetak.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Lembar Disposisi - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/print.css">
+    
+    <style>
+        body {
+            background: white;
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+        
+        .disposisi-print {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .kop-disposisi {
+            text-align: center;
+            border-bottom: 3px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .lembar-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px solid #000;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            border-bottom: 1px solid #000;
+        }
+        
+        .info-label {
+            width: 150px;
+            padding: 8px;
+            background: #f0f0f0;
+            font-weight: bold;
+            border-right: 1px solid #000;
+        }
+        
+        .info-value {
+            flex: 1;
+            padding: 8px;
+        }
+        
+        .instruksi-box {
+            border: 1px solid #000;
+            padding: 15px;
+            margin: 20px 0;
+            min-height: 100px;
+        }
+        
+        .signature-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+        
+        .signature-line {
+            margin-top: 60px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+        
+        @media screen {
+            .disposisi-print {
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin: 30px auto;
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="disposisi-print">
+        <!-- KOP SURAT -->
+        <div class="kop-disposisi">
+            <h5>KEMENTERIAN PENDIDIKAN</h5>
+            <h4 id="kopInstansi">FAKULTAS ILMU KOMPUTER</h4>
+            <p id="kopAlamat">Jl. Contoh No. 123, Jakarta</p>
+        </div>
+        
+        <!-- LEMBAR DISPOSISI -->
+        <div class="lembar-title">
+            LEMBAR DISPOSISI
+        </div>
+        
+        <!-- INFORMASI -->
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Diterima Tanggal</div>
+                <div class="info-value" id="infoTglTerima">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Diterima Jam</div>
+                <div class="info-value" id="infoJamTerima">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">No. Agenda</div>
+                <div class="info-value" id="infoNoAgenda">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Tgl. Agenda</div>
+                <div class="info-value" id="infoTglAgenda">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Asal Surat</div>
+                <div class="info-value" id="infoAsalSurat">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">No. Surat Asal</div>
+                <div class="info-value" id="infoNoSuratAsal">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Perihal</div>
+                <div class="info-value" id="infoPerihal">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Sifat</div>
+                <div class="info-value" id="infoSifat">-</div>
+            </div>
+        </div>
+        
+        <!-- DISPOSISI -->
+        <div style="margin: 20px 0;">
+            <table style="width: 100%; border: 1px solid #000; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 150px; padding: 8px; background: #f0f0f0; font-weight: bold; border: 1px solid #000;">
+                        Disampaikan Kepada
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #000;" id="dispoKepada">-</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; background: #f0f0f0; font-weight: bold; border: 1px solid #000;">
+                        Diteruskan Kepada
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #000;" id="dispoDiteruskan">-</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- INSTRUKSI -->
+        <div class="instruksi-box">
+            <strong>Instruksi / Catatan:</strong>
+            <p id="dispoInstruksi" style="margin-top: 10px;">-</p>
+        </div>
+        
+        <!-- TANDA TANGAN -->
+        <div class="signature-area">
+            <div class="signature-box">
+                <p>Mengetahui,</p>
+                <div class="signature-line">
+                    <p id="namaMengetahui">-</p>
+                    <p>NIP. <span id="nipMengetahui">-</span></p>
+                </div>
+            </div>
+            <div class="signature-box">
+                <p id="tempatTgl">Jakarta, -</p>
+                <p>Yang Mendisposisi,</p>
+                <div class="signature-line">
+                    <p id="namaDisposisi">-</p>
+                    <p>NIP. <span id="nipDisposisi">-</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load data dari parameter URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const disposisiId = urlParams.get('id');
+        
+        if (disposisiId) {
+            // Load data (simulasi)
+            loadDisposisiData(disposisiId);
+        }
+        
+        function loadDisposisiData(id) {
+            // Data akan diisi dari API
+            // Ini hanya placeholder
+            document.getElementById('infoTglTerima').textContent = '15 Juli 2024';
+            document.getElementById('infoJamTerima').textContent = '10:30';
+            document.getElementById('infoNoAgenda').textContent = 'M.UM-001';
+            document.getElementById('infoAsalSurat').textContent = 'Dinas Pendidikan';
+        }
+        
+        // Auto print
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

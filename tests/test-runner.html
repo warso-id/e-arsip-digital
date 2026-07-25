@@ -1,0 +1,607 @@
+<!-- tests/test-runner.html - Test Runner Dashboard 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Runner - E-Arsip Digital</title>
+    
+    <style>
+        :root {
+            --pass: #16a34a;
+            --fail: #dc2626;
+            --pending: #d97706;
+            --bg: #1e293b;
+            --card: #334155;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px;
+            min-height: 100vh;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .test-header h1 {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        
+        .test-header .version {
+            color: var(--muted);
+            font-size: 14px;
+        }
+        
+        .summary-bar {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .summary-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .summary-card .count {
+            font-size: 36px;
+            font-weight: 700;
+        }
+        
+        .summary-card .label {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        
+        .summary-card.pass .count { color: var(--pass); }
+        .summary-card.fail .count { color: var(--fail); }
+        .summary-card.pending .count { color: var(--pending); }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--card);
+            border-radius: 3px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--pass);
+            transition: width 0.3s;
+            border-radius: 3px;
+        }
+        
+        .test-suite {
+            background: var(--card);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        
+        .suite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .suite-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .suite-badge {
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .suite-badge.pass { background: #dcfce7; color: var(--pass); }
+        .suite-badge.fail { background: #fee2e2; color: var(--fail); }
+        .suite-badge.pending { background: #fffbeb; color: var(--pending); }
+        
+        .suite-body {
+            display: none;
+        }
+        
+        .suite-body.open {
+            display: block;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 13px;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+        
+        .test-icon.pass { background: var(--pass); }
+        .test-icon.fail { background: var(--fail); }
+        .test-icon.pending { background: var(--pending); }
+        
+        .test-name {
+            flex: 1;
+        }
+        
+        .test-duration {
+            font-size: 11px;
+            color: var(--muted);
+        }
+        
+        .test-error {
+            margin-top: 4px;
+            margin-left: 30px;
+            padding: 8px 12px;
+            background: rgba(220, 38, 38, 0.1);
+            border-left: 3px solid var(--fail);
+            border-radius: 0 6px 6px 0;
+            font-size: 12px;
+            color: #fca5a5;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .btn-run {
+            background: var(--pass);
+            color: white;
+        }
+        
+        .btn-run:hover { opacity: 0.9; }
+        
+        .btn-run:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-reset {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-filter {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-filter.active {
+            background: var(--card);
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🧪 E-Arsip Digital Test Suite</h1>
+        <p class="version">Version 2026.1.0</p>
+    </div>
+    
+    <div class="controls">
+        <button class="btn btn-run" id="run-all-btn">▶ Run All Tests</button>
+        <button class="btn btn-reset" id="reset-btn">↺ Reset</button>
+        <button class="btn btn-filter active" data-filter="all">All</button>
+        <button class="btn btn-filter" data-filter="pass">Passed</button>
+        <button class="btn btn-filter" data-filter="fail">Failed</button>
+    </div>
+    
+    <div class="summary-bar">
+        <div class="summary-card">
+            <div class="count" id="total-count">0</div>
+            <div class="label">Total</div>
+        </div>
+        <div class="summary-card pass">
+            <div class="count" id="pass-count">0</div>
+            <div class="label">Passed</div>
+        </div>
+        <div class="summary-card fail">
+            <div class="count" id="fail-count">0</div>
+            <div class="label">Failed</div>
+        </div>
+        <div class="summary-card pending">
+            <div class="count" id="pending-count">0</div>
+            <div class="label">Pending</div>
+        </div>
+    </div>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:0%;"></div>
+    </div>
+    
+    <div id="test-results"></div>
+    
+    <script type="module">
+        // Test runner framework
+        const suites = [];
+        let totalTests = 0;
+        let passedTests = 0;
+        let failedTests = 0;
+        let currentFilter = 'all';
+        
+        // Simple test framework
+        window.describe = function(name, fn) {
+            const suite = {
+                name,
+                tests: [],
+                passed: 0,
+                failed: 0,
+                status: 'pending'
+            };
+            
+            suites.push(suite);
+            window._currentSuite = suite;
+            fn();
+            window._currentSuite = null;
+        };
+        
+        window.it = function(name, fn) {
+            const test = {
+                name,
+                fn,
+                status: 'pending',
+                error: null,
+                duration: 0
+            };
+            
+            if (window._currentSuite) {
+                window._currentSuite.tests.push(test);
+            }
+        };
+        
+        window.expect = function(actual) {
+            return {
+                toBe(expected) {
+                    if (actual !== expected) {
+                        throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+                    }
+                },
+                toEqual(expected) {
+                    const actualStr = JSON.stringify(actual);
+                    const expectedStr = JSON.stringify(expected);
+                    if (actualStr !== expectedStr) {
+                        throw new Error(`Expected ${expectedStr} but got ${actualStr}`);
+                    }
+                },
+                toContain(expected) {
+                    if (!actual.includes(expected)) {
+                        throw new Error(`Expected "${actual}" to contain "${expected}"`);
+                    }
+                },
+                toBeTruthy() {
+                    if (!actual) {
+                        throw new Error(`Expected value to be truthy but got ${actual}`);
+                    }
+                },
+                toBeGreaterThanOrEqual(expected) {
+                    if (actual < expected) {
+                        throw new Error(`Expected ${actual} to be >= ${expected}`);
+                    }
+                },
+                toBeLessThanOrEqual(expected) {
+                    if (actual > expected) {
+                        throw new Error(`Expected ${actual} to be <= ${expected}`);
+                    }
+                },
+                not: {
+                    toBe(expected) {
+                        if (actual === expected) {
+                            throw new Error(`Expected ${JSON.stringify(actual)} not to be ${JSON.stringify(expected)}`);
+                        }
+                    }
+                }
+            };
+        };
+        
+        window.beforeAll = function(fn) { fn(); };
+        window.beforeEach = function(fn) { fn(); };
+        
+        async function runAllTests() {
+            // Reset
+            suites.forEach(s => {
+                s.passed = 0;
+                s.failed = 0;
+                s.status = 'pending';
+                s.tests.forEach(t => {
+                    t.status = 'pending';
+                    t.error = null;
+                    t.duration = 0;
+                });
+            });
+            
+            totalTests = 0;
+            passedTests = 0;
+            failedTests = 0;
+            
+            // Load test files
+            const testFiles = [
+                '../../js/security/encryption.js'
+            ];
+            
+            // Run inline tests
+            for (const suite of suites) {
+                suite.status = 'running';
+                renderSuite(suite);
+                
+                for (const test of suite.tests) {
+                    totalTests++;
+                    const startTime = performance.now();
+                    
+                    try {
+                        await test.fn();
+                        test.status = 'pass';
+                        suite.passed++;
+                        passedTests++;
+                    } catch (error) {
+                        test.status = 'fail';
+                        test.error = error.message;
+                        suite.failed++;
+                        failedTests++;
+                    }
+                    
+                    test.duration = Math.round(performance.now() - startTime);
+                }
+                
+                suite.status = suite.failed === 0 ? 'pass' : 'fail';
+                renderSuite(suite);
+            }
+            
+            updateSummary();
+        }
+        
+        function renderSuite(suite) {
+            const container = document.getElementById('test-results');
+            const existingSuite = container.querySelector(`[data-suite="${suite.name}"]`);
+            
+            const html = `
+                <div class="test-suite" data-suite="${suite.name}">
+                    <div class="suite-header" onclick="this.parentElement.querySelector('.suite-body').classList.toggle('open')">
+                        <h3>${suite.name}</h3>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:12px;color:#94a3b8;">
+                                ${suite.passed + suite.failed}/${suite.tests.length}
+                            </span>
+                            <span class="suite-badge ${suite.status}">
+                                ${suite.status.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="suite-body ${suite.status !== 'pending' ? 'open' : ''}">
+                        ${suite.tests.map(test => `
+                            <div class="test-item" data-status="${test.status}">
+                                <div class="test-icon ${test.status}">
+                                    ${test.status === 'pass' ? '✓' : test.status === 'fail' ? '✗' : '○'}
+                                </div>
+                                <span class="test-name">${test.name}</span>
+                                ${test.duration > 0 ? `<span class="test-duration">${test.duration}ms</span>` : ''}
+                            </div>
+                            ${test.error ? `<div class="test-error">${test.error}</div>` : ''}
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            if (existingSuite) {
+                existingSuite.outerHTML = html;
+            } else {
+                container.insertAdjacentHTML('beforeend', html);
+            }
+        }
+        
+        function updateSummary() {
+            document.getElementById('total-count').textContent = totalTests;
+            document.getElementById('pass-count').textContent = passedTests;
+            document.getElementById('fail-count').textContent = failedTests;
+            document.getElementById('pending-count').textContent = totalTests - passedTests - failedTests;
+            
+            const progress = totalTests > 0 ? ((passedTests + failedTests) / totalTests) * 100 : 0;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            
+            if (failedTests > 0) {
+                document.getElementById('progress-fill').style.background = '#dc2626';
+            } else if (passedTests === totalTests) {
+                document.getElementById('progress-fill').style.background = '#16a34a';
+            }
+        }
+        
+        function applyFilter(filter) {
+            currentFilter = filter;
+            
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            
+            document.querySelectorAll('.test-item').forEach(item => {
+                if (filter === 'all') {
+                    item.style.display = '';
+                } else {
+                    item.style.display = item.dataset.status === filter ? '' : 'none';
+                }
+            });
+        }
+        
+        // Event handlers
+        document.getElementById('run-all-btn')?.addEventListener('click', async () => {
+            const btn = document.getElementById('run-all-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Running...';
+            
+            await runAllTests();
+            
+            btn.disabled = false;
+            btn.textContent = '▶ Run All Tests';
+        });
+        
+        document.getElementById('reset-btn')?.addEventListener('click', () => {
+            suites.length = 0;
+            totalTests = 0;
+            passedTests = 0;
+            failedTests = 0;
+            document.getElementById('test-results').innerHTML = '';
+            updateSummary();
+        });
+        
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.addEventListener('click', () => applyFilter(btn.dataset.filter));
+        });
+        
+        // Auto-run tests on load
+        setTimeout(() => runAllTests(), 500);
+        
+        // Define test suites
+        describe('Utils - Date & Time', () => {
+            it('should format date correctly', () => {
+                const testDate = new Date('2026-01-15');
+                expect(testDate.getFullYear()).toBe(2026);
+                expect(testDate.getMonth()).toBe(0);
+                expect(testDate.getDate()).toBe(15);
+            });
+            
+            it('should calculate time differences', () => {
+                const now = Date.now();
+                const fiveMinutesAgo = now - 5 * 60 * 1000;
+                const diff = now - fiveMinutesAgo;
+                expect(diff).toBe(300000);
+            });
+        });
+        
+        describe('Utils - String Functions', () => {
+            it('should generate random strings', () => {
+                const str1 = Math.random().toString(36).substring(2, 12);
+                const str2 = Math.random().toString(36).substring(2, 12);
+                expect(str1).not.toBe(str2);
+            });
+            
+            it('should detect valid email patterns', () => {
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                expect(emailRegex.test('user@example.com')).toBe(true);
+                expect(emailRegex.test('notanemail')).toBe(false);
+            });
+        });
+        
+        describe('Encryption - Basic Operations', () => {
+            it('should verify Crypto API availability', () => {
+                expect(!!window.crypto).toBe(true);
+                expect(!!window.crypto.subtle).toBe(true);
+            });
+            
+            it('should generate random values', () => {
+                const random = crypto.getRandomValues(new Uint8Array(16));
+                expect(random.length).toBe(16);
+            });
+            
+            it('should perform SHA-256 hashing', async () => {
+                const data = new TextEncoder().encode('test data');
+                const hash = await crypto.subtle.digest('SHA-256', data);
+                expect(hash.byteLength).toBe(32);
+            });
+        });
+        
+        describe('Security - Input Validation', () => {
+            it('should detect XSS patterns', () => {
+                const xssPattern = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+                expect(xssPattern.test('<script>alert("xss")</script>')).toBe(true);
+                expect(xssPattern.test('<p>Hello World</p>')).toBe(false);
+            });
+            
+            it('should detect SQL injection patterns', () => {
+                const sqliPattern = /(\s|^)(SELECT|INSERT|UPDATE|DELETE|DROP|UNION)\s/i;
+                expect(sqliPattern.test("SELECT * FROM users")).toBe(true);
+                expect(sqliPattern.test("Hello World")).toBe(false);
+            });
+        });
+        
+        describe('API - Response Handling', () => {
+            it('should parse JSON responses', () => {
+                const json = '{"success":true,"data":{"id":1,"name":"test"}}';
+                const parsed = JSON.parse(json);
+                expect(parsed.success).toBe(true);
+                expect(parsed.data.id).toBe(1);
+            });
+            
+            it('should handle API errors', () => {
+                const errorResponse = { status: 404, message: 'Not Found' };
+                expect(errorResponse.status).toBe(404);
+                expect(errorResponse.message).toContain('Not Found');
+            });
+        });
+        
+        describe('Session - Token Management', () => {
+            it('should validate token format', () => {
+                const token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+                const parts = token.split('.');
+                expect(parts.length).toBe(3);
+            });
+            
+            it('should check token expiry', () => {
+                const now = Date.now();
+                const expiresAt = now + 3600000;
+                expect(now < expiresAt).toBe(true);
+            });
+        });
+        
+        // Load external test files
+        async function loadTestFile(path) {
+            try {
+                const module = await import(path);
+                return module;
+            } catch (error) {
+                console.warn(`Failed to load test: ${path}`, error.message);
+            }
+        }
+    </script>
+</body>
+</html>

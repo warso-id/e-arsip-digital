@@ -1,0 +1,235 @@
+<!-- surat-masuk/list.html - Daftar Surat Masuk 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Daftar Surat Masuk - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .filter-bar .form-group { margin-bottom: 0; min-width: 150px; }
+        
+        .surat-status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .dot-belum { background: #94a3b8; }
+        .dot-proses { background: #f59e0b; }
+        .dot-selesai { background: #16a34a; }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="../dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="./list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="./agenda.html" class="nav-item"><i class="fas fa-book"></i> Agenda</a>
+            <a href="./tracking.html" class="nav-item"><i class="fas fa-search"></i> Tracking</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h2>Daftar Surat Masuk</h2>
+                <p style="color:#64748b;font-size:14px;">Kelola surat masuk yang telah diterima</p>
+            </div>
+            <a href="./form.html" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Input Surat Masuk
+            </a>
+        </div>
+        
+        <div class="filter-bar">
+            <div class="form-group">
+                <label class="form-label">Cari</label>
+                <input type="text" class="form-input" id="search-input" placeholder="No. surat, perihal...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status Disposisi</label>
+                <select class="form-select" id="filter-status">
+                    <option value="">Semua</option>
+                    <option value="belum">Belum Disposisi</option>
+                    <option value="proses">Dalam Proses</option>
+                    <option value="selesai">Selesai</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tanggal</label>
+                <input type="date" class="form-input" id="filter-date">
+            </div>
+            <div class="form-group">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary btn-sm" id="apply-filter"><i class="fas fa-filter"></i> Filter</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body" style="padding:0;">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>No. Agenda</th>
+                                <th>No. Surat</th>
+                                <th>Tanggal</th>
+                                <th>Pengirim</th>
+                                <th>Perihal</th>
+                                <th>Disposisi</th>
+                                <th style="width:130px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr><td colspan="7" style="text-align:center;padding:30px;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="table-footer">
+                <div class="table-info" id="table-info">Menampilkan 0 data</div>
+                <div class="table-pagination" id="pagination"></div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '../js/auth.js';
+        import apiService from '../js/api.js';
+        import notifications from '../js/notifications.js';
+        import utils from '../js/utils.js';
+        import logger from '../js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '../login.html';
+        
+        let suratList = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            document.getElementById('apply-filter')?.addEventListener('click', () => { currentPage = 1; loadData(); });
+            document.getElementById('search-input')?.addEventListener('input', utils.debounce(() => { currentPage = 1; loadData(); }, 400));
+            loadData();
+            logger.info('Surat masuk list loaded');
+        });
+        
+        async function loadData() {
+            try {
+                const params = {
+                    page: currentPage, limit: 15,
+                    search: document.getElementById('search-input').value,
+                    status: document.getElementById('filter-status').value,
+                    date: document.getElementById('filter-date').value
+                };
+                
+                const response = await apiService.get('/api/surat-masuk', params);
+                suratList = response.data?.data || [];
+                totalPages = response.data?.totalPages || 1;
+                
+                renderTable();
+                renderPagination();
+                document.getElementById('table-info').textContent = 
+                    `Menampilkan ${suratList.length} dari ${response.data?.total || 0} surat`;
+            } catch (error) {
+                logger.error('Failed to load surat masuk', error);
+                notifications.error('Gagal memuat data');
+            }
+        }
+        
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            
+            if (suratList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;">
+                    <i class="fas fa-inbox" style="font-size:40px;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
+                    Tidak ada surat masuk
+                    <br><a href="./form.html" class="btn btn-primary btn-sm" style="margin-top:12px;">Input Surat Baru</a>
+                </td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = suratList.map(s => `
+                <tr>
+                    <td>${s.nomor_agenda || '-'}</td>
+                    <td><strong>${s.nomor_surat || '-'}</strong></td>
+                    <td>${utils.formatDate(s.tgl_terima || s.tanggal_surat, 'short')}</td>
+                    <td>${s.pengirim || s.instansi || '-'}</td>
+                    <td>${s.perihal || '-'}</td>
+                    <td>
+                        <span class="surat-status-dot dot-${s.status_disposisi || 'belum'}"></span>
+                        ${s.status_disposisi === 'selesai' ? 'Selesai' : s.status_disposisi === 'proses' ? 'Proses' : 'Belum'}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="./disposisi.html?id=${s.id}" class="btn-action" title="Disposisi">
+                                <i class="fas fa-tasks" style="color:#2563eb;"></i></a>
+                            <button class="btn-action" title="Lihat" onclick="quickView('${s.id}')">
+                                <i class="fas fa-eye" style="color:#16a34a;"></i></button>
+                            <button class="btn-action" title="Hapus" onclick="deleteSurat('${s.id}')">
+                                <i class="fas fa-trash" style="color:#dc2626;"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            
+            let html = `<button class="btn-page" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="btn-page ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += '<span class="page-ellipsis">...</span>';
+                }
+            }
+            html += `<button class="btn-page" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            container.innerHTML = html;
+        }
+        
+        async function deleteSurat(id) {
+            if (!confirm('Hapus surat ini?')) return;
+            try {
+                await apiService.delete(`/api/surat-masuk/${id}`);
+                notifications.success('Surat dihapus');
+                loadData();
+            } catch (error) {
+                notifications.error('Gagal menghapus');
+            }
+        }
+        
+        window.goToPage = (p) => { currentPage = p; loadData(); };
+        window.deleteSurat = deleteSurat;
+        window.quickView = (id) => window.location.href = `./disposisi.html?id=${id}`;
+    </script>
+</body>
+</html>

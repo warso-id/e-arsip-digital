@@ -1,0 +1,96 @@
+# .gitignore - E-Arsip Digital 2026
+# Final comprehensive gitignore for safe GitHub upload
+
+# ============================================
+# SENSITIVE FILES (MOST IMPORTANT)
+# ============================================
+config/config.js
+.env
+.env.*
+!.env.example
+credentials.json
+service-account.json
+private-key.json
+secret*.js
+*.pem
+*.key
+
+# ============================================
+# GOOGLE APPS SCRIPT (BACKEND)
+# ============================================
+Google-Apps-Script/
+*.gs
+
+# ============================================
+# BACKUPS
+# ============================================
+backups/*
+!backups/.gitkeep
+*.backup
+*.bak
+*.sql
+*.tar.gz
+*.zip
+
+# ============================================
+# DEPENDENCIES
+# ============================================
+node_modules/
+package-lock.json
+yarn.lock
+
+# ============================================
+# BUILD OUTPUT
+# ============================================
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# ============================================
+# IDE & EDITOR
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ============================================
+# OS FILES
+# ============================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ============================================
+# LOGS
+# ============================================
+logs/
+*.log
+
+# ============================================
+# UPLOAD & TEMP
+# ============================================
+uploads/*
+temp/*
+tmp/*
+*.tmp
+*.temp
+
+# ============================================
+# TEST COVERAGE
+# ============================================
+coverage/
+.nyc_output/
+
+# ============================================
+# ENVIRONMENT
+# ============================================
+.env.development
+.env.production
+.env.local
