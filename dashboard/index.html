@@ -1,0 +1,59 @@
+<!-- dashboard/index.html - Dashboard Redirect/Router 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0;url=user/index.html">
+    <title>Dashboard - E-Arsip Digital</title>
+    <script>
+        // Role-based redirection
+        (function() {
+            const roleRoutes = {
+                'super_admin': '/dashboard/super-admin/index.html',
+                'admin': '/dashboard/admin/index.html',
+                'user': '/dashboard/user/index.html',
+                'kasubag': '/dashboard/kasubag/index.html',
+                'kaprodi': '/dashboard/kaprodi/index.html',
+                'admin_kaprodi': '/dashboard/admin-kaprodi/index.html',
+                'wadek': '/dashboard/wadek/index.html',
+                'admin_wadek': '/dashboard/admin-wadek/index.html',
+                'dekan': '/dashboard/dekan/index.html',
+                'admin_dekan': '/dashboard/admin-dekan/index.html',
+                'ketua_upm': '/dashboard/ketua_upm/index.html',
+                'litdianmas': '/dashboard/litdianmas/index.html',
+                'staf': '/dashboard/staf/index.html',
+                'dosen': '/dashboard/dosen/index.html',
+                'lembaga_kemahasiswaan': '/dashboard/lembaga_kemahasiswaan/index.html',
+                'mahasiswa': '/dashboard/mahasiswa/index.html'
+            };
+            
+            try {
+                // Try to get session from localStorage
+                const encryptedSession = localStorage.getItem('auth_session');
+                if (encryptedSession) {
+                    // Simple check - in production, full decryption needed
+                    const sessionData = JSON.parse(encryptedSession);
+                    const userRole = sessionData?.user?.role;
+                    
+                    if (userRole && roleRoutes[userRole]) {
+                        window.location.href = roleRoutes[userRole];
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Dashboard redirect failed:', error);
+            }
+            
+            // Default redirect to login
+            window.location.href = '/login.html';
+        })();
+    </script>
+</head>
+<body>
+    <div style="text-align:center; padding:50px; font-family:sans-serif;">
+        <h2>Mengalihkan ke Dashboard...</h2>
+        <p>Jika tidak dialihkan secara otomatis, <a href="/login.html">klik di sini</a>.</p>
+    </div>
+</body>
+</html>
