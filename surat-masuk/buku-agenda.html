@@ -1,0 +1,208 @@
+<!-- surat-masuk/buku-agenda.html - Buku Agenda Surat Masuk 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Buku Agenda - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/print.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .buku-container { max-width: 1100px; margin: 0 auto; }
+        
+        .buku-cover {
+            background: linear-gradient(135deg, #1e3a5f, #1e40af);
+            color: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .buku-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 11px;
+        }
+        
+        .buku-table th {
+            background: #1e293b;
+            color: white;
+            padding: 8px 6px;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        
+        .buku-table td {
+            padding: 6px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            vertical-align: top;
+        }
+        
+        .buku-table .col-no { width: 30px; }
+        .buku-table .col-tgl { width: 65px; }
+        .buku-table .col-nomor { width: 90px; }
+        .buku-table .col-perihal { text-align: left; min-width: 150px; }
+        
+        .buku-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .buku-table tbody tr:hover { background: #eff6ff; }
+        
+        @media print {
+            .sidebar, .page-header, .no-print { display: none !important; }
+            .main-content { margin: 0; padding: 10mm; }
+            .buku-table { box-shadow: none; font-size: 9pt; }
+            .buku-table th { background: #000 !important; color: #fff !important; }
+            .buku-cover { background: #fff !important; color: #000 !important; border: 2px solid #000; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/surat-masuk/buku-agenda.html" class="nav-item active"><i class="fas fa-book"></i> Buku Agenda</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="buku-container">
+            <div class="page-header no-print">
+                <div>
+                    <h2>Buku Agenda Surat Masuk</h2>
+                    <p style="color:#64748b;">Format buku agenda tradisional untuk cetak</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <select class="form-select" id="filter-tahun" style="width:auto;">
+                        <option value="2026">2026</option><option value="2025">2025</option>
+                    </select>
+                    <button class="btn btn-outline btn-sm" onclick="window.print()">
+                        <i class="fas fa-print"></i> Cetak Buku
+                    </button>
+                </div>
+            </div>
+            
+            <div class="buku-cover">
+                <h2 style="color:white;margin:0;font-size:20px;">BUKU AGENDA SURAT MASUK</h2>
+                <p style="opacity:0.8;margin-top:4px;">Tahun <span id="tahun-buku">2026</span></p>
+                <p style="opacity:0.6;font-size:13px;">Fakultas Ilmu Komputer</p>
+            </div>
+            
+            <div style="overflow-x:auto;">
+                <table class="buku-table">
+                    <thead>
+                        <tr>
+                            <th class="col-no" rowspan="2">No</th>
+                            <th class="col-tgl" rowspan="2">Tgl Terima</th>
+                            <th class="col-nomor" rowspan="2">No. Surat</th>
+                            <th class="col-tgl" rowspan="2">Tgl Surat</th>
+                            <th rowspan="2">Pengirim</th>
+                            <th class="col-perihal" rowspan="2">Perihal</th>
+                            <th colspan="3">Disposisi</th>
+                            <th rowspan="2">Ket</th>
+                        </tr>
+                        <tr>
+                            <th style="width:80px;">Kepada</th>
+                            <th style="width:70px;">Batas Waktu</th>
+                            <th style="width:60px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="buku-tbody">
+                        <tr><td colspan="11" style="text-align:center;padding:30px;">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            
+            const now = new Date();
+            document.getElementById('filter-tahun').value = now.getFullYear();
+            document.getElementById('tahun-buku').textContent = now.getFullYear();
+            
+            document.getElementById('filter-tahun')?.addEventListener('change', (e) => {
+                document.getElementById('tahun-buku').textContent = e.target.value;
+                loadData();
+            });
+            
+            loadData();
+            logger.info('Buku agenda loaded');
+        });
+        
+        async function loadData() {
+            const tahun = document.getElementById('filter-tahun').value;
+            
+            try {
+                const response = await apiService.get('/api/surat-masuk/buku-agenda', { tahun });
+                const data = response.data?.surat || [];
+                renderTable(data);
+            } catch (error) {
+                logger.warn('Failed to load buku agenda');
+                // Generate empty rows for print template
+                const emptyRows = Array.from({ length: 30 }, (_, i) => ({
+                    no: i + 1
+                }));
+                renderTable(emptyRows);
+            }
+        }
+        
+        function renderTable(data) {
+            const tbody = document.getElementById('buku-tbody');
+            
+            if (data.length === 0) {
+                // Show empty template rows for printing
+                let html = '';
+                for (let i = 0; i < 30; i++) {
+                    html += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td></td><td></td><td></td><td></td><td></td>
+                            <td></td><td></td><td></td><td></td>
+                        </tr>`;
+                }
+                tbody.innerHTML = html;
+                return;
+            }
+            
+            tbody.innerHTML = data.map((s, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${utils.formatDate(s.tgl_terima, 'short')}</td>
+                    <td>${s.nomor_surat || '-'}</td>
+                    <td>${utils.formatDate(s.tgl_surat, 'short')}</td>
+                    <td style="text-align:left;font-size:10px;">${s.pengirim || s.instansi || '-'}</td>
+                    <td style="text-align:left;font-size:10px;">${s.perihal || '-'}</td>
+                    <td style="font-size:10px;">${s.disposisi_kepada || '-'}</td>
+                    <td style="font-size:10px;">${s.disposisi_batas || '-'}</td>
+                    <td>${s.disposisi_status || '-'}</td>
+                    <td style="font-size:10px;">${s.keterangan || '-'}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
