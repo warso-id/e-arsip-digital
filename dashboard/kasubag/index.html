@@ -1,0 +1,832 @@
+<!-- FILE: dashboard/kasubag/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Kasubag - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary: #1a237e;
+            --secondary: #0d47a1;
+            --accent: #2962ff;
+            --gold: #ffd700;
+            --light: #f5f6fa;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light);
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-menu { padding: 20px 0; }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--gold);
+        }
+        
+        .sidebar-menu .nav-link i { width: 25px; margin-right: 10px; text-align: center; }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+        
+        .top-navbar {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .content-area { padding: 25px; }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            .sidebar.active { margin-left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
+            <h5>E-Arsip Digital</h5>
+            <small>Kasubag Panel</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="agenda-masuk">
+                        <i class="fas fa-book"></i> Agenda Surat Masuk
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="disposisi">
+                        <i class="fas fa-clipboard-list"></i> Disposisi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="review-keluar">
+                        <i class="fas fa-check-circle"></i> Review Surat Keluar
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="semua-surat">
+                        <i class="fas fa-list"></i> Semua Surat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <i class="fas fa-user-circle"></i> Profil Saya
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a href="#" class="nav-link text-danger" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+        <div class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none me-3" id="toggleSidebarBtn">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Dashboard Kasubag</h5>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentTime" class="text-muted"></span>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <div class="avatar-circle me-2" id="userAvatar">K</div>
+                        <span id="displayName">Kasubag</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-page="profile"><i class="fas fa-user me-2"></i>Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area" id="contentArea">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="../../config/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    
+    <script>
+        if (!auth.requireRole('kasubag')) {
+            // Will redirect if not authorized
+        }
+        
+        const currentUser = auth.getCurrentUser();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            loadDashboard();
+            setupEventListeners();
+            updateClock();
+            setInterval(updateClock, 60000);
+        });
+        
+        function initializeUI() {
+            if (currentUser) {
+                document.getElementById('displayName').textContent = currentUser.name || 'Kasubag';
+                document.getElementById('userAvatar').textContent = (currentUser.name || 'K').charAt(0).toUpperCase();
+            }
+            AOS.init({ duration: 800, once: true });
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('mainContent').classList.toggle('shifted');
+            });
+            
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateTo(this.dataset.page);
+                });
+            });
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleDateString('id-ID', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+        }
+        
+        function navigateTo(page) {
+            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) link.classList.add('active');
+            });
+            
+            const titles = {
+                'dashboard': 'Dashboard Kasubag',
+                'agenda-masuk': 'Agenda Surat Masuk',
+                'disposisi': 'Disposisi Surat',
+                'review-keluar': 'Review Surat Keluar',
+                'semua-surat': 'Semua Surat',
+                'profile': 'Profil Saya'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'agenda-masuk': loadAgendaMasuk(); break;
+                case 'disposisi': loadDisposisi(); break;
+                case 'review-keluar': loadReviewKeluar(); break;
+                case 'semua-surat': loadSemuaSurat(); break;
+                case 'profile': window.location.href = '/profile/index.html'; break;
+            }
+        }
+        
+        function loadDashboard() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <!-- Stats -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Surat Masuk Baru</p>
+                                    <h3 class="mb-0" id="statMasukBaru">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                    <i class="fas fa-inbox"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Disposisi Pending</p>
+                                    <h3 class="mb-0" id="statDisposisiPending">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Review Pending</p>
+                                    <h3 class="mb-0" id="statReviewPending">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="300">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Selesai Hari Ini</p>
+                                    <h3 class="mb-0" id="statSelesaiHariIni">0</h3>
+                                </div>
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">Aksi Cepat</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-primary w-100" onclick="navigateTo('agenda-masuk')">
+                                        <i class="fas fa-book me-2"></i>Agenda Surat Masuk
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-success w-100" onclick="navigateTo('disposisi')">
+                                        <i class="fas fa-clipboard-list me-2"></i>Buat Disposisi
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-warning w-100" onclick="navigateTo('review-keluar')">
+                                        <i class="fas fa-check-circle me-2"></i>Review Surat
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-info w-100" onclick="navigateTo('semua-surat')">
+                                        <i class="fas fa-list me-2"></i>Semua Surat
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pending Review -->
+                <div class="row">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="table-container">
+                            <h5 class="mb-4">Surat Keluar Pending Review</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>No Surat</th>
+                                            <th>Perihal</th>
+                                            <th>Pemohon</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pendingReviewTable">
+                                        <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadDashboardStats();
+            loadPendingReview();
+        }
+        
+        async function loadDashboardStats() {
+            try {
+                const stats = await api.getStatistics();
+                if (stats && stats.success) {
+                    document.getElementById('statMasukBaru').textContent = stats.data?.suratMasukBaru || 0;
+                    document.getElementById('statDisposisiPending').textContent = stats.data?.disposisiPending || 0;
+                    document.getElementById('statReviewPending').textContent = stats.data?.reviewPending || 0;
+                    document.getElementById('statSelesaiHariIni').textContent = stats.data?.selesaiHariIni || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadPendingReview() {
+            const tbody = document.getElementById('pendingReviewTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: 'pending_kasubag'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorSurat || '-'}</strong></td>
+                            <td>${item.perihal || '-'}</td>
+                            <td>${item.createdBy || '-'}</td>
+                            <td><span class="badge bg-warning">Menunggu Review</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="reviewSurat('${item.nomorSurat}')">
+                                    <i class="fas fa-check me-1"></i>Review
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada surat pending</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading pending review:', error);
+            }
+        }
+        
+        function loadAgendaMasuk() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5>Agenda Surat Masuk</h5>
+                        <button class="btn btn-primary" onclick="window.location.href='/surat-masuk/form.html'">
+                            <i class="fas fa-plus me-2"></i>Input Surat Masuk
+                        </button>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchAgenda" placeholder="Cari surat masuk...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterKategoriAgenda">
+                                <option value="">Semua Kategori</option>
+                                <option value="M.UM">Umum</option>
+                                <option value="M.KEU">Keuangan</option>
+                                <option value="M.LGL">Legal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filterTanggalAgenda">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" onclick="filterAgenda()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Agenda</th>
+                                    <th>Tgl Terima</th>
+                                    <th>Pengirim</th>
+                                    <th>Perihal</th>
+                                    <th>Status</th>
+                                    <th>Disposisi</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agendaTable">
+                                <tr><td colspan="8" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadAgendaData();
+        }
+        
+        async function loadAgendaData() {
+            const tbody = document.getElementById('agendaTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ action: 'getSuratMasuk' });
+                
+                if (data && data.success && data.data) {
+                    if (data.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Tidak ada surat masuk</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorAgenda || 'Belum diagenda'}</strong></td>
+                            <td>${item.tanggalTerima || '-'}</td>
+                            <td>${item.pengirim || '-'}</td>
+                            <td>${item.perihal || '-'}</td>
+                            <td><span class="badge bg-${getStatusColor(item.status)}">${item.status || 'Baru'}</span></td>
+                            <td>
+                                ${item.disposisi ? 
+                                    '<span class="badge bg-success">Sudah</span>' : 
+                                    '<span class="badge bg-warning">Belum</span>'
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-info" onclick="viewSuratMasuk('${item.id}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${!item.disposisi ? `
+                                        <button class="btn btn-sm btn-success" onclick="buatDisposisi('${item.id}')">
+                                            <i class="fas fa-clipboard-list"></i> Disposisi
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading agenda:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+        
+        function loadReviewKeluar() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Review Surat Keluar</h5>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Surat yang perlu direview oleh Kasubag sebelum diteruskan ke Wakil Dekan
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Surat</th>
+                                    <th>Perihal</th>
+                                    <th>Pemohon</th>
+                                    <th>Tanggal</th>
+                                    <th>Status Admin</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewTable">
+                                <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            loadReviewData();
+        }
+        
+        async function loadReviewData() {
+            const tbody = document.getElementById('reviewTable');
+            if (!tbody) return;
+            
+            try {
+                const data = await api.sendRequest({ 
+                    action: 'getSuratKeluar',
+                    status: 'pending_kasubag'
+                });
+                
+                if (data && data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><strong>${item.nomorSurat || '-'}</strong></td>
+                            <td>${item.perihal || '-'}</td>
+                            <td>${item.createdBy || '-'}</td>
+                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
+                            <td><span class="badge bg-success">Disetujui Admin</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="approveSurat('${item.nomorSurat}', 'disetujui')">
+                                    <i class="fas fa-check me-1"></i>Setujui
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="approveSurat('${item.nomorSurat}', 'ditolak')">
+                                    <i class="fas fa-times me-1"></i>Tolak
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada surat yang perlu direview</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading review:', error);
+            }
+        }
+        
+        function loadDisposisi() {
+            window.location.href = '/surat-masuk/disposisi.html';
+        }
+        
+        function loadSemuaSurat() {
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="table-container">
+                    <h5 class="mb-4">Semua Surat</h5>
+                    
+                    <ul class="nav nav-tabs mb-4" id="suratTabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#tabMasuk">Surat Masuk</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tabKeluar">Surat Keluar</a>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tabMasuk">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>No Agenda</th>
+                                            <th>Pengirim</th>
+                                            <th>Perihal</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="semuaMasukTable">
+                                        <tr><td colspan="6" class="text-center">Memuat...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="tabKeluar">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>No Surat</th>
+                                            <th>Perihal</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="semuaKeluarTable">
+                                        <tr><td colspan="5" class="text-center">Memuat...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadSemuaSuratData();
+        }
+        
+        async function loadSemuaSuratData() {
+            // Load surat masuk
+            try {
+                const masukData = await api.sendRequest({ action: 'getSuratMasuk' });
+                const tbodyMasuk = document.getElementById('semuaMasukTable');
+                
+                if (masukData && masukData.success && masukData.data) {
+                    tbodyMasuk.innerHTML = masukData.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.nomorAgenda || '-'}</td>
+                            <td>${item.pengirim || '-'}</td>
+                            <td>${item.perihal || '-'}</td>
+                            <td><span class="badge bg-info">${item.status || 'Baru'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewSuratMasuk('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            // Load surat keluar
+            try {
+                const keluarData = await api.sendRequest({ action: 'getSuratKeluar' });
+                const tbodyKeluar = document.getElementById('semuaKeluarTable');
+                
+                if (keluarData && keluarData.success && keluarData.data) {
+                    tbodyKeluar.innerHTML = keluarData.data.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.nomorSurat || '-'}</td>
+                            <td>${item.perihal || '-'}</td>
+                            <td><span class="badge bg-${getStatusColor(item.status)}">${formatStatus(item.status)}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        // Helper Functions
+        function getStatusColor(status) {
+            const colors = {
+                'draft': 'secondary', 'pending_admin': 'info',
+                'pending_kasubag': 'primary', 'pending_wadek': 'warning',
+                'pending_dekan': 'warning', 'completed': 'success',
+                'rejected': 'danger', 'diterima': 'info',
+                'diagendakan': 'primary', 'disposisi': 'warning', 'selesai': 'success'
+            };
+            return colors[status] || 'secondary';
+        }
+        
+        function formatStatus(status) {
+            const labels = {
+                'draft': 'Draft', 'pending_admin': 'Menunggu Admin',
+                'pending_kasubag': 'Menunggu Kasubag', 'pending_wadek': 'Menunggu Wadek',
+                'pending_dekan': 'Menunggu Dekan', 'completed': 'Selesai', 'rejected': 'Ditolak'
+            };
+            return labels[status] || status;
+        }
+        
+        function handleLogout() {
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                auth.logout();
+            }
+        }
+        
+        // Global functions
+        window.navigateTo = navigateTo;
+        window.handleLogout = handleLogout;
+        window.reviewSurat = function(nomor) {
+            const catatan = prompt('Catatan review (opsional):');
+            approveSurat(nomor, 'disetujui', catatan);
+        };
+        
+        async function approveSurat(nomor, status, catatan = '') {
+            try {
+                const result = await api.approveSuratKeluar(nomor, 'kasubag', status, catatan);
+                if (result.success) {
+                    alert('Review berhasil');
+                    loadReviewKeluar();
+                } else {
+                    alert('Gagal: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        window.approveSurat = approveSurat;
+        window.viewSurat = function(id) { alert('Lihat surat ID: ' + id); };
+        window.viewSuratMasuk = function(id) { alert('Lihat surat masuk ID: ' + id); };
+        window.buatDisposisi = function(id) { 
+            window.location.href = `/surat-masuk/disposisi.html?id=${id}`; 
+        };
+        window.filterAgenda = function() { loadAgendaData(); };
+    </script>
+</body>
+</html>
