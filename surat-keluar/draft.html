@@ -1,0 +1,216 @@
+<!-- surat-keluar/draft.html - Draft Surat 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Draft Surat - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .draft-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .draft-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-color: #2563eb;
+        }
+        
+        .draft-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #fffbeb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d97706;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .draft-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .draft-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .draft-info .meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .draft-status {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 10px;
+            background: #fef3c7;
+            color: #d97706;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .draft-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-keluar/draft.html" class="nav-item active"><i class="fas fa-file-alt"></i> Draft</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h2>Draft Surat</h2>
+                <p style="color:#64748b;font-size:14px;">Surat yang belum selesai atau disimpan sebagai draft</p>
+            </div>
+            <a href="/surat-keluar/form.html" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Buat Surat Baru
+            </a>
+        </div>
+        
+        <div id="draft-list">
+            <div style="text-align:center;padding:40px;color:#94a3b8;">
+                <div class="spinner"></div>
+                <p style="margin-top:12px;">Memuat draft...</p>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        let drafts = [];
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            loadDrafts();
+            logger.info('Draft page loaded');
+        });
+        
+        async function loadDrafts() {
+            try {
+                const response = await apiService.get('/api/surat-keluar/drafts');
+                drafts = response.data || [];
+                renderDrafts();
+            } catch (error) {
+                logger.error('Failed to load drafts', error);
+                drafts = [];
+                renderDrafts();
+            }
+        }
+        
+        function renderDrafts() {
+            const container = document.getElementById('draft-list');
+            
+            if (drafts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Tidak Ada Draft</h3>
+                        <p>Surat yang disimpan sebagai draft akan muncul di sini</p>
+                        <a href="/surat-keluar/form.html" class="btn btn-primary btn-sm" style="margin-top:16px;">
+                            Buat Surat Baru
+                        </a>
+                    </div>`;
+                return;
+            }
+            
+            container.innerHTML = drafts.map(d => `
+                <div class="draft-card" onclick="window.location.href='/surat-keluar/form.html?edit=${d.id}'">
+                    <div class="draft-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="draft-info">
+                        <h4>${d.perihal || 'Tanpa Perihal'}</h4>
+                        <div class="meta">
+                            ${d.tujuan ? `<span><i class="fas fa-building"></i> ${d.tujuan}</span> &nbsp;` : ''}
+                            <span><i class="fas fa-clock"></i> ${utils.timeAgo(d.updatedAt || d.createdAt)}</span>
+                        </div>
+                    </div>
+                    <span class="draft-status">Draft</span>
+                    <div class="draft-actions" onclick="event.stopPropagation();">
+                        <a href="/surat-keluar/form.html?edit=${d.id}" class="btn btn-sm btn-outline" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline" title="Hapus" style="color:#dc2626;" 
+                            onclick="deleteDraft('${d.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function deleteDraft(id) {
+            if (!confirm('Hapus draft ini?')) return;
+            
+            try {
+                await apiService.delete(`/api/surat-keluar/drafts/${id}`);
+                notifications.success('Draft dihapus');
+                drafts = drafts.filter(d => d.id !== id);
+                renderDrafts();
+            } catch (error) {
+                notifications.error('Gagal menghapus draft');
+            }
+        }
+        
+        window.deleteDraft = deleteDraft;
+    </script>
+</body>
+</html>
