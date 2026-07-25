@@ -1,0 +1,604 @@
+<!-- pengaturan/backup.html - Backup & Restore 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Backup & Restore - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .backup-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .backup-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .backup-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .backup-history {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .backup-item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .backup-item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #eff6ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+            font-size: 18px;
+        }
+        
+        .backup-item-name {
+            font-weight: 500;
+        }
+        
+        .backup-item-meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .backup-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .schedule-option {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .schedule-option:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+        
+        .schedule-option.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .schedule-option i {
+            font-size: 24px;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar-container {
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .progress-bar-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #667eea);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+            <a href="/pengaturan/backup.html" class="nav-item active"><i class="fas fa-database"></i> Backup</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="backup-container">
+            <div class="page-header" style="margin-bottom:24px;">
+                <div>
+                    <h2>Backup & Restore</h2>
+                    <p style="color:#64748b;">Kelola backup data sistem</p>
+                </div>
+            </div>
+            
+            <!-- Create Backup -->
+            <div class="backup-card">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Buat Backup Baru</h3>
+                <p style="color:#64748b;margin-bottom:16px;">
+                    Backup akan mencakup semua data surat, pengguna, dan pengaturan sistem.
+                </p>
+                
+                <div class="form-row" style="margin-bottom:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Backup</label>
+                        <input type="text" class="form-input" id="backup-name" 
+                            placeholder="Otomatis: backup-YYYY-MM-DD-HHmmss">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipe Backup</label>
+                        <select class="form-select" id="backup-type">
+                            <option value="full">Full Backup</option>
+                            <option value="surat">Hanya Data Surat</option>
+                            <option value="users">Hanya Data User</option>
+                            <option value="settings">Hanya Pengaturan</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display:flex;gap:12px;">
+                    <button class="btn btn-primary" id="create-backup-btn">
+                        <i class="fas fa-save"></i> Buat Backup
+                    </button>
+                    <button class="btn btn-outline" id="download-backup-btn" disabled>
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+                
+                <div class="progress-bar-container" id="backup-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="backup-progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="backup-progress-text">Mempersiapkan...</div>
+                </div>
+            </div>
+            
+            <!-- Restore Backup -->
+            <div class="backup-card">
+                <h3><i class="fas fa-cloud-download-alt"></i> Restore Backup</h3>
+                <p style="color:#dc2626;font-size:13px;margin-bottom:16px;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Perhatian:</strong> Restore akan menimpa data yang ada. Pastikan Anda telah membuat backup terbaru.
+                </p>
+                
+                <div class="form-group">
+                    <label class="form-label">Upload File Backup</label>
+                    <input type="file" class="form-input" id="restore-file" accept=".zip,.tar.gz,.json">
+                    <div class="form-help">Format: ZIP, TAR.GZ, JSON</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-check">
+                        <input type="checkbox" class="form-check-input" id="confirm-restore">
+                        <span>Saya mengerti bahwa restore akan menimpa data yang ada</span>
+                    </label>
+                </div>
+                
+                <button class="btn btn-danger" id="restore-btn" disabled>
+                    <i class="fas fa-undo"></i> Restore Data
+                </button>
+                
+                <div class="progress-bar-container" id="restore-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="restore-progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="restore-progress-text">Mempersiapkan...</div>
+                </div>
+            </div>
+            
+            <!-- Schedule Backup -->
+            <div class="backup-card">
+                <h3><i class="fas fa-clock"></i> Jadwal Backup Otomatis</h3>
+                
+                <div class="schedule-grid">
+                    <div class="schedule-option" data-schedule="daily">
+                        <i class="fas fa-calendar-day"></i>
+                        <div style="font-weight:500;">Harian</div>
+                        <div style="font-size:12px;color:#64748b;">Setiap hari pukul 02:00</div>
+                    </div>
+                    <div class="schedule-option" data-schedule="weekly">
+                        <i class="fas fa-calendar-week"></i>
+                        <div style="font-weight:500;">Mingguan</div>
+                        <div style="font-size:12px;color:#64748b;">Setiap Minggu pukul 02:00</div>
+                    </div>
+                    <div class="schedule-option" data-schedule="monthly">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div style="font-weight:500;">Bulanan</div>
+                        <div style="font-size:12px;color:#64748b;">Setiap tanggal 1 pukul 02:00</div>
+                    </div>
+                    <div class="schedule-option selected" data-schedule="off">
+                        <i class="fas fa-ban"></i>
+                        <div style="font-weight:500;">Nonaktif</div>
+                        <div style="font-size:12px;color:#64748b;">Tidak ada jadwal</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:16px;">
+                    <button class="btn btn-primary" id="save-schedule-btn">
+                        <i class="fas fa-check"></i> Simpan Jadwal
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Backup History -->
+            <div class="backup-card">
+                <h3><i class="fas fa-history"></i> Riwayat Backup</h3>
+                
+                <ul class="backup-history" id="backup-history">
+                    <li style="text-align:center;padding:20px;color:#94a3b8;">
+                        <i class="fas fa-inbox" style="font-size:32px;margin-bottom:8px;display:block;"></i>
+                        Belum ada riwayat backup
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        // Check auth
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        
+        // State
+        let backupHistory = [];
+        let selectedSchedule = 'off';
+        let lastBackupFile = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEventListeners();
+            await loadBackupHistory();
+            await loadSchedule();
+            logger.info('Backup page loaded');
+        });
+        
+        function initEventListeners() {
+            // Create backup
+            document.getElementById('create-backup-btn')?.addEventListener('click', createBackup);
+            
+            // Download backup
+            document.getElementById('download-backup-btn')?.addEventListener('click', downloadBackup);
+            
+            // Restore
+            document.getElementById('restore-file')?.addEventListener('change', (e) => {
+                document.getElementById('restore-btn').disabled = !e.target.files[0];
+            });
+            
+            document.getElementById('confirm-restore')?.addEventListener('change', (e) => {
+                updateRestoreButton();
+            });
+            
+            document.getElementById('restore-btn')?.addEventListener('click', restoreBackup);
+            
+            // Schedule
+            document.querySelectorAll('.schedule-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.schedule-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedSchedule = option.dataset.schedule;
+                });
+            });
+            
+            document.getElementById('save-schedule-btn')?.addEventListener('click', saveSchedule);
+        }
+        
+        function updateRestoreButton() {
+            const hasFile = !!document.getElementById('restore-file').files[0];
+            const confirmed = document.getElementById('confirm-restore').checked;
+            document.getElementById('restore-btn').disabled = !(hasFile && confirmed);
+        }
+        
+        async function createBackup() {
+            const name = document.getElementById('backup-name').value.trim();
+            const type = document.getElementById('backup-type').value;
+            
+            try {
+                const btn = document.getElementById('create-backup-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Membuat backup...';
+                
+                // Show progress
+                const progressContainer = document.getElementById('backup-progress');
+                const progressFill = document.getElementById('backup-progress-fill');
+                const progressText = document.getElementById('backup-progress-text');
+                
+                progressContainer.classList.add('active');
+                
+                // Simulate progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `Memproses... ${Math.round(progress)}%`;
+                }, 500);
+                
+                const response = await apiService.post('/api/backup/create', {
+                    name: name || `backup-${Date.now()}`,
+                    type
+                });
+                
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Backup selesai!';
+                
+                lastBackupFile = response.data;
+                
+                // Enable download button
+                document.getElementById('download-backup-btn').disabled = false;
+                
+                notifications.success('Backup berhasil dibuat');
+                
+                await loadBackupHistory();
+                
+                // Hide progress after delay
+                setTimeout(() => {
+                    progressContainer.classList.remove('active');
+                    progressFill.style.width = '0%';
+                }, 2000);
+                
+            } catch (error) {
+                logger.error('Backup failed', error);
+                notifications.error('Gagal membuat backup: ' + error.message);
+            } finally {
+                const btn = document.getElementById('create-backup-btn');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Buat Backup';
+            }
+        }
+        
+        async function downloadBackup() {
+            if (!lastBackupFile) {
+                notifications.warning('Tidak ada backup yang tersedia');
+                return;
+            }
+            
+            try {
+                const response = await apiService.get(`/api/backup/download/${lastBackupFile.id}`, {}, {
+                    responseType: 'blob'
+                });
+                
+                const url = URL.createObjectURL(response);
+                utils.downloadFile(url, lastBackupFile.name || `backup-${Date.now()}.zip`);
+                URL.revokeObjectURL(url);
+                
+                notifications.success('Backup berhasil didownload');
+            } catch (error) {
+                notifications.error('Gagal mendownload backup');
+            }
+        }
+        
+        async function restoreBackup() {
+            const fileInput = document.getElementById('restore-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                notifications.warning('Pilih file backup terlebih dahulu');
+                return;
+            }
+            
+            if (!confirm('Apakah Anda yakin ingin merestore data? Data yang ada akan ditimpa.')) {
+                return;
+            }
+            
+            try {
+                const btn = document.getElementById('restore-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Merestore...';
+                
+                // Show progress
+                const progressContainer = document.getElementById('restore-progress');
+                const progressFill = document.getElementById('restore-progress-fill');
+                const progressText = document.getElementById('restore-progress-text');
+                
+                progressContainer.classList.add('active');
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `Merestore... ${Math.round(progress)}%`;
+                }, 500);
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                await apiService.uploadFile('/api/backup/restore', file);
+                
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Restore selesai!';
+                
+                notifications.success('Data berhasil direstore');
+                
+                setTimeout(() => {
+                    progressContainer.classList.remove('active');
+                    progressFill.style.width = '0%';
+                    window.location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                logger.error('Restore failed', error);
+                notifications.error('Gagal merestore data');
+            } finally {
+                const btn = document.getElementById('restore-btn');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-undo"></i> Restore Data';
+            }
+        }
+        
+        async function saveSchedule() {
+            try {
+                await apiService.put('/api/backup/schedule', {
+                    schedule: selectedSchedule
+                });
+                
+                notifications.success('Jadwal backup disimpan');
+            } catch (error) {
+                notifications.error('Gagal menyimpan jadwal');
+            }
+        }
+        
+        async function loadBackupHistory() {
+            try {
+                const response = await apiService.get('/api/backup/history', { limit: 10 });
+                backupHistory = response.data || [];
+                renderHistory();
+            } catch (error) {
+                logger.warn('Failed to load backup history', error);
+            }
+        }
+        
+        async function loadSchedule() {
+            try {
+                const response = await apiService.get('/api/backup/schedule');
+                selectedSchedule = response.data?.schedule || 'off';
+                
+                document.querySelectorAll('.schedule-option').forEach(option => {
+                    option.classList.remove('selected');
+                    if (option.dataset.schedule === selectedSchedule) {
+                        option.classList.add('selected');
+                    }
+                });
+            } catch (error) {
+                logger.warn('Failed to load schedule', error);
+            }
+        }
+        
+        function renderHistory() {
+            const container = document.getElementById('backup-history');
+            
+            if (backupHistory.length === 0) {
+                container.innerHTML = `
+                    <li style="text-align:center;padding:20px;color:#94a3b8;">
+                        <i class="fas fa-inbox" style="font-size:32px;margin-bottom:8px;display:block;"></i>
+                        Belum ada riwayat backup
+                    </li>`;
+                return;
+            }
+            
+            container.innerHTML = backupHistory.map(backup => `
+                <li class="backup-item">
+                    <div class="backup-item-info">
+                        <div class="backup-item-icon">
+                            <i class="fas fa-file-archive"></i>
+                        </div>
+                        <div>
+                            <div class="backup-item-name">${backup.name}</div>
+                            <div class="backup-item-meta">
+                                ${utils.formatFileSize(backup.size)} • 
+                                ${backup.type === 'full' ? 'Full Backup' : backup.type} • 
+                                ${utils.timeAgo(backup.createdAt)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="backup-actions">
+                        <button class="btn btn-sm btn-outline" onclick="downloadHistoryBackup('${backup.id}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline text-error" onclick="deleteBackup('${backup.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            `).join('');
+        }
+        
+        async function deleteBackup(id) {
+            if (!confirm('Hapus backup ini?')) return;
+            
+            try {
+                await apiService.delete(`/api/backup/${id}`);
+                notifications.success('Backup dihapus');
+                await loadBackupHistory();
+            } catch (error) {
+                notifications.error('Gagal menghapus backup');
+            }
+        }
+        
+        async function downloadHistoryBackup(id) {
+            try {
+                const response = await apiService.get(`/api/backup/download/${id}`, {}, {
+                    responseType: 'blob'
+                });
+                
+                const url = URL.createObjectURL(response);
+                utils.downloadFile(url, `backup-${id}.zip`);
+                URL.revokeObjectURL(url);
+                
+                notifications.success('Backup berhasil didownload');
+            } catch (error) {
+                notifications.error('Gagal mendownload backup');
+            }
+        }
+        
+        // Global functions
+        window.downloadHistoryBackup = downloadHistoryBackup;
+        window.deleteBackup = deleteBackup;
+    </script>
+</body>
+</html>

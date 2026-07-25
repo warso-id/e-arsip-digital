@@ -1,0 +1,331 @@
+<!-- FILE: pengaturan/index.html (FINAL - GABUNGAN LENGKAP) -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan - E-Arsip Digital</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: #f5f6fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .settings-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .settings-header {
+            border-bottom: 2px solid #1a237e;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .sub-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            cursor: pointer;
+            height: 100%;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .sub-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .sub-card i {
+            transition: all 0.3s ease;
+        }
+        
+        .sub-card:hover i {
+            transform: scale(1.1);
+        }
+        
+        .btn-back {
+            margin-bottom: 20px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section h6 {
+            background: #f0f4ff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #1a237e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- BACK BUTTON -->
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-back">
+            <i class="fas fa-arrow-left me-2"></i>Kembali
+        </a>
+
+        <!-- MAIN SETTINGS -->
+        <div class="settings-card">
+            <div class="settings-header">
+                <h4><i class="fas fa-cog me-2"></i>Pengaturan Sistem</h4>
+                <p class="text-muted mb-0">Konfigurasi sistem E-Arsip Digital</p>
+            </div>
+            
+            <form id="settingsForm">
+                <!-- Instansi -->
+                <div class="form-section">
+                    <h6><i class="fas fa-university me-2"></i>Informasi Instansi</h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Instansi</label>
+                            <input type="text" class="form-control" id="namaInstansi" 
+                                   value="Fakultas Ilmu Komputer">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Singkatan</label>
+                            <input type="text" class="form-control" id="singkatanInstansi" 
+                                   value="FIKOM">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea class="form-control" id="alamatInstansi" rows="2">Jl. Contoh No. 123, Jakarta</textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Telepon</label>
+                            <input type="text" class="form-control" id="teleponInstansi" 
+                                   value="(021) 12345678">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="emailInstansi" 
+                                   value="admin@fikom.ac.id">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Google Integration -->
+                <div class="form-section">
+                    <h6><i class="fas fa-cloud me-2"></i>Integrasi Google</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Google Apps Script URL</label>
+                        <input type="text" class="form-control" id="gasUrl" readonly>
+                        <small class="text-muted">URL ini dikonfigurasi di config.js</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Google Drive Folder ID</label>
+                        <input type="text" class="form-control" id="driveFolderId" readonly>
+                    </div>
+                </div>
+                
+                <!-- Backup -->
+                <div class="form-section">
+                    <h6><i class="fas fa-database me-2"></i>Backup & Restore</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <button type="button" class="btn btn-primary w-100" onclick="backupData()">
+                                <i class="fas fa-download me-2"></i>Backup Data
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button type="button" class="btn btn-warning w-100" onclick="restoreData()">
+                                <i class="fas fa-upload me-2"></i>Restore Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save me-2"></i>Simpan Pengaturan
+                </button>
+            </form>
+        </div>
+
+        <!-- SUB PENGATURAN -->
+        <div class="row mt-2">
+            <div class="col-md-4 mb-3">
+                <a href="penomoran.html" class="sub-card">
+                    <i class="fas fa-sort-numeric-up fa-3x mb-3" style="color: #667eea;"></i>
+                    <h6>Penomoran Surat</h6>
+                    <p class="text-muted small mb-0">Konfigurasi format penomoran surat keluar dan masuk</p>
+                </a>
+            </div>
+            <div class="col-md-4 mb-3">
+                <a href="tanda-tangan.html" class="sub-card">
+                    <i class="fas fa-signature fa-3x mb-3" style="color: #28a745;"></i>
+                    <h6>Tanda Tangan Digital</h6>
+                    <p class="text-muted small mb-0">Upload dan kelola tanda tangan pejabat</p>
+                </a>
+            </div>
+            <div class="col-md-4 mb-3">
+                <a href="backup.html" class="sub-card">
+                    <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: #ffc107;"></i>
+                    <h6>Backup & Restore</h6>
+                    <p class="text-muted small mb-0">Backup data sistem dan restore jika diperlukan</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../config/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    
+    <script>
+        // Check authentication
+        if (!auth.requireAuth()) {
+            window.location.href = '../login.html';
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set Google integration URLs
+            document.getElementById('gasUrl').value = CONFIG.GOOGLE_SCRIPT_URL || 'Tidak dikonfigurasi';
+            document.getElementById('driveFolderId').value = CONFIG.DRIVE_FOLDER_ID || 'Tidak dikonfigurasi';
+            
+            // Handle settings form submission
+            document.getElementById('settingsForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveSettings();
+            });
+        });
+        
+        /**
+         * Save settings to server
+         */
+        async function saveSettings() {
+            const settings = {
+                instansi: {
+                    nama: document.getElementById('namaInstansi').value,
+                    singkatan: document.getElementById('singkatanInstansi').value,
+                    alamat: document.getElementById('alamatInstansi').value,
+                    telepon: document.getElementById('teleponInstansi').value,
+                    email: document.getElementById('emailInstansi').value
+                }
+            };
+            
+            // Show loading state
+            const submitBtn = document.querySelector('#settingsForm button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+            submitBtn.disabled = true;
+            
+            try {
+                const result = await api.updateSettings(settings);
+                
+                if (result.success) {
+                    // Update CONFIG locally
+                    if (typeof CONFIG !== 'undefined') {
+                        CONFIG.INSTANSI = settings.instansi;
+                    }
+                    
+                    // Show success
+                    alert('✅ Pengaturan berhasil disimpan');
+                } else {
+                    alert('❌ Gagal: ' + (result.message || 'Terjadi kesalahan'));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            } finally {
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        /**
+         * Backup data
+         */
+        async function backupData() {
+            if (!confirm('Backup semua data sistem?')) return;
+            
+            try {
+                const result = await api.sendRequest({
+                    action: 'backupData',
+                    type: 'all'
+                });
+                
+                if (result && result.success) {
+                    // Download as JSON file
+                    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `backup-e-arsip-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    alert('✅ Backup berhasil diunduh');
+                } else {
+                    alert('ℹ️ Backup data lokal. Untuk backup lengkap, gunakan halaman Backup & Restore.');
+                    window.location.href = 'backup.html';
+                }
+            } catch (error) {
+                // Fallback: backup localStorage only
+                const data = {
+                    localStorage: { ...localStorage },
+                    sessionStorage: { ...sessionStorage },
+                    timestamp: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup-local-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('✅ Backup lokal berhasil diunduh (data browser saja)');
+            }
+        }
+        
+        /**
+         * Restore data
+         */
+        function restoreData() {
+            // Redirect to dedicated backup/restore page
+            window.location.href = 'backup.html';
+        }
+        
+        // Make functions globally available
+        window.backupData = backupData;
+        window.restoreData = restoreData;
+    </script>
+</body>
+</html>
