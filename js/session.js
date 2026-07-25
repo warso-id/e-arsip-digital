@@ -6,7 +6,10 @@
 
 import APP_CONFIG from '../config/config.js';
 import { Logger } from './logger.js';
+<<<<<<< HEAD
 import { navigateToAppPath } from './path-utils.js';
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
 import { EncryptionService } from './security/encryption.js';
 import apiService from './api.js';
 
@@ -246,7 +249,11 @@ class SessionManager {
         this.clearSession();
         
         setTimeout(() => {
+<<<<<<< HEAD
             navigateToAppPath('/login.html?message=session_expired');
+=======
+            window.location.href = '/login.html?message=session_expired';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         }, 2000);
     }
     

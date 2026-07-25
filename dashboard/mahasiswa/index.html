@@ -308,10 +308,17 @@
             
             switch(page) {
                 case 'dashboard': loadDashboard(); break;
+<<<<<<< HEAD
                 case 'buat-surat': window.location.href = '../../surat-keluar/form.html'; break;
                 case 'surat-saya': loadSuratSaya(); break;
                 case 'status-surat': loadStatusSurat(); break;
                 case 'profile': window.location.href = '../../profile/index.html'; break;
+=======
+                case 'buat-surat': window.location.href = '/surat-keluar/form.html'; break;
+                case 'surat-saya': loadSuratSaya(); break;
+                case 'status-surat': loadStatusSurat(); break;
+                case 'profile': window.location.href = '/profile/index.html'; break;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             }
         }
         
@@ -622,6 +629,7 @@
         window.viewSurat = function(id) { alert('Lihat surat ID: ' + id); };
         window.downloadSurat = function(nomor) { alert('Download surat: ' + nomor); };
         window.buatSuratAktif = function() { 
+<<<<<<< HEAD
             window.location.href = '../../surat-keluar/form.html?jenis=aktif_kuliah'; 
         };
         window.buatSuratKeterangan = function() { 
@@ -630,3 +638,13 @@
     </script>
 </body>
 </html>
+=======
+            window.location.href = '/surat-keluar/form.html?jenis=aktif_kuliah'; 
+        };
+        window.buatSuratKeterangan = function() { 
+            window.location.href = '/surat-keluar/form.html?jenis=keterangan'; 
+        };
+    </script>
+</body>
+</html>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

@@ -8,7 +8,11 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Daftar Surat Masuk - E-Arsip Digital</title>
     
+<<<<<<< HEAD
     <link rel="stylesheet" href="../css/style.css">
+=======
+    <link rel="stylesheet" href="/css/style.css">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
@@ -48,11 +52,19 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
+<<<<<<< HEAD
             <a href="../dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
             <a href="../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
             <a href="./list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
             <a href="./agenda.html" class="nav-item"><i class="fas fa-book"></i> Agenda</a>
             <a href="./tracking.html" class="nav-item"><i class="fas fa-search"></i> Tracking</a>
+=======
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/surat-masuk/agenda.html" class="nav-item"><i class="fas fa-book"></i> Agenda</a>
+            <a href="/surat-masuk/tracking.html" class="nav-item"><i class="fas fa-search"></i> Tracking</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         </nav>
     </aside>
     
@@ -62,7 +74,11 @@
                 <h2>Daftar Surat Masuk</h2>
                 <p style="color:#64748b;font-size:14px;">Kelola surat masuk yang telah diterima</p>
             </div>
+<<<<<<< HEAD
             <a href="./form.html" class="btn btn-primary">
+=======
+            <a href="/surat-masuk/form.html" class="btn btn-primary">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 <i class="fas fa-plus"></i> Input Surat Masuk
             </a>
         </div>
@@ -120,6 +136,7 @@
     </main>
     
     <script type="module">
+<<<<<<< HEAD
         import authService from '../js/auth.js';
         import apiService from '../js/api.js';
         import notifications from '../js/notifications.js';
@@ -127,6 +144,15 @@
         import logger from '../js/logger.js';
         
         if (!authService.isAuthenticated) window.location.href = '../login.html';
+=======
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         
         let suratList = [];
         let currentPage = 1;
@@ -170,7 +196,11 @@
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;">
                     <i class="fas fa-inbox" style="font-size:40px;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
                     Tidak ada surat masuk
+<<<<<<< HEAD
                     <br><a href="./form.html" class="btn btn-primary btn-sm" style="margin-top:12px;">Input Surat Baru</a>
+=======
+                    <br><a href="/surat-masuk/form.html" class="btn btn-primary btn-sm" style="margin-top:12px;">Input Surat Baru</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 </td></tr>`;
                 return;
             }
@@ -188,7 +218,11 @@
                     </td>
                     <td>
                         <div class="action-buttons">
+<<<<<<< HEAD
                             <a href="./disposisi.html?id=${s.id}" class="btn-action" title="Disposisi">
+=======
+                            <a href="/surat-masuk/disposisi.html?id=${s.id}" class="btn-action" title="Disposisi">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                                 <i class="fas fa-tasks" style="color:#2563eb;"></i></a>
                             <button class="btn-action" title="Lihat" onclick="quickView('${s.id}')">
                                 <i class="fas fa-eye" style="color:#16a34a;"></i></button>
@@ -229,7 +263,11 @@
         
         window.goToPage = (p) => { currentPage = p; loadData(); };
         window.deleteSurat = deleteSurat;
+<<<<<<< HEAD
         window.quickView = (id) => window.location.href = `./disposisi.html?id=${id}`;
+=======
+        window.quickView = (id) => window.location.href = `/surat-masuk/disposisi.html?id=${id}`;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     </script>
 </body>
 </html>

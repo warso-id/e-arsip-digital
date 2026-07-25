@@ -131,4 +131,8 @@ runner.describe('Integration Test: Approval Flow', () => {
     });
 });
 
+<<<<<<< HEAD
 function beforeAll(fn) { fn(); }
+=======
+function beforeAll(fn) { fn(); }
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

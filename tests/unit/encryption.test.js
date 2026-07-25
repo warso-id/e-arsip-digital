@@ -214,4 +214,8 @@ describe('EncryptionService', () => {
             expect(info.keyLength).toBe(256);
         });
     });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

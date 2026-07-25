@@ -454,4 +454,8 @@ class SecuritySanitizer {
 const sanitizer = new SecuritySanitizer();
 
 export default sanitizer;
+<<<<<<< HEAD
 export { SecuritySanitizer };
+=======
+export { SecuritySanitizer };
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

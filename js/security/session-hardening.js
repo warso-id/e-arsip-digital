@@ -313,7 +313,11 @@ class SessionHardening {
         
         // Redirect to login
         setTimeout(() => {
+<<<<<<< HEAD
             window.location.href = resolveAppPath('/login.html?message=session_expired');
+=======
+            window.location.href = '/login.html?message=session_expired';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         }, 1000);
     }
     

@@ -200,4 +200,8 @@ runner.describe('Integration Test: Surat Keluar Flow', () => {
         assert.true(roles.includes('wadek'), 'Wadek should approve');
         assert.true(roles.includes('dekan'), 'Dekan should approve');
     });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

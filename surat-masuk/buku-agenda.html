@@ -130,12 +130,21 @@
     </main>
     
     <script type="module">
+<<<<<<< HEAD
         import authService from '../js/auth.js';
         import apiService from '../js/api.js';
         import utils from '../js/utils.js';
         import logger from '../js/logger.js';
         
         if (!authService.isAuthenticated) window.location.href = '../login.html';
+=======
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loading-screen')?.classList.add('hidden');
@@ -205,4 +214,8 @@
         }
     </script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

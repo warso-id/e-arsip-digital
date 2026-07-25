@@ -189,6 +189,7 @@
     </main>
     
     <script type="module">
+<<<<<<< HEAD
         import authService from '../js/auth.js';
         import apiService from '../js/api.js';
         import notifications from '../js/notifications.js';
@@ -196,6 +197,15 @@
         import logger from '../js/logger.js';
         
         if (!authService.isAuthenticated) window.location.href = '../login.html';
+=======
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         
         let approvalList = [];
         

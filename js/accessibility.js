@@ -7,7 +7,10 @@
  */
 
 import { Logger } from './logger.js';
+<<<<<<< HEAD
 import { resolveAppPath } from './path-utils.js';
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
 
 class AccessibilityManager {
     constructor() {
@@ -217,7 +220,11 @@ class AccessibilityManager {
             // Alt + H: Go home
             if (event.key === 'h' || event.key === 'H') {
                 event.preventDefault();
+<<<<<<< HEAD
                 window.location.href = resolveAppPath('/dashboard/');
+=======
+                window.location.href = '/dashboard/';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             }
             
             // Alt + A: Accessibility menu

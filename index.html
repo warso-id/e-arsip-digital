@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!-- index.html - Landing Page 2026 (FIXED) -->
 <!DOCTYPE html>
 <html lang="id" dir="ltr">
@@ -7,6 +8,17 @@
     <meta name="theme-color" content="#2563eb">
     <meta name="description" content="E-Arsip Digital - Sistem Manajemen Arsip Digital Modern untuk Institusi Pendidikan">
     <meta name="keywords" content="e-arsip, digital arsip, manajemen surat, sistem arsip, surat menyurat, arsip digital">
+=======
+<!-- index.html - Landing Page 2026 (ROOT - GitHub Pages Ready) -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="E-Arsip Digital - Sistem Manajemen Arsip Digital Modern">
+    <meta name="keywords" content="e-arsip, digital arsip, manajemen surat">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <meta name="author" content="E-Arsip Digital Team">
     <meta name="robots" content="index, follow">
     
@@ -15,6 +27,7 @@
     <meta property="og:description" content="Kelola arsip dan surat menyurat secara digital dengan mudah, aman, dan efisien.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://warso-id.github.io/arsip-surat-digital-enterprise/">
+<<<<<<< HEAD
     <meta property="og:site_name" content="E-Arsip Digital">
     
     <!-- PWA -->
@@ -31,10 +44,26 @@
     <title>E-Arsip Digital - Sistem Manajemen Arsip Modern</title>
     
     <!-- Stylesheets -->
+=======
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="E-Arsip">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='55' font-weight='bold'>A</text></svg>">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-src 'self' https://script.google.com; form-action 'self' https://script.google.com; base-uri 'self';">
+    
+    <title>E-Arsip Digital - Sistem Manajemen Arsip Modern</title>
+    
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
+<<<<<<< HEAD
         /* ============================================ */
         /* CRITICAL CSS INLINE                          */
         /* ============================================ */
@@ -62,10 +91,26 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
+=======
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8; --accent: #764ba2;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --radius: 12px; --transition: all 0.3s ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.6;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             -webkit-font-smoothing: antialiased;
         }
         
         .loading-screen {
+<<<<<<< HEAD
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
@@ -289,12 +334,91 @@
             font-size: 24px;
             margin-bottom: 18px;
         }
+=======
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--white); display: flex; justify-content: center; align-items: center;
+            z-index: 9999; transition: opacity 0.4s;
+        }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner {
+            width: 48px; height: 48px; border: 3px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .main-header {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); z-index: 100; transition: var(--transition);
+        }
+        .main-header.scrolled { box-shadow: var(--shadow-md); }
+        .nav-container {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center; height: 68px;
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
+        .brand-icon {
+            width: 42px; height: 42px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+        }
+        .nav-brand h1 { font-size: 20px; font-weight: 700; margin: 0; }
+        .nav-menu { display: flex; align-items: center; gap: 8px; }
+        .nav-link { padding: 8px 16px; color: var(--text-light); text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px; transition: var(--transition); }
+        .nav-link:hover { color: var(--primary); background: rgba(37,99,235,0.06); }
+        
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 22px; font-size: 14px; font-weight: 600;
+            border: none; border-radius: 10px; cursor: pointer;
+            text-decoration: none; transition: var(--transition); font-family: inherit;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-outline:hover { background: var(--primary); color: white; }
+        .btn-lg { padding: 14px 30px; font-size: 16px; border-radius: 12px; }
+        
+        .hero-section {
+            padding: 140px 24px 80px; text-align: center;
+            background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 50%, #ffffff 100%);
+            position: relative; overflow: hidden;
+        }
+        .hero-content { max-width: 700px; margin: 0 auto; position: relative; z-index: 1; animation: fadeInUp 0.8s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .hero-icon {
+            width: 80px; height: 80px; border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; font-size: 36px; color: white;
+            box-shadow: 0 8px 30px rgba(37,99,235,0.3);
+        }
+        .hero-content h2 { font-size: 42px; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
+        .hero-content h2 span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-content p { font-size: 18px; color: var(--text-light); margin-bottom: 32px; }
+        .hero-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        
+        .features-section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 48px; }
+        .section-header h3 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+        .section-header p { font-size: 16px; color: var(--text-light); }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; }
+        .feature-card {
+            background: var(--white); border-radius: var(--radius); padding: 32px 28px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            transition: var(--transition); position: relative; overflow: hidden;
+        }
+        .feature-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+        .feature-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 18px; }
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         .feature-icon.blue { background: #eff6ff; color: #2563eb; }
         .feature-icon.green { background: #f0fdf4; color: #16a34a; }
         .feature-icon.purple { background: #faf5ff; color: #9333ea; }
         .feature-icon.orange { background: #fff7ed; color: #ea580c; }
         .feature-icon.teal { background: #f0fdfa; color: #0d9488; }
         .feature-icon.red { background: #fef2f2; color: #dc2626; }
+<<<<<<< HEAD
         
         .feature-card h4 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
         .feature-card p { font-size: 14px; color: var(--text-light); line-height: 1.6; margin: 0; }
@@ -308,11 +432,20 @@
             gap: 60px;
             flex-wrap: wrap;
             color: white;
+=======
+        .feature-card h4 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .feature-card p { font-size: 14px; color: var(--text-light); margin: 0; }
+        
+        .stats-section {
+            padding: 60px 24px; background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; color: white;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         }
         .stat-item { text-align: center; }
         .stat-number { font-size: 42px; font-weight: 800; display: block; line-height: 1; margin-bottom: 8px; }
         .stat-label { font-size: 14px; opacity: 0.85; font-weight: 500; }
         
+<<<<<<< HEAD
         /* CTA */
         .cta-section {
             padding: 80px 24px;
@@ -338,24 +471,43 @@
             flex-wrap: wrap;
             gap: 20px;
         }
+=======
+        .cta-section { padding: 80px 24px; text-align: center; max-width: 600px; margin: 0 auto; }
+        .cta-section h3 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+        .cta-section p { font-size: 16px; color: var(--text-light); margin-bottom: 28px; }
+        
+        .main-footer { background: #1e293b; color: #94a3b8; padding: 40px 24px; }
+        .footer-content { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         .footer-brand h4 { color: white; font-size: 16px; margin-bottom: 4px; }
         .footer-brand p { font-size: 13px; margin: 0; }
         .footer-links { display: flex; gap: 20px; }
         .footer-links a { color: #94a3b8; text-decoration: none; font-size: 13px; transition: color 0.2s; }
         .footer-links a:hover { color: white; }
         
+<<<<<<< HEAD
         /* Responsive */
+=======
+        .mobile-toggle { display: none; background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; }
+        
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         @media (max-width: 768px) {
             .hero-content h2 { font-size: 30px; }
             .features-grid { grid-template-columns: 1fr; }
             .stats-section { gap: 30px; padding: 40px 24px; }
             .stat-number { font-size: 32px; }
+<<<<<<< HEAD
+=======
+            .nav-link { display: none; }
+            .mobile-toggle { display: block; }
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             .footer-content { flex-direction: column; text-align: center; }
         }
         @media (max-width: 480px) {
             .hero-content h2 { font-size: 26px; }
             .hero-buttons { flex-direction: column; align-items: center; }
         }
+<<<<<<< HEAD
         @media (prefers-reduced-motion: reduce) {
             .feature-card { transition: none; }
             .feature-card:hover { transform: none; }
@@ -381,16 +533,38 @@
                 <a href="login.html" class="btn btn-primary">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </a>
+=======
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <header class="main-header" id="main-header">
+        <nav class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="brand-icon">📁</div>
+                <h1>E-Arsip Digital</h1>
+            </a>
+            <button class="mobile-toggle" id="mobile-toggle">☰</button>
+            <div class="nav-menu" id="nav-menu">
+                <a href="#features" class="nav-link">Fitur</a>
+                <a href="help/" class="nav-link">Bantuan</a>
+                <a href="login.html" class="btn btn-primary" id="nav-login-btn"><i class="fas fa-sign-in-alt"></i> Login</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             </div>
         </nav>
     </header>
     
     <main>
+<<<<<<< HEAD
         <!-- Hero -->
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         <section class="hero-section">
             <div class="hero-content">
                 <div class="hero-icon">📁</div>
                 <h2>Sistem Manajemen <span>Arsip Digital</span></h2>
+<<<<<<< HEAD
                 <p>Kelola arsip dan surat menyurat secara digital dengan mudah, aman, dan efisien. Dilengkapi fitur QR Code, Tanda Tangan Digital, dan Approval Workflow.</p>
                 <div class="hero-buttons">
                     <a href="login.html" class="btn btn-primary btn-lg">
@@ -399,10 +573,17 @@
                     <a href="#features" class="btn btn-outline btn-lg">
                         <i class="fas fa-info-circle"></i> Pelajari Lebih Lanjut
                     </a>
+=======
+                <p>Kelola arsip dan surat menyurat secara digital dengan mudah, aman, dan efisien.</p>
+                <div class="hero-buttons">
+                    <a href="login.html" class="btn btn-primary btn-lg"><i class="fas fa-rocket"></i> Mulai Sekarang</a>
+                    <a href="#features" class="btn btn-outline btn-lg"><i class="fas fa-info-circle"></i> Pelajari</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 </div>
             </div>
         </section>
         
+<<<<<<< HEAD
         <!-- Features -->
         <section id="features" class="features-section">
             <div class="section-header">
@@ -522,3 +703,88 @@
     </script>
 </body>
 </html>
+=======
+        <section id="features" class="features-section">
+            <div class="section-header"><h3>Fitur Utama</h3><p>Berbagai fitur modern untuk memudahkan pengelolaan arsip</p></div>
+            <div class="features-grid">
+                <div class="feature-card"><div class="feature-icon blue"><i class="fas fa-envelope-open-text"></i></div><h4>Manajemen Surat</h4><p>Kelola surat masuk dan keluar dengan sistem penomoran otomatis, klasifikasi, dan tracking.</p></div>
+                <div class="feature-card"><div class="feature-icon green"><i class="fas fa-qrcode"></i></div><h4>QR Code Verification</h4><p>Verifikasi keaslian surat dengan teknologi QR Code.</p></div>
+                <div class="feature-card"><div class="feature-icon purple"><i class="fas fa-signature"></i></div><h4>Tanda Tangan Digital</h4><p>Dukungan tanda tangan digital yang aman.</p></div>
+                <div class="feature-card"><div class="feature-icon orange"><i class="fas fa-chart-bar"></i></div><h4>Laporan & Analytics</h4><p>Pantau aktivitas arsip secara real-time dengan grafik interaktif.</p></div>
+                <div class="feature-card"><div class="feature-icon teal"><i class="fas fa-check-double"></i></div><h4>Approval Workflow</h4><p>Sistem approval bertingkat untuk setiap surat.</p></div>
+                <div class="feature-card"><div class="feature-icon red"><i class="fas fa-shield-alt"></i></div><h4>Keamanan Terintegrasi</h4><p>Enkripsi AES-256, CSRF, XSS Protection.</p></div>
+            </div>
+        </section>
+        
+        <section class="stats-section">
+            <div class="stat-item"><span class="stat-number">16</span><span class="stat-label">Role Pengguna</span></div>
+            <div class="stat-item"><span class="stat-number">8</span><span class="stat-label">Tema Tampilan</span></div>
+            <div class="stat-item"><span class="stat-number">PWA</span><span class="stat-label">Progressive Web App</span></div>
+        </section>
+        
+        <section class="cta-section">
+            <h3>Siap Mengelola Arsip Digital?</h3>
+            <p>Mulai sekarang dan rasakan kemudahan mengelola surat menyurat.</p>
+            <a href="login.html" class="btn btn-primary btn-lg"><i class="fas fa-arrow-right"></i> Masuk ke Sistem</a>
+        </section>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-brand"><h4>📁 E-Arsip Digital</h4><p>v2026.1.0</p></div>
+            <div class="footer-links"><a href="help/">Bantuan</a><a href="login.html">Login</a></div>
+        </div>
+    </footer>
+    
+    <script src="config/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+    (function() {
+        var loader = document.getElementById('loading-screen');
+        if (loader) {
+            window.addEventListener('load', function() { setTimeout(function() { loader.classList.add('hidden'); }, 300); });
+            setTimeout(function() { loader.classList.add('hidden'); }, 3000);
+        }
+        
+        // Header scroll
+        var header = document.getElementById('main-header');
+        window.addEventListener('scroll', function() {
+            header.classList.toggle('scrolled', window.scrollY > 50);
+        });
+        
+        // Mobile menu
+        document.getElementById('mobile-toggle').addEventListener('click', function() {
+            document.getElementById('nav-menu').classList.toggle('mobile-open');
+        });
+        
+        // Check auth - update login button
+        setTimeout(function() {
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
+                var user = window.EArsip.Auth.currentUser;
+                var btn = document.getElementById('nav-login-btn');
+                if (btn) { btn.href = 'dashboard/'; btn.innerHTML = '<i class="fas fa-home"></i> Dashboard'; }
+            }
+        }, 500);
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+            a.addEventListener('click', function(e) {
+                var t = document.querySelector(this.getAttribute('href'));
+                if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+            });
+        });
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(function() {});
+        }
+        
+        console.log('E-Arsip Digital v2026.1.0');
+    })();
+    </script>
+</body>
+</html>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

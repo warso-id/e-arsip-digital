@@ -3,8 +3,11 @@
 // SECURITY MODULE - E-ARSIP DIGITAL
 // ============================================
 
+<<<<<<< HEAD
 import { resolveAppPath } from './path-utils.js';
 
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
 class SecurityManager {
     constructor() {
         this.securityConfig = {
@@ -183,7 +186,11 @@ class SecurityManager {
         localStorage.removeItem('currentUser');
         
         // Redirect to login
+<<<<<<< HEAD
         window.location.href = resolveAppPath('/login.html?reason=' + encodeURIComponent(reason));
+=======
+        window.location.href = '/login.html?reason=' + encodeURIComponent(reason);
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     }
     
     /**

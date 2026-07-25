@@ -10,6 +10,7 @@
     
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<<<<<<< HEAD
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
     
     <style>
@@ -66,11 +67,40 @@
             flex-shrink: 0;
         }
         
+=======
+    
+    <style>
+        .dashboard-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px;
+        }
+        .dashboard-header h1 { font-size: 24px; margin: 0; }
+        
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 16px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        
+        .stat-icon {
+            width: 52px; height: 52px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+        }
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         .stat-icon.blue { background: #eff6ff; color: #2563eb; }
         .stat-icon.green { background: #f0fdf4; color: #16a34a; }
         .stat-icon.purple { background: #faf5ff; color: #9333ea; }
         .stat-icon.orange { background: #fff7ed; color: #ea580c; }
         
+<<<<<<< HEAD
         .stat-info h3 {
             font-size: 28px;
             font-weight: 700;
@@ -230,15 +260,70 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
+=======
+        .stat-info h3 { font-size: 26px; font-weight: 700; margin: 0; line-height: 1; }
+        .stat-info p { font-size: 13px; color: #64748b; margin: 4px 0 0 0; }
+        
+        .quick-actions {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        }
+        .quick-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 14px 18px; background: #f8fafc;
+            border: 1px solid #e2e8f0; border-radius: 10px;
+            text-decoration: none; color: #334155;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .quick-btn i { color: #2563eb; font-size: 16px; }
+        
+        .card {
+            background: white; border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px; border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-header h3 { font-size: 16px; margin: 0; }
+        .card-body { padding: 20px; }
+        
+        .recent-list { list-style: none; padding: 0; margin: 0; }
+        .recent-list li {
+            padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .recent-list li:last-child { border-bottom: none; }
+        
+        .empty-state {
+            text-align: center; padding: 40px; color: #94a3b8;
+        }
+        .empty-state i { font-size: 40px; display: block; margin-bottom: 12px; }
+        
+        @media (max-width: 768px) {
+            .quick-actions { grid-template-columns: 1fr; }
+            .dashboard-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         }
     </style>
 </head>
 <body>
+<<<<<<< HEAD
     <!-- Loading Screen -->
     <div class="loading-screen" id="loading-screen">
         <div class="spinner"></div>
     </div>
     
+=======
+    <!-- Loading -->
+    <div id="loading-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;align-items:center;justify-content:center;z-index:9999;">
+        <div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
@@ -246,6 +331,7 @@
             <span>E-Arsip Digital</span>
         </div>
         <nav class="sidebar-nav">
+<<<<<<< HEAD
             <a href="./" class="nav-item active">
                 <i class="fas fa-home"></i> Dashboard
             </a>
@@ -264,27 +350,49 @@
             <a href="../../pengaturan/" class="nav-item">
                 <i class="fas fa-cog"></i> Pengaturan
             </a>
+=======
+            <a href="index.html" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="../../surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="../../manajemen-user/index.html" class="nav-item"><i class="fas fa-users"></i> Manajemen User</a>
+            <a href="../../laporan/index.html" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="../../pengaturan/index.html" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         </nav>
     </aside>
     
     <!-- Main Content -->
+<<<<<<< HEAD
     <main class="main-content" id="main-content">
         <!-- Header -->
+=======
+    <main class="main-content">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         <div class="dashboard-header">
             <div>
                 <h1>Dashboard Admin</h1>
                 <p style="color:#64748b;font-size:14px;">Selamat datang, <span id="user-name">Admin</span></p>
             </div>
+<<<<<<< HEAD
             <div class="dashboard-actions">
                 <a href="../../surat-keluar/form.html" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Buat Surat
                 </a>
                 <button class="btn btn-outline" id="refresh-btn">
                     <i class="fas fa-sync-alt"></i> Refresh
+=======
+            <div style="display:flex;gap:8px;">
+                <a href="../../surat-keluar/form.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Buat Surat
+                </a>
+                <button class="btn btn-outline btn-sm" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 </button>
             </div>
         </div>
         
+<<<<<<< HEAD
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card" onclick="window.location.href='../../surat-keluar/list.html'">
@@ -355,10 +463,43 @@
                 <div class="card-body">
                     <div class="chart-container">
                         <canvas id="surat-chart"></canvas>
+=======
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-paper-plane"></i></div>
+                <div class="stat-info"><h3 id="stat-keluar">-</h3><p>Surat Keluar</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-inbox"></i></div>
+                <div class="stat-info"><h3 id="stat-masuk">-</h3><p>Surat Masuk</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-users"></i></div>
+                <div class="stat-info"><h3 id="stat-users">-</h3><p>Pengguna</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+                <div class="stat-info"><h3 id="stat-pending">-</h3><p>Pending Approval</p></div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions + Recent Activity -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+            <div class="card">
+                <div class="card-header"><h3>Aksi Cepat</h3></div>
+                <div class="card-body">
+                    <div class="quick-actions">
+                        <a href="../../surat-keluar/form.html" class="quick-btn"><i class="fas fa-pen"></i> Buat Surat Baru</a>
+                        <a href="../../surat-masuk/form.html" class="quick-btn"><i class="fas fa-download"></i> Input Surat Masuk</a>
+                        <a href="../../laporan/index.html" class="quick-btn"><i class="fas fa-file-alt"></i> Buat Laporan</a>
+                        <a href="../../pengaturan/backup.html" class="quick-btn"><i class="fas fa-database"></i> Backup Data</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                     </div>
                 </div>
             </div>
             
+<<<<<<< HEAD
             <!-- Recent Activity & Quick Actions -->
             <div style="display:flex;flex-direction:column;gap:20px;">
                 <!-- Recent Activity -->
@@ -428,12 +569,21 @@
                             </tr>
                         </tbody>
                     </table>
+=======
+            <div class="card">
+                <div class="card-header"><h3>Aktivitas</h3></div>
+                <div class="card-body">
+                    <ul class="recent-list" id="recent-list">
+                        <li class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></li>
+                    </ul>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 </div>
             </div>
         </div>
     </main>
     
     <!-- Scripts -->
+<<<<<<< HEAD
     <script type="module">
         import authService from '../../js/auth.js';
         import apiService from '../../js/api.js';
@@ -740,3 +890,136 @@
     </script>
 </body>
 </html>
+=======
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    (function() {
+        'use strict';
+        
+        console.log('Admin Dashboard v2026.1.0');
+        
+        // ⬇️ AUTH CHECK
+        function checkAuth() {
+            // Cek Auth Service
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
+                var user = window.EArsip.Auth.currentUser;
+                
+                // Cek role
+                if (user.role !== 'admin' && user.role !== 'super_admin') {
+                    window.location.href = '../user/index.html';
+                    return false;
+                }
+                
+                document.getElementById('user-name').textContent = user.fullname || user.username;
+                return true;
+            }
+            
+            // Cek localStorage
+            try {
+                var session = localStorage.getItem('auth_session');
+                if (session) {
+                    var data = JSON.parse(session);
+                    if (data.user && data.expiresAt && Date.now() < data.expiresAt) {
+                        document.getElementById('user-name').textContent = data.user.fullname || data.user.username;
+                        return true;
+                    }
+                }
+            } catch(e) {}
+            
+            // Tidak authenticated
+            window.location.href = '../../login.html';
+            return false;
+        }
+        
+        // ⬇️ LOAD DATA
+        function loadDashboard() {
+            var api = window.EArsip && window.EArsip.Api;
+            
+            if (api) {
+                // Gunakan API service
+                api.get('getDashboardStats')
+                    .then(function(response) {
+                        updateStats(response.data || response);
+                    })
+                    .catch(function() {
+                        setDefaultStats();
+                    });
+                
+                api.get('getRecentActivity', { limit: 5 })
+                    .then(function(response) {
+                        updateRecentActivity(response.data || []);
+                    })
+                    .catch(function() {
+                        updateRecentActivity([]);
+                    });
+            } else {
+                // Fallback: tampilkan data kosong
+                setDefaultStats();
+                updateRecentActivity([]);
+            }
+        }
+        
+        function updateStats(data) {
+            document.getElementById('stat-keluar').textContent = (data.suratKeluar || 0).toLocaleString('id-ID');
+            document.getElementById('stat-masuk').textContent = (data.suratMasuk || 0).toLocaleString('id-ID');
+            document.getElementById('stat-users').textContent = (data.totalUsers || 0).toLocaleString('id-ID');
+            document.getElementById('stat-pending').textContent = (data.pendingApprovals || 0).toLocaleString('id-ID');
+        }
+        
+        function setDefaultStats() {
+            document.getElementById('stat-keluar').textContent = '0';
+            document.getElementById('stat-masuk').textContent = '0';
+            document.getElementById('stat-users').textContent = '0';
+            document.getElementById('stat-pending').textContent = '0';
+        }
+        
+        function updateRecentActivity(logs) {
+            var list = document.getElementById('recent-list');
+            
+            if (!logs || logs.length === 0) {
+                list.innerHTML = '<li class="empty-state"><i class="fas fa-inbox"></i><p>Belum ada aktivitas</p></li>';
+                return;
+            }
+            
+            var utils = window.EArsip && window.EArsip.Utils;
+            
+            list.innerHTML = logs.map(function(log) {
+                var time = utils ? utils.timeAgo(log.timestamp) : log.timestamp;
+                return '<li><div><strong>' + (log.description || log.action) + '</strong><br><small style="color:#94a3b8;">' + (log.username || 'system') + ' &bull; ' + time + '</small></div></li>';
+            }).join('');
+        }
+        
+        // ⬇️ INIT
+        function init() {
+            if (!checkAuth()) return;
+            
+            document.getElementById('loading-screen').style.display = 'none';
+            loadDashboard();
+            
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                loadDashboard();
+            });
+        }
+        
+        // Tunggu Auth Service siap
+        if (window.EArsip && window.EArsip.Auth) {
+            init();
+        } else {
+            var attempts = 0;
+            var checkInterval = setInterval(function() {
+                attempts++;
+                if ((window.EArsip && window.EArsip.Auth) || attempts > 20) {
+                    clearInterval(checkInterval);
+                    init();
+                }
+            }, 100);
+        }
+    })();
+    </script>
+</body>
+</html>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

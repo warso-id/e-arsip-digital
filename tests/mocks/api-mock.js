@@ -572,4 +572,8 @@ window.fetch = async function(url, options = {}) {
 };
 
 export default apiMock;
+<<<<<<< HEAD
 export { APIMock };
+=======
+export { APIMock };
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

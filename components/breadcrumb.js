@@ -16,7 +16,11 @@ class Breadcrumb {
             separator: '/',
             homeLabel: 'Dashboard',
             homeIcon: 'fa-home',
+<<<<<<< HEAD
             homeUrl: '../dashboard/',
+=======
+            homeUrl: '/dashboard/',
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             autoGenerate: true,
             ...options
         };

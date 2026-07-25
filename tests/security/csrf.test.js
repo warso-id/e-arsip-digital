@@ -70,4 +70,8 @@ runner.describe('Security Test: CSRF Protection', () => {
         // Cleanup
         form.remove();
     });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

@@ -8,7 +8,11 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Daftar Surat Keluar - E-Arsip Digital</title>
     
+<<<<<<< HEAD
     <link rel="stylesheet" href="../css/style.css">
+=======
+    <link rel="stylesheet" href="/css/style.css">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
@@ -105,11 +109,19 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
+<<<<<<< HEAD
             <a href="../dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
             <a href="./list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
             <a href="../surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
             <a href="../laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
             <a href="../pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+=======
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item active"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         </nav>
     </aside>
     
@@ -120,10 +132,17 @@
                 <p style="color:#64748b;font-size:14px;">Kelola surat keluar yang telah dibuat</p>
             </div>
             <div style="display:flex;gap:8px;">
+<<<<<<< HEAD
                 <a href="./form.html" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Buat Surat
                 </a>
                 <a href="./draft.html" class="btn btn-outline">
+=======
+                <a href="/surat-keluar/form.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Buat Surat
+                </a>
+                <a href="/surat-keluar/draft.html" class="btn btn-outline">
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                     <i class="fas fa-file-alt"></i> Draft
                 </a>
             </div>
@@ -215,6 +234,7 @@
     </div>
     
     <script type="module">
+<<<<<<< HEAD
         import authService from '../js/auth.js';
         import apiService from '../js/api.js';
         import notifications from '../js/notifications.js';
@@ -223,6 +243,16 @@
         import logger from '../js/logger.js';
         
         if (!authService.isAuthenticated) window.location.href = '../login.html';
+=======
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import exportHandler from '/js/export.js';
+        import utils from '/js/utils.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         
         let suratList = [];
         let selectedIds = new Set();
@@ -278,7 +308,11 @@
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;">
                     <i class="fas fa-envelope" style="font-size:40px;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
                     Tidak ada surat keluar ditemukan
+<<<<<<< HEAD
                     <br><a href="./form.html" class="btn btn-primary btn-sm" style="margin-top:12px;">Buat Surat Baru</a>
+=======
+                    <br><a href="/surat-keluar/form.html" class="btn btn-primary btn-sm" style="margin-top:12px;">Buat Surat Baru</a>
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 </td></tr>`;
                 return;
             }
@@ -295,8 +329,13 @@
                     <td>
                         <div class="action-buttons">
                             <button class="btn-action" title="Lihat" onclick="quickView('${s.id}')"><i class="fas fa-eye" style="color:#2563eb;"></i></button>
+<<<<<<< HEAD
                             <a href="./preview.html?id=${s.id}" class="btn-action" title="Preview"><i class="fas fa-file-alt" style="color:#16a34a;"></i></a>
                             ${s.status === 'draft' ? `<a href="./form.html?edit=${s.id}" class="btn-action" title="Edit"><i class="fas fa-edit" style="color:#d97706;"></i></a>` : ''}
+=======
+                            <a href="/surat-keluar/preview.html?id=${s.id}" class="btn-action" title="Preview"><i class="fas fa-file-alt" style="color:#16a34a;"></i></a>
+                            ${s.status === 'draft' ? `<a href="/surat-keluar/form.html?edit=${s.id}" class="btn-action" title="Edit"><i class="fas fa-edit" style="color:#d97706;"></i></a>` : ''}
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                             <button class="btn-action" title="Hapus" onclick="deleteSurat('${s.id}')"><i class="fas fa-trash" style="color:#dc2626;"></i></button>
                         </div>
                     </td>

@@ -79,4 +79,8 @@ runner.describe('Security Test: SQL Injection Prevention', () => {
         const sanitized = advancedSanitizer.sanitizeSQL(input);
         assert.false(sanitized.includes('--'), 'SQL comments should be removed');
     });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

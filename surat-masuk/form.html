@@ -334,6 +334,7 @@
     </main>
     
     <script type="module">
+<<<<<<< HEAD
         import authService from '../js/auth.js';
         import FormValidator from '../js/validator.js';
         import FileUploader from '../js/upload.js';
@@ -343,6 +344,17 @@
         
         // Check auth
         if (!authService.isAuthenticated) window.location.href = '../login.html';
+=======
+        import authService from '/js/auth.js';
+        import FormValidator from '/js/validator.js';
+        import FileUploader from '/js/upload.js';
+        import notifications from '/js/notifications.js';
+        import apiService from '/js/api.js';
+        import logger from '/js/logger.js';
+        
+        // Check auth
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         
         let formValidator;
         let dokumenUploader;

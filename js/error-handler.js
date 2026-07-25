@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // js/error-handler.js - Global Error Handler 2026
 /**
  * E-Arsip Digital - Global Error Handler
@@ -9,13 +10,26 @@
 import { Logger } from './logger.js';
 import { navigateToAppPath } from './path-utils.js';
 import notifications from './notifications.js';
+=======
+// js/error-handler.js - Global Error Handler 2026 (FIXED)
+/**
+ * E-Arsip Digital - Global Error Handler
+ * Version: 2026.1.0
+ * ⬇️ FIXED: Import notifications secara dinamis, bukan statis
+ */
+
+import { Logger } from './logger.js';
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
 import APP_CONFIG from '../config/config.js';
 
 class ErrorHandler {
     constructor() {
         this.logger = new Logger('ErrorHandler');
         
+<<<<<<< HEAD
         // Error severity levels
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         this.SEVERITY = {
             LOW: 'low',
             MEDIUM: 'medium',
@@ -23,7 +37,10 @@ class ErrorHandler {
             CRITICAL: 'critical'
         };
         
+<<<<<<< HEAD
         // Error categories
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         this.CATEGORIES = {
             NETWORK: 'network',
             AUTH: 'auth',
@@ -34,6 +51,7 @@ class ErrorHandler {
             UNKNOWN: 'unknown'
         };
         
+<<<<<<< HEAD
         // Error history
         this.errorHistory = [];
         this.maxHistory = 50;
@@ -47,10 +65,41 @@ class ErrorHandler {
             errors: [],
             threshold: 5 // Max errors per window
         };
+=======
+        this.errorHistory = [];
+        this.maxHistory = 50;
+        this.recoveryStrategies = new Map();
+        this.errorRate = { window: 60000, errors: [], threshold: 5 };
+        
+        // ⬇️ FIX: Lazy load notifications
+        this._notifications = null;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         
         this.init();
     }
     
+<<<<<<< HEAD
+=======
+    // ⬇️ FIX: Lazy getter untuk notifications
+    async getNotifications() {
+        if (!this._notifications) {
+            try {
+                const module = await import('./notifications.js');
+                this._notifications = module.default || module;
+            } catch (error) {
+                console.warn('Notifications module not available');
+                this._notifications = {
+                    error: function(msg) { console.error(msg); },
+                    warning: function(msg) { console.warn(msg); },
+                    info: function(msg) { console.info(msg); },
+                    success: function(msg) { console.log(msg); }
+                };
+            }
+        }
+        return this._notifications;
+    }
+    
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     init() {
         this.registerDefaultRecoveryStrategies();
         this.setupGlobalHandlers();
@@ -58,12 +107,16 @@ class ErrorHandler {
         this.logger.info('Error handler initialized');
     }
     
+<<<<<<< HEAD
     // ============================================
     // GLOBAL HANDLERS
     // ============================================
     
     setupGlobalHandlers() {
         // Uncaught errors
+=======
+    setupGlobalHandlers() {
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         window.addEventListener('error', (event) => {
             this.handleError(event.error || new Error(event.message), {
                 category: this.CATEGORIES.RUNTIME,
@@ -72,7 +125,10 @@ class ErrorHandler {
             });
         });
         
+<<<<<<< HEAD
         // Unhandled promise rejections
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         window.addEventListener('unhandledrejection', (event) => {
             const error = event.reason instanceof Error ? 
                 event.reason : new Error(String(event.reason));
@@ -83,6 +139,7 @@ class ErrorHandler {
                 source: 'unhandledrejection'
             });
         });
+<<<<<<< HEAD
         
         // Resource loading errors
         window.addEventListener('error', (event) => {
@@ -119,6 +176,18 @@ class ErrorHandler {
         this.attemptRecovery(errorInfo);
         
         // Report to server
+=======
+    }
+    
+    handleError(error, context = {}) {
+        const errorInfo = this.classifyError(error, context);
+        
+        this.logError(errorInfo);
+        this.trackErrorRate(errorInfo);
+        this.addToHistory(errorInfo);
+        this.notifyUser(errorInfo);
+        this.attemptRecovery(errorInfo);
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         this.reportError(errorInfo);
         
         return errorInfo;
@@ -136,6 +205,7 @@ class ErrorHandler {
             source: context.source || 'unknown',
             code: error.code || error.status || null,
             recoverable: context.recoverable !== false,
+<<<<<<< HEAD
             context: context,
             handled: false
         };
@@ -152,12 +222,24 @@ class ErrorHandler {
         } else if (error.name === 'SecurityError') {
             errorInfo.category = this.CATEGORIES.SECURITY;
             errorInfo.severity = this.SEVERITY.CRITICAL;
+=======
+            handled: false
+        };
+        
+        if (error.name === 'TypeError' || error.name === 'ReferenceError') {
+            errorInfo.category = this.CATEGORIES.RUNTIME;
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            errorInfo.category = this.CATEGORIES.NETWORK;
+        } else if (error.status === 401 || error.status === 403) {
+            errorInfo.category = this.CATEGORIES.AUTH;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         }
         
         return errorInfo;
     }
     
     logError(errorInfo) {
+<<<<<<< HEAD
         const logMethod = {
             [this.SEVERITY.LOW]: 'warn',
             [this.SEVERITY.MEDIUM]: 'error',
@@ -190,10 +272,31 @@ class ErrorHandler {
             [this.CATEGORIES.RUNTIME]: 'Terjadi kesalahan aplikasi.',
             [this.CATEGORIES.SECURITY]: 'Terjadi pelanggaran keamanan.',
             [this.CATEGORIES.UNKNOWN]: 'Terjadi kesalahan yang tidak diketahui.'
+=======
+        const method = errorInfo.severity === this.SEVERITY.CRITICAL ? 'fatal' :
+                       errorInfo.severity === this.SEVERITY.LOW ? 'warn' : 'error';
+        
+        this.logger[method](errorInfo.message, {
+            errorId: errorInfo.id,
+            category: errorInfo.category
+        });
+    }
+    
+    async notifyUser(errorInfo) {
+        if (errorInfo.severity === this.SEVERITY.LOW) return;
+        
+        const messages = {
+            network: 'Gagal terhubung ke server. Periksa koneksi internet.',
+            auth: 'Sesi berakhir. Silakan login kembali.',
+            api: 'Terjadi kesalahan server. Silakan coba lagi.',
+            runtime: 'Terjadi kesalahan aplikasi.',
+            unknown: 'Terjadi kesalahan.'
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         };
         
         const message = messages[errorInfo.category] || errorInfo.message;
         
+<<<<<<< HEAD
         if (errorInfo.severity === this.SEVERITY.CRITICAL) {
             notifications.error(message, {
                 duration: 0,
@@ -220,23 +323,49 @@ class ErrorHandler {
             canRecover: () => navigator.onLine,
             recover: async () => {
                 // Wait for connectivity
+=======
+        try {
+            const notif = await this.getNotifications();
+            
+            if (errorInfo.severity === this.SEVERITY.CRITICAL || errorInfo.severity === this.SEVERITY.HIGH) {
+                notif.error(message, { duration: 10000 });
+            } else {
+                notif.warning(message, { duration: 5000 });
+            }
+        } catch {
+            console.error(message);
+        }
+    }
+    
+    registerDefaultRecoveryStrategies() {
+        this.registerRecoveryStrategy(this.CATEGORIES.NETWORK, {
+            canRecover: () => navigator.onLine,
+            recover: async () => {
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 await new Promise(resolve => {
                     if (navigator.onLine) return resolve();
                     window.addEventListener('online', resolve, { once: true });
                 });
+<<<<<<< HEAD
                 
                 // Reload current page data
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 window.dispatchEvent(new CustomEvent('app:reconnect'));
                 return true;
             }
         });
         
+<<<<<<< HEAD
         // Auth errors - redirect to login
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         this.registerRecoveryStrategy(this.CATEGORIES.AUTH, {
             canRecover: () => true,
             recover: async () => {
                 localStorage.removeItem('auth_session');
                 localStorage.removeItem('auth_token');
+<<<<<<< HEAD
                 
                 setTimeout(() => {
                     navigateToAppPath('/login.html?message=session_expired');
@@ -254,11 +383,23 @@ class ErrorHandler {
                 window.dispatchEvent(new CustomEvent('app:retry', {
                     detail: { errorId: errorInfo.id }
                 }));
+=======
+                setTimeout(() => {
+                    window.location.href = 'login.html?message=session_expired';
+                }, 2000);
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
                 return true;
             }
         });
     }
     
+<<<<<<< HEAD
+=======
+    registerRecoveryStrategy(category, strategy) {
+        this.recoveryStrategies.set(category, strategy);
+    }
+    
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     async attemptRecovery(errorInfo) {
         if (!errorInfo.recoverable) return false;
         
@@ -270,6 +411,7 @@ class ErrorHandler {
             if (!canRecover) return false;
             
             const recovered = await strategy.recover(errorInfo);
+<<<<<<< HEAD
             
             if (recovered) {
                 errorInfo.recovered = true;
@@ -283,10 +425,17 @@ class ErrorHandler {
             return recovered;
         } catch (recoveryError) {
             this.logger.error('Recovery failed', recoveryError);
+=======
+            if (recovered) errorInfo.recovered = true;
+            
+            return recovered;
+        } catch {
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
             return false;
         }
     }
     
+<<<<<<< HEAD
     // ============================================
     // ERROR TRACKING
     // ============================================
@@ -315,17 +464,29 @@ class ErrorHandler {
                 }
             }));
         }
+=======
+    trackErrorRate(errorInfo) {
+        const now = Date.now();
+        this.errorRate.errors.push({ timestamp: now, ...errorInfo });
+        this.errorRate.errors = this.errorRate.errors.filter(
+            e => now - e.timestamp < this.errorRate.window
+        );
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     }
     
     addToHistory(errorInfo) {
         this.errorHistory.unshift(errorInfo);
+<<<<<<< HEAD
         
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         if (this.errorHistory.length > this.maxHistory) {
             this.errorHistory = this.errorHistory.slice(0, this.maxHistory);
         }
     }
     
     async reportError(errorInfo) {
+<<<<<<< HEAD
         // Don't report low severity in development
         if (errorInfo.severity === this.SEVERITY.LOW && 
             APP_CONFIG.app.environment === 'development') {
@@ -437,6 +598,42 @@ class ErrorHandler {
     // CLEANUP
     // ============================================
     
+=======
+        // Best-effort reporting
+        try {
+            await fetch('https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec?action=createLog', {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: '',
+                    username: 'system',
+                    action: 'error',
+                    description: errorInfo.message,
+                    details: JSON.stringify({
+                        errorId: errorInfo.id,
+                        category: errorInfo.category,
+                        url: window.location.href
+                    })
+                })
+            }).catch(() => {});
+        } catch {}
+    }
+    
+    generateErrorId() {
+        return 'ERR-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 6);
+    }
+    
+    getStats() {
+        return {
+            total: this.errorHistory.length,
+            byCategory: {},
+            bySeverity: {},
+            currentRate: this.errorRate.errors.length
+        };
+    }
+    
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     clearHistory() {
         this.errorHistory = [];
         this.errorRate.errors = [];
@@ -445,6 +642,7 @@ class ErrorHandler {
     destroy() {
         this.errorHistory = [];
         this.recoveryStrategies.clear();
+<<<<<<< HEAD
         this.logger.info('Error handler destroyed');
     }
 }
@@ -457,3 +655,13 @@ window.handleError = (error, context) => errorHandler.handleError(error, context
 
 export default errorHandler;
 export { ErrorHandler };
+=======
+    }
+}
+
+const errorHandler = new ErrorHandler();
+window.handleError = (error, context) => errorHandler.handleError(error, context);
+
+export default errorHandler;
+export { ErrorHandler };
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

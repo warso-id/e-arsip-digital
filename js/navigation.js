@@ -10,7 +10,10 @@ import { Logger } from './logger.js';
 import authService from './auth.js';
 import ROUTES_CONFIG from '../config/routes-config.js';
 import MENU_CONFIG from '../config/menu-config.js';
+<<<<<<< HEAD
 import { resolveAppPath, navigateToAppPath } from './path-utils.js';
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
 
 class NavigationController {
     constructor() {
@@ -129,8 +132,11 @@ class NavigationController {
     // ============================================
     
     resolvePath(path) {
+<<<<<<< HEAD
         if (!path) return '/';
 
+=======
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
         // Handle relative paths
         if (path.startsWith('./') || path.startsWith('../')) {
             const base = this.currentRoute?.path || '/';
@@ -148,7 +154,11 @@ class NavigationController {
             path = path.slice(0, -1);
         }
         
+<<<<<<< HEAD
         return resolveAppPath(path);
+=======
+        return path;
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     }
     
     getPageTitle(path) {

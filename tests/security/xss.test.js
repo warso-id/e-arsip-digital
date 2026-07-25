@@ -102,4 +102,8 @@ runner.describe('Security Test: XSS Prevention', () => {
         assert.false(sanitized.nested.array[0].includes('onerror'), 'Array event handler should be removed');
         assert.equal(sanitized.nested.array[1], 'safe', 'Safe value should remain unchanged');
     });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
