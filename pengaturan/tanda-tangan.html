@@ -1,0 +1,486 @@
+<!-- pengaturan/tanda-tangan.html - Tanda Tangan Digital 2026 -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tanda Tangan Digital - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        .ttd-container { max-width: 800px; margin: 0 auto; }
+        
+        .signature-list { list-style: none; padding: 0; }
+        
+        .signature-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background: white;
+        }
+        
+        .signature-preview {
+            width: 120px;
+            height: 60px;
+            border: 1px dashed #e2e8f0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .signature-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .signature-info { flex: 1; }
+        .signature-name { font-weight: 600; margin-bottom: 4px; }
+        .signature-meta { font-size: 12px; color: #64748b; }
+        
+        .signature-actions { display: flex; gap: 8px; }
+        
+        .draw-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            width: 100%;
+            height: 200px;
+            cursor: crosshair;
+            background: #f8fafc;
+            position: relative;
+        }
+        
+        .draw-area canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+        
+        .draw-tools {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            align-items: center;
+        }
+        
+        .draw-tools .color-picker {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        .draw-tools .color-picker.selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.3);
+        }
+        
+        .upload-signature-zone {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-signature-zone:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+            <a href="/pengaturan/tanda-tangan.html" class="nav-item active"><i class="fas fa-signature"></i> Tanda Tangan</a>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        <div class="ttd-container">
+            <h2 style="margin-bottom:8px;">Tanda Tangan Digital</h2>
+            <p style="color:#64748b;margin-bottom:24px;">Kelola tanda tangan digital untuk penandatanganan surat</p>
+            
+            <!-- Saved Signatures -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header">
+                    <h3>Tanda Tangan Tersimpan</h3>
+                    <button class="btn btn-sm btn-primary" id="add-signature-btn">
+                        <i class="fas fa-plus"></i> Tambah
+                    </button>
+                </div>
+                <div class="card-body">
+                    <ul class="signature-list" id="signature-list">
+                        <li style="text-align:center;padding:20px;color:#94a3b8;">
+                            Belum ada tanda tangan tersimpan
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Add Signature Modal -->
+            <div class="modal-overlay" id="signature-modal">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-header">
+                        <h3>Tambah Tanda Tangan Baru</h3>
+                        <button class="modal-close" onclick="closeSignatureModal()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label form-label-required">Nama Penandatangan</label>
+                            <input type="text" class="form-input" id="signature-name" placeholder="Nama lengkap penandatangan">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Jabatan</label>
+                            <input type="text" class="form-input" id="signature-position" placeholder="Contoh: Dekan, Kaprodi">
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div style="display:flex;gap:0;border-bottom:2px solid #e2e8f0;margin-bottom:16px;">
+                            <button class="profile-tab active" data-tab="draw" style="border:none;background:none;padding:8px 16px;cursor:pointer;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px;">Gambar</button>
+                            <button class="profile-tab" data-tab="upload" style="border:none;background:none;padding:8px 16px;cursor:pointer;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px;">Upload</button>
+                            <button class="profile-tab" data-tab="type" style="border:none;background:none;padding:8px 16px;cursor:pointer;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px;">Ketik</button>
+                        </div>
+                        
+                        <!-- Draw Tab -->
+                        <div class="tab-content active" data-content="draw">
+                            <div class="draw-area" id="draw-area">
+                                <canvas id="draw-canvas"></canvas>
+                            </div>
+                            <div class="draw-tools">
+                                <span style="font-size:13px;color:#64748b;">Warna:</span>
+                                <button class="color-picker selected" style="background:#1e293b;" data-color="#1e293b"></button>
+                                <button class="color-picker" style="background:#2563eb;" data-color="#2563eb"></button>
+                                <button class="color-picker" style="background:#dc2626;" data-color="#dc2626"></button>
+                                <span style="font-size:13px;color:#64748b;margin-left:12px;">Ukuran:</span>
+                                <input type="range" id="pen-size" min="1" max="5" value="2" style="width:80px;">
+                                <button class="btn btn-sm btn-outline" id="clear-draw-btn" style="margin-left:auto;">
+                                    <i class="fas fa-eraser"></i> Hapus
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Upload Tab -->
+                        <div class="tab-content" data-content="upload" style="display:none;">
+                            <div class="upload-signature-zone" id="upload-signature-zone">
+                                <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:#94a3b8;"></i>
+                                <p>Klik untuk upload gambar tanda tangan</p>
+                                <p style="font-size:12px;color:#94a3b8;">PNG dengan background transparan (Maks. 2MB)</p>
+                                <input type="file" id="signature-file" accept="image/png" style="display:none;">
+                            </div>
+                        </div>
+                        
+                        <!-- Type Tab -->
+                        <div class="tab-content" data-content="type" style="display:none;">
+                            <div class="form-group">
+                                <label class="form-label">Nama (akan dikonversi ke tanda tangan)</label>
+                                <input type="text" class="form-input" id="typed-name" placeholder="Ketik nama di sini">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Pilih Font</label>
+                                <select class="form-select" id="signature-font">
+                                    <option value="Dancing Script">Dancing Script</option>
+                                    <option value="Great Vibes">Great Vibes</option>
+                                    <option value="Pacifico">Pacifico</option>
+                                    <option value="Caveat">Caveat</option>
+                                    <option value="Satisfy">Satisfy</option>
+                                </select>
+                            </div>
+                            <div style="text-align:center;padding:20px;font-size:36px;" id="type-preview">
+                                Tanda Tangan
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeSignatureModal()">Batal</button>
+                        <button class="btn btn-primary" id="save-signature-btn">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import authService from '/js/auth.js';
+        import apiService from '/js/api.js';
+        import notifications from '/js/notifications.js';
+        import logger from '/js/logger.js';
+        
+        if (!authService.isAuthenticated) window.location.href = '/login.html';
+        if (!authService.hasRole(['super_admin', 'admin'])) window.location.href = '/403.html';
+        
+        let signatures = [];
+        let canvas, ctx, isDrawing = false;
+        let penColor = '#1e293b';
+        let penSize = 2;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initCanvas();
+            initEvents();
+            loadSignatures();
+            logger.info('Tanda tangan page loaded');
+        });
+        
+        function initCanvas() {
+            canvas = document.getElementById('draw-canvas');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
+            canvas.addEventListener('touchend', stopDraw);
+        }
+        
+        function resizeCanvas() {
+            const area = document.getElementById('draw-area');
+            canvas.width = area.offsetWidth;
+            canvas.height = area.offsetHeight;
+            ctx.strokeStyle = penColor;
+            ctx.lineWidth = penSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        
+        function startDraw(e) {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            ctx.lineTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+            ctx.stroke();
+        }
+        
+        function stopDraw() { isDrawing = false; }
+        
+        function initEvents() {
+            document.getElementById('add-signature-btn')?.addEventListener('click', openSignatureModal);
+            document.getElementById('save-signature-btn')?.addEventListener('click', saveSignature);
+            document.getElementById('clear-draw-btn')?.addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+            
+            // Color pickers
+            document.querySelectorAll('.color-picker').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.color-picker').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    penColor = btn.dataset.color;
+                    ctx.strokeStyle = penColor;
+                });
+            });
+            
+            document.getElementById('pen-size')?.addEventListener('input', (e) => {
+                penSize = parseInt(e.target.value);
+                ctx.lineWidth = penSize;
+            });
+            
+            // Tabs
+            document.querySelectorAll('.profile-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    const content = document.querySelector(`[data-content="${tab.dataset.tab}"]`);
+                    if (content) content.style.display = 'block';
+                });
+            });
+            
+            // Upload zone
+            document.getElementById('upload-signature-zone')?.addEventListener('click', () => {
+                document.getElementById('signature-file')?.click();
+            });
+            
+            document.getElementById('signature-file')?.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        document.getElementById('upload-signature-zone').innerHTML = 
+                            `<img src="${ev.target.result}" style="max-width:200px;max-height:100px;">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Type preview
+            document.getElementById('typed-name')?.addEventListener('input', (e) => {
+                document.getElementById('type-preview').textContent = e.target.value || 'Tanda Tangan';
+            });
+            
+            document.getElementById('signature-font')?.addEventListener('change', (e) => {
+                document.getElementById('type-preview').style.fontFamily = `'${e.target.value}', cursive`;
+            });
+        }
+        
+        function openSignatureModal() {
+            document.getElementById('signature-modal').classList.add('visible');
+            resizeCanvas();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('signature-name').value = '';
+            document.getElementById('signature-position').value = '';
+            document.getElementById('upload-signature-zone').innerHTML = `
+                <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:#94a3b8;"></i>
+                <p>Klik untuk upload gambar tanda tangan</p>
+                <p style="font-size:12px;color:#94a3b8;">PNG dengan background transparan (Maks. 2MB)</p>
+                <input type="file" id="signature-file" accept="image/png" style="display:none;">
+            `;
+        }
+        
+        function closeSignatureModal() {
+            document.getElementById('signature-modal').classList.remove('visible');
+        }
+        
+        async function loadSignatures() {
+            try {
+                const response = await apiService.get('/api/signatures');
+                signatures = response.data || [];
+                renderSignatures();
+            } catch (error) {
+                logger.warn('Failed to load signatures');
+                // Show sample data
+                signatures = [
+                    { id: '1', name: 'Dr. Ahmad Fauzi, M.Kom', position: 'Dekan', createdAt: '2026-01-15' },
+                    { id: '2', name: 'Siti Nurhaliza, S.Kom., M.T.', position: 'Kaprodi TI', createdAt: '2026-02-01' }
+                ];
+                renderSignatures();
+            }
+        }
+        
+        function renderSignatures() {
+            const container = document.getElementById('signature-list');
+            
+            if (signatures.length === 0) {
+                container.innerHTML = '<li style="text-align:center;padding:20px;color:#94a3b8;">Belum ada tanda tangan tersimpan</li>';
+                return;
+            }
+            
+            container.innerHTML = signatures.map(s => `
+                <li class="signature-item">
+                    <div class="signature-preview">
+                        ${s.image ? `<img src="${s.image}" alt="${s.name}">` : 
+                            `<span style="font-family:'Dancing Script',cursive;font-size:18px;color:#1e293b;">${s.name}</span>`}
+                    </div>
+                    <div class="signature-info">
+                        <div class="signature-name">${s.name}</div>
+                        <div class="signature-meta">${s.position || '-'} • Ditambahkan ${new Date(s.createdAt).toLocaleDateString('id-ID')}</div>
+                    </div>
+                    <div class="signature-actions">
+                        <button class="btn btn-sm btn-outline" onclick="setDefault('${s.id}')" title="${s.isDefault ? 'Default' : 'Jadikan Default'}">
+                            <i class="fas fa-star" style="color:${s.isDefault ? '#f59e0b' : '#94a3b8'};"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="deleteSignature('${s.id}')" title="Hapus">
+                            <i class="fas fa-trash" style="color:#dc2626;"></i>
+                        </button>
+                    </div>
+                </li>
+            `).join('');
+        }
+        
+        async function saveSignature() {
+            const name = document.getElementById('signature-name').value.trim();
+            const position = document.getElementById('signature-position').value.trim();
+            
+            if (!name) {
+                notifications.warning('Nama penandatangan harus diisi');
+                return;
+            }
+            
+            const activeTab = document.querySelector('.profile-tab.active').dataset.tab;
+            let imageData = null;
+            
+            if (activeTab === 'draw') {
+                imageData = canvas.toDataURL('image/png');
+            } else if (activeTab === 'upload') {
+                const file = document.getElementById('signature-file').files[0];
+                if (!file) {
+                    notifications.warning('Pilih file gambar tanda tangan');
+                    return;
+                }
+                const reader = new FileReader();
+                imageData = await new Promise(resolve => {
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                // Type - create from text
+                const typedName = document.getElementById('typed-name').value || name;
+                const font = document.getElementById('signature-font').value;
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 400;
+                tempCanvas.height = 100;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.font = `36px '${font}', cursive`;
+                tempCtx.fillStyle = '#1e293b';
+                tempCtx.textAlign = 'center';
+                tempCtx.fillText(typedName, 200, 60);
+                imageData = tempCanvas.toDataURL('image/png');
+            }
+            
+            try {
+                await apiService.post('/api/signatures', { name, position, image: imageData });
+                notifications.success('Tanda tangan berhasil disimpan');
+                closeSignatureModal();
+                loadSignatures();
+            } catch (error) {
+                notifications.error('Gagal menyimpan tanda tangan');
+            }
+        }
+        
+        async function setDefault(id) {
+            try {
+                await apiService.put(`/api/signatures/${id}/default`);
+                notifications.success('Tanda tangan default diubah');
+                loadSignatures();
+            } catch (error) {
+                notifications.error('Gagal mengubah tanda tangan default');
+            }
+        }
+        
+        async function deleteSignature(id) {
+            if (!confirm('Hapus tanda tangan ini?')) return;
+            try {
+                await apiService.delete(`/api/signatures/${id}`);
+                notifications.success('Tanda tangan dihapus');
+                loadSignatures();
+            } catch (error) {
+                notifications.error('Gagal menghapus tanda tangan');
+            }
+        }
+        
+        window.closeSignatureModal = closeSignatureModal;
+        window.setDefault = setDefault;
+        window.deleteSignature = deleteSignature;
+    </script>
+</body>
+</html>
