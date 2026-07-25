@@ -1,0 +1,51 @@
+/* FILE: css/themes/orange.css */
+/* ============================================ */
+/* ORANGE THEME - E-ARSIP DIGITAL               */
+/* ============================================ */
+
+.theme-orange {
+    --primary: #e65100;
+    --primary-light: #ff833a;
+    --primary-dark: #ac1900;
+    --secondary: #ef6c00;
+    --secondary-light: #ff9d3f;
+    --secondary-dark: #b53d00;
+    --accent: #ff9100;
+    --accent-light: #ffc246;
+    --accent-dark: #c56200;
+    --gold: #ffd700;
+    --bg-primary: #fff3e0;
+    --bg-secondary: #ffe0b2;
+    --bg-card: #ffffff;
+    --text-primary: #e65100;
+    --text-secondary: #ef6c00;
+    --text-muted: #ff9800;
+}
+
+.theme-orange .sidebar {
+    background: linear-gradient(180deg, #e65100, #ef6c00) !important;
+}
+
+.theme-orange .btn-primary {
+    background: linear-gradient(135deg, #ff9100, #e65100);
+}
+
+.theme-orange .btn-primary:hover {
+    background: linear-gradient(135deg, #c56200, #ac1900);
+}
+
+.theme-orange .stat-icon {
+    background: linear-gradient(135deg, #ff9100, #ef6c00) !important;
+}
+
+.theme-orange .avatar-circle {
+    background: linear-gradient(135deg, #e65100, #ff9100);
+}
+
+.theme-orange .badge-primary {
+    background: #ff9100;
+}
+
+.theme-orange .nav-link.active {
+    border-left-color: #ffd700 !important;
+}

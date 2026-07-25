@@ -1,0 +1,234 @@
+/* css/themes/dark.css - Dark Theme 2026 */
+/**
+ * E-Arsip Digital - Dark Theme
+ * Version: 2026.1.0
+ */
+
+[data-theme="dark"] {
+    /* Primary Colors - Inverted for dark mode */
+    --color-primary-50: #1e293b;
+    --color-primary-100: #1e3a5f;
+    --color-primary-200: #1e40af;
+    --color-primary-300: #2563eb;
+    --color-primary-400: #3b82f6;
+    --color-primary-500: #60a5fa;
+    --color-primary-600: #93c5fd;
+    --color-primary-700: #bfdbfe;
+    --color-primary-800: #dbeafe;
+    --color-primary-900: #eff6ff;
+    
+    /* Background Colors */
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    
+    /* Text Colors */
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #64748b;
+    
+    /* Border Colors */
+    --color-border: #334155;
+    --color-border-light: #1e293b;
+    
+    /* Shadow */
+    --color-shadow: rgba(0, 0, 0, 0.3);
+    
+    /* Component Specific */
+    --color-sidebar-bg: #1e293b;
+    --color-sidebar-text: #94a3b8;
+    --color-sidebar-hover: #334155;
+    --color-sidebar-active: #60a5fa;
+    --color-sidebar-active-bg: rgba(96, 165, 250, 0.1);
+    
+    --color-card-bg: #1e293b;
+    --color-card-border: #334155;
+    --color-card-header-bg: #0f172a;
+    
+    --color-input-bg: #0f172a;
+    --color-input-border: #334155;
+    --color-input-focus: #3b82f6;
+    --color-input-disabled: #1e293b;
+    
+    --color-table-header: #1e293b;
+    --color-table-hover: #334155;
+    --color-table-stripe: #1a2332;
+    --color-table-border: #334155;
+    
+    --color-modal-overlay: rgba(0, 0, 0, 0.7);
+    --color-modal-bg: #1e293b;
+    
+    --color-toast-bg: #1e293b;
+    --color-toast-border: #334155;
+    
+    --color-badge-bg: #334155;
+    --color-badge-text: #94a3b8;
+    
+    /* Semantic Colors - Adjusted for dark */
+    --color-success-bg: rgba(22, 163, 74, 0.15);
+    --color-success-text: #4ade80;
+    --color-success-border: rgba(22, 163, 74, 0.3);
+    
+    --color-warning-bg: rgba(217, 119, 6, 0.15);
+    --color-warning-text: #fbbf24;
+    --color-warning-border: rgba(217, 119, 6, 0.3);
+    
+    --color-error-bg: rgba(220, 38, 38, 0.15);
+    --color-error-text: #f87171;
+    --color-error-border: rgba(220, 38, 38, 0.3);
+    
+    --color-info-bg: rgba(37, 99, 235, 0.15);
+    --color-info-text: #60a5fa;
+    --color-info-border: rgba(37, 99, 235, 0.3);
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Dark mode selection */
+[data-theme="dark"] ::selection {
+    background: rgba(59, 130, 246, 0.3);
+    color: #f1f5f9;
+}
+
+/* Dark mode form elements */
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+    background: var(--color-input-bg);
+    border-color: var(--color-input-border);
+    color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-textarea:focus {
+    border-color: var(--color-input-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="dark"] .form-input:disabled,
+[data-theme="dark"] .form-select:disabled {
+    background: var(--color-input-disabled);
+    color: var(--color-text-muted);
+}
+
+/* Dark mode cards */
+[data-theme="dark"] .card {
+    background: var(--color-card-bg);
+    border-color: var(--color-card-border);
+}
+
+[data-theme="dark"] .card-header {
+    border-bottom-color: var(--color-card-border);
+    background: var(--color-card-header-bg);
+}
+
+/* Dark mode tables */
+[data-theme="dark"] .data-table thead {
+    background: var(--color-table-header);
+    border-bottom-color: var(--color-table-border);
+}
+
+[data-theme="dark"] .data-table th {
+    color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .data-table tbody tr:hover {
+    background: var(--color-table-hover);
+}
+
+[data-theme="dark"] .data-table tbody tr.selected {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+/* Dark mode sidebar */
+[data-theme="dark"] .sidebar {
+    background: var(--color-sidebar-bg);
+    border-right-color: var(--color-border);
+}
+
+[data-theme="dark"] .sidebar-brand {
+    border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .nav-item {
+    color: var(--color-sidebar-text);
+}
+
+[data-theme="dark"] .nav-item:hover {
+    background: var(--color-sidebar-hover);
+    color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .nav-item.active {
+    background: var(--color-sidebar-active-bg);
+    color: var(--color-sidebar-active);
+}
+
+/* Dark mode modals */
+[data-theme="dark"] .modal-dialog {
+    background: var(--color-modal-bg);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top-color: var(--color-border);
+}
+
+/* Dark mode toast */
+[data-theme="dark"] .toast {
+    background: var(--color-toast-bg);
+    border-color: var(--color-toast-border);
+}
+
+/* Dark mode alerts */
+[data-theme="dark"] .alert-success {
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-color: var(--color-success-border);
+}
+
+[data-theme="dark"] .alert-warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    border-color: var(--color-warning-border);
+}
+
+[data-theme="dark"] .alert-error {
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
+    border-color: var(--color-error-border);
+}
+
+[data-theme="dark"] .alert-info {
+    background: var(--color-info-bg);
+    color: var(--color-info-text);
+    border-color: var(--color-info-border);
+}
+
+/* Dark mode badges */
+[data-theme="dark"] .badge {
+    background: var(--color-badge-bg);
+    color: var(--color-badge-text);
+}
+
+/* Dark mode tooltip */
+[data-theme="dark"] .tooltip {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+}

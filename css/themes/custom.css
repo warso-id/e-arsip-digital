@@ -1,0 +1,113 @@
+/* css/themes/custom.css - Custom Theme Template 2026 */
+/**
+ * E-Arsip Digital - Custom Theme Template
+ * Version: 2026.1.0
+ * Use this file as a template to create your own theme
+ * Copy desired variables from style.css and modify them here
+ */
+
+[data-theme="custom"] {
+    /* ============================================ */
+    /* PRIMARY COLORS                               */
+    /* ============================================ */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    
+    /* ============================================ */
+    /* BACKGROUND COLORS                            */
+    /* ============================================ */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f8fafc;
+    --color-bg-tertiary: #f1f5f9;
+    
+    /* ============================================ */
+    /* TEXT COLORS                                  */
+    /* ============================================ */
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-text-muted: #94a3b8;
+    
+    /* ============================================ */
+    /* BORDER COLORS                                */
+    /* ============================================ */
+    --color-border: #e2e8f0;
+    --color-border-light: #f1f5f9;
+    
+    /* ============================================ */
+    /* SHADOW                                       */
+    /* ============================================ */
+    --color-shadow: rgba(0, 0, 0, 0.1);
+    
+    /* ============================================ */
+    /* COMPONENT SPECIFIC                           */
+    /* ============================================ */
+    --color-sidebar-bg: #ffffff;
+    --color-sidebar-text: #64748b;
+    --color-sidebar-hover: #f8fafc;
+    --color-sidebar-active: #2563eb;
+    --color-sidebar-active-bg: rgba(37, 99, 235, 0.08);
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #e2e8f0;
+    --color-card-header-bg: #f8fafc;
+    
+    --color-input-bg: #ffffff;
+    --color-input-border: #e2e8f0;
+    --color-input-focus: #3b82f6;
+    --color-input-disabled: #f1f5f9;
+    
+    --color-table-header: #f8fafc;
+    --color-table-hover: #f1f5f9;
+    --color-table-stripe: #fafafa;
+    --color-table-border: #e2e8f0;
+    
+    --color-modal-overlay: rgba(0, 0, 0, 0.5);
+    --color-modal-bg: #ffffff;
+    
+    --color-toast-bg: #ffffff;
+    --color-toast-border: #e2e8f0;
+    
+    --color-badge-bg: #f1f5f9;
+    --color-badge-text: #64748b;
+    
+    /* ============================================ */
+    /* SEMANTIC COLORS                              */
+    /* ============================================ */
+    --color-success-bg: #f0fdf4;
+    --color-success-text: #16a34a;
+    --color-success-border: #bbf7d0;
+    
+    --color-warning-bg: #fffbeb;
+    --color-warning-text: #d97706;
+    --color-warning-border: #fde68a;
+    
+    --color-error-bg: #fef2f2;
+    --color-error-text: #dc2626;
+    --color-error-border: #fecaca;
+    
+    --color-info-bg: #eff6ff;
+    --color-info-text: #2563eb;
+    --color-info-border: #bfdbfe;
+}
+
+/* Custom theme scrollbar */
+[data-theme="custom"] ::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+}
+
+[data-theme="custom"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+}
+
+[data-theme="custom"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+}

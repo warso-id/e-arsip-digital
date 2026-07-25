@@ -1,0 +1,51 @@
+/* FILE: css/themes/green.css */
+/* ============================================ */
+/* GREEN THEME - E-ARSIP DIGITAL                */
+/* ============================================ */
+
+.theme-green {
+    --primary: #1b5e20;
+    --primary-light: #4c8c4a;
+    --primary-dark: #003300;
+    --secondary: #2e7d32;
+    --secondary-light: #60ad5e;
+    --secondary-dark: #005005;
+    --accent: #00c853;
+    --accent-light: #5efc82;
+    --accent-dark: #009624;
+    --gold: #ffd700;
+    --bg-primary: #e8f5e9;
+    --bg-secondary: #c8e6c9;
+    --bg-card: #ffffff;
+    --text-primary: #1b5e20;
+    --text-secondary: #2e7d32;
+    --text-muted: #66bb6a;
+}
+
+.theme-green .sidebar {
+    background: linear-gradient(180deg, #1b5e20, #2e7d32) !important;
+}
+
+.theme-green .btn-primary {
+    background: linear-gradient(135deg, #00c853, #1b5e20);
+}
+
+.theme-green .btn-primary:hover {
+    background: linear-gradient(135deg, #009624, #003300);
+}
+
+.theme-green .stat-icon {
+    background: linear-gradient(135deg, #00c853, #2e7d32) !important;
+}
+
+.theme-green .avatar-circle {
+    background: linear-gradient(135deg, #1b5e20, #00c853);
+}
+
+.theme-green .badge-primary {
+    background: #00c853;
+}
+
+.theme-green .nav-link.active {
+    border-left-color: #ffd700 !important;
+}
