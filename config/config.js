@@ -62,7 +62,7 @@ window.EArsip.Config = (function() {
             version: '2026.1.0',
             environment: 'production',    // 'development' | 'staging' | 'production'
             debug: false,
-            baseUrl: 'https://warso-id.github.io/arsip-surat-digital-enterprise',
+            baseUrl: 'https://warso-id.github.io/e-arsip-digital',
             apiUrl: 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec',
             timezone: 'Asia/Jakarta',
             language: 'id',
