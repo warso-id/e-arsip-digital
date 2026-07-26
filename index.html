@@ -1,4 +1,4 @@
-<!-- index.html - Landing Page 2026 (MERGED & FIXED) -->
+<!-- index.html - Landing Page 2026 (FULLY FIXED) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -17,15 +17,17 @@
     <meta property="og:url" content="https://warso-id.github.io/arsip-surat-digital-enterprise/">
     <meta property="og:site_name" content="E-Arsip Digital">
     
-    <!-- PWA -->
+    <!-- PWA Manifest - Fixed: Use valid icon -->
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="E-Arsip">
+    
+    <!-- Favicon - Fixed: Use inline SVG -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><text x='50' y='65' text-anchor='middle' fill='white' font-size='50' font-weight='bold'>A</text></svg>">
     
-    <!-- CSP - Fixed: ditambahkan frame-src untuk Google Scripts -->
+    <!-- CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-src 'self' https://script.google.com; form-action 'self' https://script.google.com; base-uri 'self';">
     
     <title>E-Arsip Digital - Sistem Manajemen Arsip Modern</title>
@@ -36,7 +38,7 @@
     
     <style>
         /* ============================================ */
-        /* CRITICAL CSS INLINE - MERGED VERSION         */
+        /* CRITICAL CSS INLINE                         */
         /* ============================================ */
         :root {
             --primary: #2563eb;
@@ -375,7 +377,6 @@
             .stats-section { gap: 30px; padding: 40px 24px; }
             .stat-number { font-size: 32px; }
             
-            /* Mobile Navigation */
             .mobile-toggle { display: block; }
             .nav-menu {
                 position: fixed;
@@ -408,7 +409,6 @@
             .btn-lg { width: 100%; justify-content: center; }
         }
         
-        /* Accessibility */
         @media (prefers-reduced-motion: reduce) {
             .feature-card, .hero-content, .loading-screen {
                 transition: none;
@@ -432,7 +432,6 @@
                 <h1>E-Arsip Digital</h1>
             </a>
             
-            <!-- Mobile Menu Toggle -->
             <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle menu" aria-expanded="false">
                 ☰
             </button>
@@ -549,7 +548,7 @@
         </div>
     </footer>
     
-    <!-- Scripts -->
+    <!-- Scripts - Load order matters: config first, then utils, then api, then auth -->
     <script src="config/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
@@ -559,7 +558,7 @@
     (function() {
         'use strict';
         
-        // Hide loading screen with fallback
+        // Hide loading screen
         function hideLoadingScreen() {
             var loader = document.getElementById('loading-screen');
             if (loader) {
@@ -567,7 +566,6 @@
             }
         }
         
-        // Multiple triggers to ensure loading screen hides
         window.addEventListener('DOMContentLoaded', function() {
             setTimeout(hideLoadingScreen, 300);
         });
@@ -576,7 +574,6 @@
             setTimeout(hideLoadingScreen, 100);
         });
         
-        // Safety timeout
         setTimeout(hideLoadingScreen, 3000);
         
         // Header scroll effect
@@ -606,7 +603,6 @@
                 mobileToggle.innerHTML = isOpen ? '✕' : '☰';
             });
             
-            // Close mobile menu when clicking nav links
             navMenu.querySelectorAll('.nav-link').forEach(function(link) {
                 link.addEventListener('click', function() {
                     navMenu.classList.remove('mobile-open');
@@ -616,14 +612,16 @@
             });
         }
         
-        // Check authentication status
+        // Check authentication status - Fixed: Safe check for EArsip object
         setTimeout(function() {
-            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
-                var user = window.EArsip.Auth.currentUser;
-                var btn = document.getElementById('nav-login-btn');
-                if (btn && user) {
-                    btn.href = 'dashboard/';
-                    btn.innerHTML = '<i class="fas fa-home"></i> Dashboard';
+            if (window.EArsip && window.EArsip.Auth && typeof window.EArsip.Auth.isAuthenticated === 'function') {
+                if (window.EArsip.Auth.isAuthenticated()) {
+                    var user = window.EArsip.Auth.getCurrentUser();
+                    var btn = document.getElementById('nav-login-btn');
+                    if (btn && user) {
+                        btn.href = 'dashboard/';
+                        btn.innerHTML = '<i class="fas fa-home"></i> Dashboard';
+                    }
                 }
             }
         }, 500);
