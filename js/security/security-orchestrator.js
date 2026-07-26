@@ -1,607 +1,399 @@
-// js/security/security-orchestrator.js - Security Orchestrator 2026
+// js/security/security-orchestrator.js - Security Orchestrator 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Security Orchestrator
  * Version: 2026.1.0
- * Central security management system
- * Coordinates all security modules and provides unified security interface
+ * 
+ * Central security coordinator.
+ * Hanya mengorkestrasi modul yang SUDAH ADA.
+ * Tidak membuat dependency baru.
  */
 
-import APP_CONFIG from '../../config/config.js';
-import { Logger } from '../logger.js';
-import { EncryptionService } from './encryption.js';
-import { CSRFProtection } from './csrf.js';
-import { XSSPrevention } from './xss.js';
-import { RateLimiter } from './rate-limit.js';
-import { Firewall } from './firewall.js';
-import { IntrusionDetectionSystem } from './intrusion-detection.js';
-import { SessionHardening } from './session-hardening.js';
-import { SecureHeadersManager } from './secure-headers.js';
-import { SecureStorage } from './secure-storage.js';
-import { TokenManager } from './token-manager.js';
-import { AuditTrail } from './audit.js';
-import { SecuritySanitizer } from './sanitizer.js';
-
-class SecurityOrchestrator {
-    constructor(config = APP_CONFIG.security) {
-        this.config = config;
-        this.logger = new Logger('SecurityOrchestrator');
+var SecurityOrchestrator = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        enabled: true,
+        autoScan: false,          // Jangan auto-scan (berat)
+        logLevel: 'warn'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _modules = {};            // Modul yang terdaftar
+    var _policies = {};           // Security policies
+    var _listeners = {};          // Event listeners
+    var _stats = {
+        threatsDetected: 0,
+        attacksBlocked: 0,
+        lastThreatTime: null
+    };
+    var _initialized = false;
+    
+    // ============================================
+    // MODULE REGISTRATION
+    // ============================================
+    
+    /**
+     * Register modul keamanan (hanya yang ADA)
+     */
+    function registerModule(name, module) {
+        if (!module) {
+            console.warn('[Orchestrator] Module not available: ' + name);
+            return false;
+        }
         
-        // Initialize all security modules
-        this.modules = {
-            encryption: new EncryptionService(config.encryption),
-            csrf: new CSRFProtection(config.csrf),
-            xss: new XSSPrevention(config.xss),
-            rateLimiter: new RateLimiter(config.rateLimit),
-            firewall: new Firewall(config.firewall),
-            ids: new IntrusionDetectionSystem(),
-            sessionHardening: new SessionHardening(config.session),
-            secureHeaders: new SecureHeadersManager(config.headers),
-            secureStorage: new SecureStorage(),
-            tokenManager: new TokenManager(),
-            audit: new AuditTrail(),
-            sanitizer: new SecuritySanitizer()
-        };
-        
-        // Security metrics
-        this.metrics = {
-            threatsDetected: 0,
-            attacksBlocked: 0,
-            suspiciousActivities: 0,
-            securityScore: 100,
-            lastThreatTime: null,
-            vulnerabilities: []
-        };
-        
-        // Security policies
-        this.policies = new Map();
-        
-        // Event listeners
-        this.eventListeners = new Map();
-        
-        this.init();
+        _modules[name] = module;
+        console.info('[Orchestrator] Registered: ' + name);
+        return true;
     }
     
-    async init() {
-        try {
-            // Initialize all modules
-            await this.initializeModules();
-            
-            // Load security policies
-            this.loadPolicies();
-            
-            // Setup event listeners
-            this.setupEventListeners();
-            
-            // Perform initial security scan
-            await this.performSecurityScan();
-            
-            // Start continuous monitoring
-            this.startContinuousMonitoring();
-            
-            this.logger.info('Security Orchestrator initialized', {
-                modules: Object.keys(this.modules),
-                score: this.metrics.securityScore
-            });
-            
-        } catch (error) {
-            this.logger.error('Security Orchestrator initialization failed', error);
-            this.degradeGracefully(error);
+    /**
+     * Auto-detect dan register modul yang tersedia
+     */
+    function autoRegisterModules() {
+        // CSRF Protection
+        if (typeof CSRFProtection !== 'undefined') {
+            registerModule('csrf', CSRFProtection);
+        }
+        
+        // Firewall
+        if (typeof Firewall !== 'undefined') {
+            registerModule('firewall', Firewall);
+        }
+        
+        // Rate Limiter
+        if (typeof RateLimiter !== 'undefined') {
+            registerModule('rateLimiter', RateLimiter);
+        }
+        
+        // Intrusion Detection
+        if (typeof IntrusionDetection !== 'undefined') {
+            registerModule('ids', IntrusionDetection);
+        }
+        
+        // Audit Trail
+        if (typeof AuditTrail !== 'undefined') {
+            registerModule('audit', AuditTrail);
+        }
+        
+        // Sanitizer
+        if (typeof Sanitizer !== 'undefined') {
+            registerModule('sanitizer', Sanitizer);
+        }
+        
+        // Encryption Service
+        if (typeof EncryptionService !== 'undefined') {
+            registerModule('encryption', EncryptionService);
+        }
+        
+        // Secure Storage
+        if (typeof SecureStorage !== 'undefined') {
+            registerModule('storage', SecureStorage);
+        }
+        
+        // Secure Headers
+        if (typeof SecureHeaders !== 'undefined') {
+            registerModule('headers', SecureHeaders);
         }
     }
     
-    async initializeModules() {
-        const initOrder = [
-            'encryption',
-            'csrf',
-            'xss',
-            'sanitizer',
-            'rateLimiter',
-            'firewall',
-            'ids',
-            'sessionHardening',
-            'secureHeaders',
-            'secureStorage',
-            'tokenManager',
-            'audit'
-        ];
-        
-        for (const moduleName of initOrder) {
-            if (this.modules[moduleName]) {
-                try {
-                    await this.modules[moduleName].init?.();
-                    this.logger.debug(`Module initialized: ${moduleName}`);
-                } catch (error) {
-                    this.logger.warn(`Failed to initialize module: ${moduleName}`, error);
-                }
-            }
-        }
+    // ============================================
+    // POLICY MANAGEMENT
+    // ============================================
+    
+    function setPolicy(name, policy) {
+        _policies[name] = policy;
     }
     
-    loadPolicies() {
-        // Default security policies
-        this.setPolicy('input_validation', {
-            sanitize: true,
-            maxLength: 10000,
-            allowedTags: this.config.xss?.allowedTags || [],
-            stripHtml: false
-        });
-        
-        this.setPolicy('password', {
+    function getPolicy(name) {
+        return _policies[name] || null;
+    }
+    
+    function loadDefaultPolicies() {
+        setPolicy('password', {
             minLength: 8,
             requireUppercase: true,
-            requireNumbers: true,
-            requireSpecialChars: true,
-            maxAge: 90, // days
-            historySize: 5,
-            preventCommonPassword: true
+            requireNumber: true,
+            requireSpecialChar: true
         });
         
-        this.setPolicy('session', {
-            maxConcurrentSessions: 3,
-            idleTimeout: 30, // minutes
-            absoluteTimeout: 480, // minutes (8 hours)
-            extendOnActivity: true,
-            requireReauth: false
+        setPolicy('session', {
+            idleTimeout: 1800000,      // 30 menit
+            absoluteTimeout: 28800000  // 8 jam
         });
         
-        this.setPolicy('api', {
-            rateLimit: {
-                window: 60000,
-                max: 100
-            },
-            requireAuth: true,
-            validateInput: true,
-            logRequests: true
-        });
-        
-        this.setPolicy('file_upload', {
-            maxSize: 10485760, // 10MB
-            allowedTypes: [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'image/jpeg',
-                'image/png'
-            ],
-            scanForMalware: true,
-            validateMagicBytes: true
+        setPolicy('upload', {
+            maxSize: 10485760,         // 10MB
+            allowedTypes: ['application/pdf', 'image/jpeg', 'image/png']
         });
     }
     
-    setupEventListeners() {
-        // Monitor XSS attempts
-        document.addEventListener('security:xss_attempt', (e) => {
-            this.handleSecurityEvent('xss_attempt', e.detail);
-        });
+    // ============================================
+    // EVENT SYSTEM
+    // ============================================
+    
+    function on(event, callback) {
+        if (!_listeners[event]) {
+            _listeners[event] = [];
+        }
+        _listeners[event].push(callback);
         
-        // Monitor CSRF attempts
-        document.addEventListener('security:csrf_violation', (e) => {
-            this.handleSecurityEvent('csrf_violation', e.detail);
-        });
-        
-        // Monitor rate limit violations
-        document.addEventListener('security:rate_limit_exceeded', (e) => {
-            this.handleSecurityEvent('rate_limit_exceeded', e.detail);
-        });
-        
-        // Monitor firewall blocks
-        document.addEventListener('security:firewall_block', (e) => {
-            this.handleSecurityEvent('firewall_block', e.detail);
-        });
-        
-        // Monitor intrusion detections
-        document.addEventListener('security:intrusion_detected', (e) => {
-            this.handleSecurityEvent('intrusion_detected', e.detail);
-        });
+        // Return unsubscribe
+        return function() {
+            if (_listeners[event]) {
+                _listeners[event] = _listeners[event].filter(function(cb) {
+                    return cb !== callback;
+                });
+            }
+        };
     }
     
-    async handleSecurityEvent(type, details) {
-        this.metrics.threatsDetected++;
-        this.metrics.lastThreatTime = Date.now();
-        this.metrics.securityScore = Math.max(0, this.metrics.securityScore - 1);
-        
-        this.logger.warn(`Security event: ${type}`, details);
-        
-        // Log to audit trail
-        await this.modules.audit.log('security_event', {
-            type,
-            details,
-            timestamp: Date.now()
-        });
-        
-        // Notify listeners
-        this.emit('threat_detected', { type, details });
-        
-        // Take automatic action based on threat level
-        const threatLevel = this.calculateThreatLevel(type, details);
-        if (threatLevel === 'critical') {
-            await this.handleCriticalThreat(type, details);
+    function emit(event, data) {
+        if (_listeners[event]) {
+            for (var i = 0; i < _listeners[event].length; i++) {
+                try {
+                    _listeners[event][i](data);
+                } catch(e) {}
+            }
         }
     }
     
-    calculateThreatLevel(type, details) {
-        const threatLevels = {
-            'xss_attempt': 'high',
-            'csrf_violation': 'high',
-            'rate_limit_exceeded': 'medium',
-            'firewall_block': 'medium',
-            'intrusion_detected': 'critical',
-            'suspicious_activity': 'low'
+    // ============================================
+    // SECURITY EVENT HANDLING
+    // ============================================
+    
+    function handleSecurityEvent(type, details) {
+        _stats.threatsDetected++;
+        _stats.lastThreatTime = Date.now();
+        
+        console.warn('[Orchestrator] Security event: ' + type, details || '');
+        
+        // Log ke audit trail
+        if (_modules.audit && typeof _modules.audit.logSecurity === 'function') {
+            _modules.audit.logSecurity('ORCHESTRATOR_EVENT', {
+                type: type,
+                details: details
+            });
+        }
+        
+        // Emit event
+        emit('threat', { type: type, details: details, time: Date.now() });
+        
+        // Critical threats
+        if (type === 'intrusion_detected' || type === 'critical') {
+            handleCriticalThreat(type, details);
+        }
+    }
+    
+    function handleCriticalThreat(type, details) {
+        console.error('[Orchestrator] CRITICAL: ' + type);
+        
+        // Enable strict mode di rate limiter jika ada
+        if (_modules.rateLimiter && typeof _modules.rateLimiter.configure === 'function') {
+            _modules.rateLimiter.configure({ maxRequests: 10, windowMs: 60000 });
+        }
+        
+        emit('critical', { type: type, details: details });
+    }
+    
+    // ============================================
+    // SECURITY SCAN (Lightweight)
+    // ============================================
+    
+    function performScan() {
+        var results = {
+            timestamp: new Date().toISOString(),
+            issues: [],
+            score: 100
         };
         
-        return threatLevels[type] || 'low';
-    }
-    
-    async handleCriticalThreat(type, details) {
-        this.logger.error(`Critical threat detected: ${type}`, details);
-        
-        // Lock down sensitive operations
-        await this.lockdownSensitiveOperations();
-        
-        // Notify administrator
-        await this.notifyAdministrator('critical_threat', { type, details });
-        
-        // Collect forensic data
-        await this.collectForensicData();
-        
-        // Emit alert
-        this.emit('critical_alert', {
-            type,
-            details,
-            timestamp: Date.now()
-        });
-    }
-    
-    async lockdownSensitiveOperations() {
-        // Increase security measures
-        this.modules.rateLimiter.setStrictMode(true);
-        this.modules.firewall.enableStrictMode();
-        this.modules.ids.increaseSensitivity();
-        
-        // Force re-authentication for all sessions
-        this.modules.sessionHardening.forceReauthentication();
-        
-        this.logger.info('Sensitive operations locked down');
-    }
-    
-    async performSecurityScan() {
-        try {
-            const scanResults = {
-                timestamp: Date.now(),
-                vulnerabilities: [],
-                warnings: [],
-                score: 100
-            };
-            
-            // Check for common vulnerabilities
-            await this.checkXVulnerabilities(scanResults);
-            await this.checkInsecureStorage(scanResults);
-            await this.checkWeakConfigurations(scanResults);
-            
-            this.metrics.vulnerabilities = scanResults.vulnerabilities;
-            
-            this.logger.info('Security scan completed', {
-                score: scanResults.score,
-                vulnerabilities: scanResults.vulnerabilities.length
+        // Check HTTPS
+        if (window.location.protocol !== 'https:') {
+            results.issues.push({
+                severity: 'high',
+                message: 'Halaman tidak menggunakan HTTPS'
             });
-            
-            return scanResults;
-        } catch (error) {
-            this.logger.error('Security scan failed', error);
-            return null;
-        }
-    }
-    
-    async checkXVulnerabilities(results) {
-        // Check for XSS vulnerabilities
-        const testInputs = [
-            '<script>alert("xss")</script>',
-            'javascript:alert("xss")',
-            '<img src=x onerror=alert("xss")>',
-            '"><script>alert("xss")</script>',
-            '<svg onload=alert("xss")>'
-        ];
-        
-        for (const input of testInputs) {
-            const sanitized = this.modules.xss.sanitize(input);
-            if (sanitized.includes('<script>') || sanitized.includes('onerror=')) {
-                results.vulnerabilities.push({
-                    type: 'xss',
-                    severity: 'high',
-                    description: 'XSS filter mungkin tidak berfungsi dengan baik'
-                });
-                results.score -= 10;
-                break;
-            }
-        }
-    }
-    
-    async checkInsecureStorage(results) {
-        // Check for sensitive data in localStorage
-        const sensitiveKeys = ['password', 'token', 'secret', 'key', 'credential'];
-        
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const value = localStorage.getItem(key);
-            
-            if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk))) {
-                if (!this.modules.encryption.isEncrypted(value)) {
-                    results.vulnerabilities.push({
-                        type: 'insecure_storage',
-                        severity: 'high',
-                        description: `Data sensitif tidak terenkripsi: ${key}`
-                    });
-                    results.score -= 15;
-                }
-            }
-        }
-    }
-    
-    async checkWeakConfigurations(results) {
-        // Check CSP configuration
-        const csp = this.config.headers?.['Content-Security-Policy'];
-        if (!csp || csp.includes('unsafe-inline') || csp.includes('unsafe-eval')) {
-            results.warnings.push('CSP mengandung directive yang tidak aman');
-            results.score -= 5;
+            results.score -= 20;
         }
         
-        // Check if debug mode is on in production
-        if (APP_CONFIG.app.environment === 'production' && APP_CONFIG.app.debug) {
-            results.vulnerabilities.push({
-                type: 'debug_mode',
+        // Check CSP
+        var cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        if (!cspMeta) {
+            results.issues.push({
                 severity: 'medium',
-                description: 'Debug mode aktif di environment production'
+                message: 'CSP meta tag tidak ditemukan'
             });
             results.score -= 10;
         }
+        
+        // Check modul yang aktif
+        var activeModules = Object.keys(_modules);
+        if (activeModules.length < 3) {
+            results.issues.push({
+                severity: 'low',
+                message: 'Hanya ' + activeModules.length + ' modul keamanan aktif'
+            });
+            results.score -= 5;
+        }
+        
+        return results;
     }
     
-    startContinuousMonitoring() {
-        // Monitor DOM mutations for XSS
-        this.setupMutationObserver();
-        
-        // Monitor network requests
-        this.setupNetworkMonitor();
-        
-        // Monitor storage access
-        this.setupStorageMonitor();
-        
-        this.logger.info('Continuous monitoring started');
-    }
+    // ============================================
+    // PUBLIC API
+    // ============================================
     
-    setupMutationObserver() {
-        const observer = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1) { // Element node
-                            this.scanElementForThreats(node);
-                        }
-                    });
-                } else if (mutation.type === 'attributes') {
-                    this.scanAttributeForThreats(
-                        mutation.target, 
-                        mutation.attributeName
-                    );
-                }
-            }
+    function init() {
+        if (_initialized) return;
+        
+        // Register modul yang tersedia
+        autoRegisterModules();
+        
+        // Load policies
+        loadDefaultPolicies();
+        
+        // Listen untuk event dari modul lain
+        window.addEventListener('firewall:blocked', function(e) {
+            handleSecurityEvent('firewall_block', e.detail);
         });
         
-        observer.observe(document.body, {
-            childList: true,
-            attributes: true,
-            subtree: true,
-            attributeFilter: ['src', 'href', 'onclick', 'onerror', 'onload']
+        window.addEventListener('ids:alert', function(e) {
+            handleSecurityEvent('intrusion_alert', e.detail);
         });
-    }
-    
-    setupNetworkMonitor() {
-        const originalFetch = window.fetch;
-        const self = this;
         
-        window.fetch = function(...args) {
-            const [url, options] = args;
-            
-            // Check for suspicious URLs
-            if (self.modules.firewall.isUrlBlocked(url)) {
-                self.handleSecurityEvent('firewall_block', { url });
-                throw new Error('URL diblokir oleh firewall');
-            }
-            
-            // Sanitize request data
-            if (options?.body) {
-                try {
-                    const parsed = JSON.parse(options.body);
-                    const sanitized = self.modules.sanitizer.sanitizeObject(parsed);
-                    options.body = JSON.stringify(sanitized);
-                } catch (e) {
-                    // If not JSON, leave as is
-                }
-            }
-            
-            return originalFetch.apply(this, [url, options]);
-        };
-    }
-    
-    setupStorageMonitor() {
-        const originalSetItem = Storage.prototype.setItem;
-        const self = this;
-        
-        Storage.prototype.setItem = function(key, value) {
-            // Block setting sensitive data without encryption
-            if (self.isSensitiveKey(key) && !self.modules.encryption.isEncrypted(value)) {
-                self.logger.warn(`Attempted to store sensitive data without encryption: ${key}`);
-                value = self.modules.encryption.encrypt(value);
-            }
-            
-            return originalSetItem.call(this, key, value);
-        };
-    }
-    
-    scanElementForThreats(element) {
-        // Check for inline scripts
-        if (element.tagName === 'SCRIPT' && element.src) {
-            this.handleSecurityEvent('suspicious_activity', {
-                type: 'dynamic_script',
-                src: element.src
-            });
-        }
-        
-        // Check for event handlers
-        const eventAttrs = ['onclick', 'onerror', 'onload', 'onmouseover', 'onfocus'];
-        eventAttrs.forEach(attr => {
-            if (element.hasAttribute(attr)) {
-                this.handleSecurityEvent('suspicious_activity', {
-                    type: 'inline_event_handler',
-                    attribute: attr
-                });
-            }
+        window.addEventListener('ids:block', function(e) {
+            handleSecurityEvent('intrusion_block', e.detail);
         });
-    }
-    
-    scanAttributeForThreats(element, attributeName) {
-        const value = element.getAttribute(attributeName);
         
-        if (value && (value.startsWith('javascript:') || value.startsWith('data:'))) {
-            this.handleSecurityEvent('suspicious_activity', {
-                type: 'dangerous_url_scheme',
-                attribute: attributeName,
-                value: value
-            });
-        }
-    }
-    
-    isSensitiveKey(key) {
-        const sensitivePatterns = [
-            'password', 'token', 'secret', 'key', 'credential',
-            'auth', 'session', 'private', 'encrypted'
-        ];
+        _initialized = true;
         
-        return sensitivePatterns.some(pattern => 
-            key.toLowerCase().includes(pattern)
-        );
-    }
-    
-    // Policy management
-    setPolicy(name, policy) {
-        this.policies.set(name, policy);
-    }
-    
-    getPolicy(name) {
-        return this.policies.get(name);
-    }
-    
-    // Event system
-    on(event, listener) {
-        if (!this.eventListeners.has(event)) {
-            this.eventListeners.set(event, new Set());
-        }
-        this.eventListeners.get(event).add(listener);
-    }
-    
-    emit(event, data) {
-        const listeners = this.eventListeners.get(event);
-        if (listeners) {
-            listeners.forEach(listener => {
-                try {
-                    listener(data);
-                } catch (error) {
-                    this.logger.error(`Event listener error for ${event}`, error);
-                }
-            });
-        }
-    }
-    
-    // Reporting
-    getSecurityReport() {
+        var moduleCount = Object.keys(_modules).length;
+        console.info('[Orchestrator] Initialized with ' + moduleCount + ' modules');
+        
         return {
-            timestamp: Date.now(),
-            metrics: { ...this.metrics },
-            moduleStatus: Object.entries(this.modules).reduce((acc, [name, module]) => {
-                acc[name] = {
-                    active: !!module,
-                    initialized: module.isInitialized || false
-                };
-                return acc;
-            }, {}),
-            policies: Array.from(this.policies.entries()),
-            recommendations: this.generateRecommendations()
+            modules: Object.keys(_modules),
+            policies: Object.keys(_policies)
         };
     }
     
-    generateRecommendations() {
-        const recommendations = [];
+    // Auto-init (tapi tidak blocking)
+    setTimeout(init, 100);
+    
+    return {
+        init: init,
         
-        if (this.metrics.securityScore < 80) {
-            recommendations.push('Tingkatkan keamanan secara keseluruhan');
+        /**
+         * Register modul keamanan
+         */
+        register: registerModule,
+        
+        /**
+         * Get registered module
+         */
+        getModule: function(name) {
+            return _modules[name] || null;
+        },
+        
+        /**
+         * Get all registered modules
+         */
+        getModules: function() {
+            return Object.keys(_modules);
+        },
+        
+        /**
+         * Handle security event
+         */
+        handleEvent: handleSecurityEvent,
+        
+        /**
+         * Set security policy
+         */
+        setPolicy: setPolicy,
+        
+        /**
+         * Get security policy
+         */
+        getPolicy: getPolicy,
+        
+        /**
+         * Listen for events
+         */
+        on: on,
+        
+        /**
+         * Perform security scan
+         */
+        scan: performScan,
+        
+        /**
+         * Get statistics
+         */
+        getStats: function() {
+            return {
+                threatsDetected: _stats.threatsDetected,
+                attacksBlocked: _stats.attacksBlocked,
+                lastThreatTime: _stats.lastThreatTime,
+                activeModules: Object.keys(_modules).length,
+                initialized: _initialized
+            };
+        },
+        
+        /**
+         * Generate security report
+         */
+        getReport: function() {
+            return {
+                timestamp: new Date().toISOString(),
+                stats: {
+                    threatsDetected: _stats.threatsDetected,
+                    attacksBlocked: _stats.attacksBlocked,
+                    lastThreatTime: _stats.lastThreatTime
+                },
+                modules: Object.keys(_modules),
+                policies: Object.keys(_policies),
+                scan: performScan()
+            };
+        },
+        
+        /**
+         * Check if module is available
+         */
+        hasModule: function(name) {
+            return !!_modules[name];
+        },
+        
+        /**
+         * Reset stats
+         */
+        reset: function() {
+            _stats = {
+                threatsDetected: 0,
+                attacksBlocked: 0,
+                lastThreatTime: null
+            };
         }
-        
-        if (this.metrics.vulnerabilities.length > 0) {
-            recommendations.push('Perbaiki kerentanan yang terdeteksi');
-        }
-        
-        return recommendations;
-    }
-    
-    // Utility
-    async collectForensicData() {
-        return {
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            url: window.location.href,
-            cookies: document.cookie,
-            localStorage: { ...localStorage },
-            sessionStorage: { ...sessionStorage },
-            domSnapshot: document.documentElement.outerHTML.substring(0, 1000)
-        };
-    }
-    
-    async notifyAdministrator(type, data) {
-        // In production, send to admin notification system
-        this.logger.info(`Admin notification: ${type}`, data);
-        
-        // Store in audit log
-        await this.modules.audit.log('admin_notification', {
-            type,
-            data,
-            timestamp: Date.now()
-        });
-    }
-    
-    degradeGracefully(error) {
-        this.logger.error('Degrading security gracefully', error);
-        
-        // Keep critical modules running
-        const criticalModules = ['encryption', 'csrf', 'xss', 'rateLimiter'];
-        
-        criticalModules.forEach(moduleName => {
-            if (this.modules[moduleName]) {
-                try {
-                    this.modules[moduleName].init?.();
-                } catch (e) {
-                    // Module failed, continue without it
-                }
-            }
-        });
-    }
-    
-    destroy() {
-        // Clean up all modules
-        Object.values(this.modules).forEach(module => {
-            try {
-                module.destroy?.();
-            } catch (error) {
-                this.logger.error('Module cleanup failed', error);
-            }
-        });
-        
-        this.eventListeners.clear();
-        this.policies.clear();
-    }
-}
+    };
+})();
 
-// Create singleton instance
-const securityOrchestrator = new SecurityOrchestrator();
-
-export default securityOrchestrator;
-export { SecurityOrchestrator };
+// ============================================
+// USAGE:
+// ============================================
+// // Register module
+// SecurityOrchestrator.register('csrf', CSRFProtection);
+// 
+// // Handle event
+// SecurityOrchestrator.handleEvent('xss_attempt', { payload: '...' });
+// 
+// // Listen for threats
+// SecurityOrchestrator.on('threat', function(data) {
+//     console.warn('Threat:', data.type);
+// });
+// 
+// // Get report
+// var report = SecurityOrchestrator.getReport();
+// ============================================

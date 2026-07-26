@@ -1,329 +1,86 @@
-// js/security/xss.js - Advanced XSS Prevention 2026
+// js/security/xss.js - XSS Prevention 2026 (SAFE & LIGHTWEIGHT)
 /**
  * E-Arsip Digital - XSS Prevention Module
  * Version: 2026.1.0
- * Features: Input sanitization, output encoding, DOM-based XSS detection,
- *           CSP enforcement, HTML purification, context-aware escaping
+ * 
+ * Features:
+ * - Input sanitization (HTML entity encoding)
+ * - Output encoding (context-aware)
+ * - XSS pattern detection
+ * - Safe HTML stripping (tanpa innerHTML!)
+ * - No DOM mutation observers (lightweight)
  */
 
-import { Logger } from '../logger.js';
-import APP_CONFIG from '../../config/config.js';
-
-class XSSPrevention {
-    constructor(config = APP_CONFIG.security?.xss || {}) {
-        this.logger = new Logger('XSSPrevention');
-        
-        this.config = {
-            sanitizeInput: config.sanitizeInput !== false,
-            sanitizeOutput: config.sanitizeOutput !== false,
-            allowedTags: config.allowedTags || ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
-            allowedAttributes: config.allowedAttributes || ['href', 'title', 'target', 'class', 'id'],
-            allowedSchemes: ['http', 'https', 'mailto', 'tel'],
-            stripComments: true,
-            removeEmptyTags: true,
-            ...config
-        };
-        
-        // HTML entity mapping
-        this.entities = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#x27;',
-            '/': '&#x2F;',
-            '`': '&#x60;',
-            '=': '&#x3D;'
-        };
-        
-        // Dangerous patterns to detect
-        this.dangerousPatterns = [
-            /<script\b[^>]*>([\s\S]*?)<\/script>/gi,
-            /javascript\s*:/gi,
-            /vbscript\s*:/gi,
-            /data\s*:\s*text\/html/gi,
-            /on\w+\s*=\s*["'][^"']*["']/gi,
-            /<iframe\b[^>]*>/gi,
-            /<object\b[^>]*>/gi,
-            /<embed\b[^>]*>/gi,
-            /<link\b[^>]*>/gi,
-            /<meta\b[^>]*>/gi,
-            /expression\s*\(/gi,
-            /eval\s*\(/gi,
-            /document\.cookie/gi,
-            /document\.write/gi,
-            /\.innerHTML/gi,
-            /\.outerHTML/gi,
-            /fromCharCode/gi,
-            /String\.fromCharCode/gi,
-            /atob\s*\(/gi,
-            /btoa\s*\(/gi,
-            /setTimeout\s*\(/gi,
-            /setInterval\s*\(/gi,
-            /Function\s*\(/gi,
-            /constructor\s*\(/gi,
-            /__proto__/gi,
-            /__defineGetter__/gi,
-            /__defineSetter__/gi
-        ];
-        
-        // Context types for escaping
-        this.CONTEXTS = {
-            HTML: 'html',
-            HTML_ATTRIBUTE: 'html_attribute',
-            JAVASCRIPT: 'javascript',
-            CSS: 'css',
-            URL: 'url',
-            SQL: 'sql'
-        };
-        
-        this.initialized = false;
-        this.detections = [];
-        
-        this.init();
-    }
-    
-    init() {
-        if (!this.config.sanitizeInput && !this.config.sanitizeOutput) {
-            this.logger.info('XSS prevention is disabled');
-            return;
-        }
-        
-        this.setupDOMPurify();
-        this.setupInputMonitoring();
-        this.setupOutputMonitoring();
-        this.initialized = true;
-        
-        this.logger.info('XSS prevention initialized', {
-            allowedTags: this.config.allowedTags.length,
-            patterns: this.dangerousPatterns.length
-        });
-    }
+var XSSPrevention = (function() {
+    'use strict';
     
     // ============================================
-    // INPUT SANITIZATION
+    // HTML ENTITY MAP
     // ============================================
-    
-    sanitize(input, context = this.CONTEXTS.HTML) {
-        if (!input) return input;
-        
-        // Handle different types
-        if (typeof input === 'object') {
-            return this.sanitizeObject(input);
-        }
-        
-        if (typeof input !== 'string') return input;
-        
-        // Check for dangerous patterns first
-        const detection = this.detectDangerousPatterns(input);
-        if (detection) {
-            this.reportDetection('dangerous_pattern', detection);
-        }
-        
-        // Context-specific sanitization
-        switch (context) {
-            case this.CONTEXTS.HTML:
-                return this.sanitizeHTML(input);
-            case this.CONTEXTS.HTML_ATTRIBUTE:
-                return this.sanitizeHTMLAttribute(input);
-            case this.CONTEXTS.JAVASCRIPT:
-                return this.sanitizeJavaScript(input);
-            case this.CONTEXTS.CSS:
-                return this.sanitizeCSS(input);
-            case this.CONTEXTS.URL:
-                return this.sanitizeURL(input);
-            case this.CONTEXTS.SQL:
-                return this.sanitizeSQL(input);
-            default:
-                return this.encodeHTML(input);
-        }
-    }
-    
-    sanitizeObject(obj) {
-        if (Array.isArray(obj)) {
-            return obj.map(item => this.sanitize(item));
-        }
-        
-        const sanitized = {};
-        for (const [key, value] of Object.entries(obj)) {
-            const safeKey = this.sanitize(key);
-            sanitized[safeKey] = this.sanitize(value);
-        }
-        return sanitized;
-    }
-    
-    sanitizeHTML(html) {
-        if (!html) return '';
-        
-        // Use DOMPurify if available
-        if (window.DOMPurify) {
-            try {
-                return DOMPurify.sanitize(html, {
-                    ALLOWED_TAGS: this.config.allowedTags,
-                    ALLOWED_ATTR: this.config.allowedAttributes,
-                    ALLOWED_URI_REGEXP: new RegExp(
-                        `^(?:${this.config.allowedSchemes.join('|')}):`, 'i'
-                    ),
-                    ALLOW_DATA_ATTR: false,
-                    ADD_TAGS: [],
-                    ADD_ATTR: ['target'],
-                    FORBID_TAGS: ['style', 'script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea'],
-                    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
-                    ALLOW_ARIA_ATTR: true,
-                    ALLOW_UNKNOWN_PROTOCOLS: false,
-                    WHOLE_DOCUMENT: false,
-                    RETURN_DOM: false,
-                    RETURN_DOM_FRAGMENT: false,
-                    SANITIZE_DOM: true
-                });
-            } catch (error) {
-                this.logger.warn('DOMPurify sanitization failed, using fallback', error);
-            }
-        }
-        
-        // Fallback sanitization
-        return this.encodeHTML(html)
-            .replace(/&lt;(\/?(?:b|i|em|strong|a|p|br|ul|ol|li)\b[^>]*)&gt;/gi, '<$1>')
-            .replace(/&lt;a\s+(.*?)&gt;(.*?)&lt;\/a&gt;/gi, (match, attrs, text) => {
-                const safeAttrs = attrs.replace(/href="javascript:[^"]*"/gi, 'href="#"');
-                return `<a ${safeAttrs}>${text}</a>`;
-            });
-    }
-    
-    sanitizeHTMLAttribute(value) {
-        if (!value) return '';
-        
-        // Remove dangerous characters
-        return value
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-            .replace(/`/g, '&#x60;')
-            .replace(/=/g, '&#x3D;');
-    }
-    
-    sanitizeJavaScript(value) {
-        if (!value) return '';
-        
-        // Encode for JavaScript context
-        return value
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/"/g, '\\"')
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
-            .replace(/\t/g, '\\t')
-            .replace(/\//g, '\\/')
-            .replace(/<\//g, '<\\/');
-    }
-    
-    sanitizeCSS(value) {
-        if (!value) return '';
-        
-        // Remove dangerous CSS
-        return value
-            .replace(/expression\s*\(/gi, '')
-            .replace(/javascript\s*:/gi, '')
-            .replace(/behavior\s*:/gi, '')
-            .replace(/binding\s*:/gi, '')
-            .replace(/@import/gi, '')
-            .replace(/url\s*\(\s*["']?\s*javascript\s*:/gi, 'url(');
-    }
-    
-    sanitizeURL(url) {
-        if (!url) return '';
-        
-        // Check protocol
-        const protocol = url.match(/^([a-z][a-z0-9+\-.]*):/i);
-        
-        if (protocol) {
-            const scheme = protocol[1].toLowerCase();
-            if (!this.config.allowedSchemes.includes(scheme)) {
-                return '#blocked';
-            }
-        }
-        
-        // Encode URL
-        try {
-            const parsed = new URL(url, window.location.origin);
-            
-            // Remove dangerous parameters
-            const params = new URLSearchParams(parsed.search);
-            for (const [key, value] of params) {
-                if (this.detectDangerousPatterns(decodeURIComponent(value))) {
-                    params.delete(key);
-                }
-            }
-            
-            parsed.search = params.toString();
-            return parsed.toString();
-        } catch {
-            return '#invalid';
-        }
-    }
-    
-    sanitizeSQL(value) {
-        if (!value) return '';
-        
-        // Escape SQL special characters
-        return value
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "''")
-            .replace(/"/g, '\\"')
-            .replace(/\x00/g, '\\0')
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
-            .replace(/\x1a/g, '\\Z');
-    }
+    var ENTITIES = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;',
+        '`': '&#x60;',
+        '=': '&#x3D;'
+    };
     
     // ============================================
-    // ENCODING METHODS
+    // DANGEROUS PATTERNS (Untuk deteksi saja)
+    // ============================================
+    var DANGEROUS_PATTERNS = [
+        /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi,
+        /javascript\s*:\s*/gi,
+        /on\w+\s*=\s*["'][^"']*["']/gi,
+        /<iframe\b[^>]*>/gi,
+        /<object\b[^>]*>/gi,
+        /<embed\b[^>]*>/gi,
+        /expression\s*\(/gi,
+        /eval\s*\(/gi,
+        /document\.cookie/gi,
+        /\.innerHTML\s*=/gi
+    ];
+    
+    // ============================================
+    // FORBIDDEN TAGS (Untuk validasi)
+    // ============================================
+    var FORBIDDEN_TAGS = [
+        'SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'APPLET',
+        'META', 'LINK', 'STYLE', 'BASE'
+    ];
+    
+    // ============================================
+    // CONTEXT TYPES
+    // ============================================
+    var CONTEXT = {
+        HTML: 'html',
+        ATTRIBUTE: 'attribute',
+        JAVASCRIPT: 'javascript',
+        URL: 'url',
+        CSS: 'css'
+    };
+    
+    // ============================================
+    // DETECTION (Non-invasive)
     // ============================================
     
-    encodeHTML(str) {
-        return String(str).replace(/[&<>"'`\/=]/g, char => this.entities[char] || char);
-    }
-    
-    decodeHTML(str) {
-        const entities = Object.entries(this.entities).reduce((acc, [char, entity]) => {
-            acc[entity] = char;
-            return acc;
-        }, {});
+    /**
+     * Deteksi pola berbahaya dalam string
+     * Hanya mendeteksi, TIDAK mengubah input!
+     */
+    function detectDangerous(input) {
+        if (typeof input !== 'string' || !input) return null;
         
-        return str.replace(/&[#\w]+;/g, entity => entities[entity] || entity);
-    }
-    
-    encodeURL(str) {
-        return encodeURIComponent(str).replace(/[!'()*]/g, c =>
-            '%' + c.charCodeAt(0).toString(16).toUpperCase()
-        );
-    }
-    
-    encodeBase64(str) {
-        try {
-            return btoa(unescape(encodeURIComponent(str)));
-        } catch {
-            return '';
-        }
-    }
-    
-    // ============================================
-    // DETECTION
-    // ============================================
-    
-    detectDangerousPatterns(input) {
-        if (typeof input !== 'string') return null;
-        
-        for (const pattern of this.dangerousPatterns) {
-            const match = input.match(pattern);
+        for (var i = 0; i < DANGEROUS_PATTERNS.length; i++) {
+            var match = input.match(DANGEROUS_PATTERNS[i]);
             if (match) {
                 return {
-                    pattern: pattern.source,
+                    pattern: DANGEROUS_PATTERNS[i].source,
                     match: match[0].substring(0, 100),
-                    index: match.index,
-                    input: input.substring(0, 100)
+                    index: match.index
                 };
             }
         }
@@ -331,344 +88,278 @@ class XSSPrevention {
         return null;
     }
     
-    isXSSAttempt(input) {
-        if (typeof input !== 'string') return false;
-        return this.detectDangerousPatterns(input) !== null;
-    }
-    
-    scanForXSS(html) {
-        const findings = [];
-        
-        // Check for script tags
-        const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-        let match;
-        while ((match = scriptRegex.exec(html)) !== null) {
-            findings.push({
-                type: 'script_tag',
-                content: match[0].substring(0, 100),
-                position: match.index
-            });
-        }
-        
-        // Check for event handlers
-        const handlerRegex = /\bon\w+\s*=\s*["'][^"']*["']/gi;
-        while ((match = handlerRegex.exec(html)) !== null) {
-            findings.push({
-                type: 'event_handler',
-                content: match[0],
-                position: match.index
-            });
-        }
-        
-        // Check for javascript: URLs
-        const jsUrlRegex = /javascript\s*:/gi;
-        while ((match = jsUrlRegex.exec(html)) !== null) {
-            findings.push({
-                type: 'javascript_url',
-                content: match[0],
-                position: match.index
-            });
-        }
-        
-        return findings;
+    /**
+     * Cek apakah input mengandung XSS attempt
+     */
+    function isXSSAttempt(input) {
+        return detectDangerous(input) !== null;
     }
     
     // ============================================
-    // CONTENT SECURITY POLICY HELPERS
+    // SANITIZATION (Context-aware)
     // ============================================
     
-    generateCSPHeader() {
-        const directives = {
-            'default-src': ["'self'"],
-            'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 
-                'https://apis.google.com', 'https://cdn.jsdelivr.net'],
-            'style-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-            'img-src': ["'self'", 'data:', 'https:'],
-            'font-src': ["'self'", 'https://cdn.jsdelivr.net'],
-            'connect-src': ["'self'", 'https://script.google.com'],
-            'frame-ancestors': ["'none'"],
-            'form-action': ["'self'"],
-            'base-uri': ["'self'"],
-            'object-src': ["'none'"],
-            'frame-src': ["'none'"],
-            'child-src': ["'none'"],
-            'worker-src': ["'self'"],
-            'manifest-src': ["'self'"],
-            'upgrade-insecure-requests': []
-        };
+    /**
+     * Sanitize berdasarkan konteks
+     */
+    function sanitize(input, context) {
+        if (!input) return input;
+        if (typeof input !== 'string') return input;
         
-        return Object.entries(directives)
-            .map(([key, values]) => {
-                if (values.length === 0) return key;
-                return `${key} ${values.join(' ')}`;
-            })
-            .join('; ');
+        if (!context) context = CONTEXT.HTML;
+        
+        switch (context) {
+            case CONTEXT.HTML:
+                return encodeHTML(input);
+            case CONTEXT.ATTRIBUTE:
+                return encodeAttribute(input);
+            case CONTEXT.JAVASCRIPT:
+                return encodeJavaScript(input);
+            case CONTEXT.URL:
+                return sanitizeURL(input);
+            case CONTEXT.CSS:
+                return sanitizeCSS(input);
+            default:
+                return encodeHTML(input);
+        }
     }
     
-    validateCSP(cspString) {
-        const issues = [];
+    /**
+     * Encode HTML entities (AMAN)
+     */
+    function encodeHTML(str) {
+        if (typeof str !== 'string') return '';
+        return str.replace(/[&<>"'`\/=]/g, function(char) {
+            return ENTITIES[char] || char;
+        });
+    }
+    
+    /**
+     * Encode untuk HTML attribute
+     */
+    function encodeAttribute(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/`/g, '&#x60;');
+    }
+    
+    /**
+     * Encode untuk JavaScript context
+     */
+    function encodeJavaScript(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/<\//g, '<\\/');
+    }
+    
+    /**
+     * Sanitize URL
+     */
+    function sanitizeURL(url) {
+        if (typeof url !== 'string' || !url) return '';
         
-        if (!cspString) {
-            issues.push('CSP header is missing');
-            return issues;
+        // Block dangerous protocols
+        if (/^(javascript|data|vbscript):/i.test(url)) {
+            return '#blocked';
         }
         
-        if (cspString.includes("'unsafe-inline'")) {
-            issues.push('CSP allows unsafe-inline scripts');
+        // Validasi URL
+        try {
+            var parsed = new URL(url, window.location.origin);
+            if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:' && parsed.protocol !== 'mailto:' && parsed.protocol !== 'tel:') {
+                return '#blocked';
+            }
+            return parsed.toString();
+        } catch(e) {
+            return '#invalid';
         }
+    }
+    
+    /**
+     * Sanitize CSS value
+     */
+    function sanitizeCSS(css) {
+        if (typeof css !== 'string' || !css) return '';
         
-        if (cspString.includes("'unsafe-eval'")) {
-            issues.push('CSP allows unsafe-eval');
-        }
-        
-        if (!cspString.includes("frame-ancestors 'none'")) {
-            issues.push('CSP missing frame-ancestors directive');
-        }
-        
-        if (!cspString.includes("object-src 'none'")) {
-            issues.push('CSP missing object-src directive');
-        }
-        
-        return issues;
+        return css
+            .replace(/expression\s*\(/gi, '')
+            .replace(/javascript\s*:/gi, '')
+            .replace(/behavior\s*:/gi, '')
+            .replace(/@import/gi, '')
+            .replace(/url\s*\(\s*["']?\s*javascript\s*:/gi, 'url(');
     }
     
     // ============================================
-    // MONITORING
+    // HTML STRIPPING (AMAN - Tanpa innerHTML!)
     // ============================================
     
-    setupInputMonitoring() {
-        if (!this.config.sanitizeInput) return;
+    /**
+     * Strip HTML tags dari string (AMAN)
+     * Menggunakan regex, bukan innerHTML
+     */
+    function stripHTML(html) {
+        if (typeof html !== 'string') return '';
         
-        // Monitor form inputs
-        document.addEventListener('input', (event) => {
-            const target = event.target;
-            
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-                const value = target.value;
-                const detection = this.detectDangerousPatterns(value);
+        return html
+            .replace(/<[^>]*>/g, '')           // Hapus semua tag
+            .replace(/&[^;]+;/g, ' ')           // Hapus entities
+            .replace(/\s+/g, ' ')               // Normalize whitespace
+            .trim();
+    }
+    
+    /**
+     * Sanitize HTML (izinkan tag tertentu)
+     * Untuk kebutuhan rich text yang aman
+     */
+    function sanitizeHTML(html, allowedTags) {
+        if (typeof html !== 'string') return '';
+        
+        // Pertama, encode semua
+        var encoded = encodeHTML(html);
+        
+        // Jika ada allowed tags, decode kembali
+        if (allowedTags && allowedTags.length > 0) {
+            for (var i = 0; i < allowedTags.length; i++) {
+                var tag = allowedTags[i].toLowerCase();
                 
-                if (detection) {
-                    this.reportDetection('input_monitoring', {
-                        ...detection,
-                        field: target.name || target.id,
-                        tag: target.tagName
-                    });
-                    
-                    // Sanitize the input
-                    target.value = this.sanitizeHTMLAttribute(value);
-                    
-                    // Dispatch warning
-                    target.dispatchEvent(new CustomEvent('xss:detected', {
-                        detail: { field: target.name || target.id, pattern: detection.pattern },
-                        bubbles: true
-                    }));
-                }
-            }
-        }, true);
-    }
-    
-    setupOutputMonitoring() {
-        if (!this.config.sanitizeOutput) return;
-        
-        // Monitor DOM mutations for XSS in injected content
-        const observer = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1) { // Element
-                            this.sanitizeDOMNode(node);
-                        }
-                    });
-                } else if (mutation.type === 'attributes') {
-                    this.sanitizeDOMAttribute(
-                        mutation.target,
-                        mutation.attributeName
-                    );
-                }
-            }
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            attributes: true,
-            subtree: true,
-            attributeFilter: ['src', 'href', 'onclick', 'onerror', 'onload', 'style']
-        });
-    }
-    
-    sanitizeDOMNode(node) {
-        // Check tag name
-        const forbiddenTags = ['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'APPLET', 'FORM'];
-        if (forbiddenTags.includes(node.tagName)) {
-            this.reportDetection('dom_injection', {
-                tag: node.tagName,
-                content: node.outerHTML?.substring(0, 100)
-            });
-            node.remove();
-            return;
-        }
-        
-        // Check attributes
-        if (node.hasAttributes) {
-            Array.from(node.attributes).forEach(attr => {
-                const value = attr.value;
-                if (value) {
-                    const detection = this.detectDangerousPatterns(value);
-                    if (detection) {
-                        node.removeAttribute(attr.name);
-                        this.reportDetection('attribute_injection', {
-                            attribute: attr.name,
-                            value: value.substring(0, 100)
-                        });
-                    }
-                }
-            });
-        }
-        
-        // Check inline styles
-        if (node.style?.cssText) {
-            node.style.cssText = this.sanitizeCSS(node.style.cssText);
-        }
-    }
-    
-    sanitizeDOMAttribute(element, attributeName) {
-        const value = element.getAttribute(attributeName);
-        if (!value) return;
-        
-        const detection = this.detectDangerousPatterns(value);
-        if (detection) {
-            element.removeAttribute(attributeName);
-            this.reportDetection('attribute_cleaned', {
-                attribute: attributeName,
-                value: value.substring(0, 100)
-            });
-        }
-    }
-    
-    // ============================================
-    // REPORTING
-    // ============================================
-    
-    reportDetection(type, details) {
-        const entry = {
-            type,
-            details,
-            timestamp: new Date().toISOString(),
-            url: window.location.href
-        };
-        
-        this.detections.push(entry);
-        
-        // Keep only last 100 detections
-        if (this.detections.length > 100) {
-            this.detections = this.detections.slice(-100);
-        }
-        
-        this.logger.warn(`XSS detection: ${type}`, details);
-        
-        // Dispatch event
-        window.dispatchEvent(new CustomEvent('security:xss_detected', {
-            detail: entry
-        }));
-    }
-    
-    getDetections() {
-        return [...this.detections];
-    }
-    
-    clearDetections() {
-        this.detections = [];
-    }
-    
-    // ============================================
-    // DOMPurify SETUP
-    // ============================================
-    
-    setupDOMPurify() {
-        if (!window.DOMPurify) {
-            this.logger.info('DOMPurify not loaded, using built-in sanitizer');
-            return;
-        }
-        
-        // Add hooks for custom sanitization
-        DOMPurify.addHook('uponSanitizeElement', (node, data) => {
-            // Remove elements with dangerous attributes
-            if (node.hasAttributes()) {
-                Array.from(node.attributes).forEach(attr => {
-                    if (this.detectDangerousPatterns(attr.value)) {
-                        node.removeAttribute(attr.name);
-                    }
+                // Opening tag: &lt;b&gt; → <b>
+                var openPattern = new RegExp('&lt;' + tag + '([^&]*)&gt;', 'gi');
+                encoded = encoded.replace(openPattern, function(match, attrs) {
+                    // Sanitize attributes
+                    var safeAttrs = attrs.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+                    return '<' + tag + safeAttrs + '>';
                 });
+                
+                // Closing tag: &lt;/b&gt; → </b>
+                var closePattern = new RegExp('&lt;/' + tag + '&gt;', 'gi');
+                encoded = encoded.replace(closePattern, '</' + tag + '>');
             }
-        });
+        }
         
-        DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
-            // Allow target="_blank" only with rel="noopener"
-            if (data.attrName === 'target' && data.attrValue === '_blank') {
-                node.setAttribute('rel', 'noopener noreferrer');
-            }
-        });
-        
-        this.logger.info('DOMPurify configured');
+        return encoded;
     }
     
     // ============================================
-    // UTILITY METHODS
+    // VALIDASI TAG
     // ============================================
     
-    sanitizeFilename(filename) {
-        return filename
-            .replace(/[^\w\s.-]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 255);
-    }
-    
-    sanitizeClassName(className) {
-        return className.replace(/[^a-zA-Z0-9_-]/g, '');
-    }
-    
-    sanitizeID(id) {
-        return id.replace(/[^a-zA-Z0-9_-]/g, '');
-    }
-    
-    isSafe(input, context = this.CONTEXTS.HTML) {
-        const sanitized = this.sanitize(input, context);
-        return sanitized === input;
-    }
-    
-    stripTags(html) {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.textContent || div.innerText || '';
+    /**
+     * Cek apakah string mengandung tag berbahaya
+     */
+    function hasDangerousTags(html) {
+        if (typeof html !== 'string') return false;
+        
+        for (var i = 0; i < FORBIDDEN_TAGS.length; i++) {
+            var pattern = new RegExp('<' + FORBIDDEN_TAGS[i] + '\\b', 'i');
+            if (pattern.test(html)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    getStats() {
-        return {
-            totalDetections: this.detections.length,
-            initialized: this.initialized,
-            allowedTags: this.config.allowedTags,
-            patternsMonitored: this.dangerousPatterns.length
-        };
-    }
-    
-    reset() {
-        this.detections = [];
-        this.logger.info('XSS prevention stats reset');
-    }
-    
-    destroy() {
-        this.initialized = false;
-        this.detections = [];
-        this.logger.info('XSS prevention destroyed');
-    }
-}
+    return {
+        // Context constants
+        CONTEXT: CONTEXT,
+        
+        // Sanitization
+        sanitize: sanitize,
+        encodeHTML: encodeHTML,
+        encodeAttribute: encodeAttribute,
+        encodeJavaScript: encodeJavaScript,
+        sanitizeURL: sanitizeURL,
+        sanitizeCSS: sanitizeCSS,
+        sanitizeHTML: sanitizeHTML,
+        stripHTML: stripHTML,
+        
+        // Detection
+        detect: detectDangerous,
+        isXSS: isXSSAttempt,
+        hasDangerousTags: hasDangerousTags,
+        
+        /**
+         * Sanitize object recursively
+         */
+        sanitizeObject: function(obj, context) {
+            if (!obj || typeof obj !== 'object') return sanitize(obj, context);
+            
+            if (Array.isArray(obj)) {
+                var result = [];
+                for (var i = 0; i < obj.length; i++) {
+                    result.push(this.sanitizeObject(obj[i], context));
+                }
+                return result;
+            }
+            
+            var sanitized = {};
+            var keys = Object.keys(obj);
+            for (var j = 0; j < keys.length; j++) {
+                var key = keys[j];
+                sanitized[key] = this.sanitizeObject(obj[key], context);
+            }
+            return sanitized;
+        },
+        
+        /**
+         * Cek apakah string aman
+         */
+        isSafe: function(input) {
+            return !isXSSAttempt(input) && !hasDangerousTags(input);
+        },
+        
+        /**
+         * Sanitize filename
+         */
+        sanitizeFilename: function(filename) {
+            if (typeof filename !== 'string') return 'file';
+            return filename
+                .replace(/[^a-zA-Z0-9._\- ]/g, '')
+                .replace(/\s+/g, '_')
+                .substring(0, 200) || 'file';
+        },
+        
+        /**
+         * Sanitize class/ID name
+         */
+        sanitizeIdentifier: function(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[^a-zA-Z0-9_\-]/g, '').substring(0, 64);
+        }
+    };
+})();
 
-// Create singleton
-const xssPrevention = new XSSPrevention();
-
-export default xssPrevention;
-export { XSSPrevention };
+// ============================================
+// USAGE:
+// ============================================
+// // HTML context
+// var safe = XSSPrevention.sanitize('<script>alert(1)</script>', XSSPrevention.CONTEXT.HTML);
+// // → '&lt;script&gt;alert(1)&lt;/script&gt;'
+// 
+// // URL context
+// var url = XSSPrevention.sanitizeURL('javascript:alert(1)');
+// // → '#blocked'
+// 
+// // Detection only (no modification)
+// if (XSSPrevention.isXSS(userInput)) {
+//     console.warn('XSS attempt detected!');
+// }
+// 
+// // Safe HTML stripping
+// var text = XSSPrevention.stripHTML('<p>Hello <b>World</b></p>');
+// // → 'Hello World'
+// ============================================

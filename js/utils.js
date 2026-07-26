@@ -1,60 +1,70 @@
-<<<<<<< HEAD
-// js/utils.js - Advanced Utility Functions 2026
+// js/utils.js - Enterprise Utility Library 2026
 /**
- * E-Arsip Digital - Utility Functions
+ * E-Arsip Digital - Comprehensive Utility Functions
  * Version: 2026.1.0
- * Provides common utility functions for the entire application
+ * Features: Date/Time, String, Number, Object/Array, DOM, Validation,
+ *           File, Color, Encoding, Performance, Security utilities
+ * Export: ES Module (default) + Global fallback (window.EArsip.Utils)
  */
 
-import APP_CONFIG from '../config/config.js';
-import { Logger } from './logger.js';
-
-const logger = new Logger('Utils');
-
-class Utils {
-    constructor() {
-        this.memoizeCache = new Map();
-        this.debounceTimers = new Map();
-        this.throttleTimestamps = new Map();
-    }
-
+const Utils = {
     // ============================================
-    // DATE & TIME UTILITIES
+    // DATE & TIME
     // ============================================
     
-    /**
-     * Format date to Indonesian locale
-     */
-    formatDate(date, format = 'full', locale = 'id-ID') {
+    formatDate(date, format = 'long', locale = 'id-ID') {
         if (!date) return '-';
         
         const d = new Date(date);
         if (isNaN(d.getTime())) return 'Invalid Date';
         
-        const options = {
-            full: { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
-            long: { year: 'numeric', month: 'long', day: 'numeric' },
-            medium: { year: 'numeric', month: 'short', day: 'numeric' },
-            short: { day: 'numeric', month: 'numeric', year: 'numeric' },
-            time: { hour: '2-digit', minute: '2-digit' },
-            datetime: { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' },
-            iso: null
-        };
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+                            'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         
-        if (format === 'iso') {
-            return d.toISOString();
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = d.getMonth();
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        
+        switch (format) {
+            case 'full':
+                return d.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            case 'long':
+                return `${day} ${months[month]} ${year}`;
+            case 'medium':
+                return `${day} ${shortMonths[month]} ${year}`;
+            case 'short':
+                return `${day}/${month + 1}/${year}`;
+            case 'time':
+                return `${hours}:${minutes}`;
+            case 'time-full':
+                return `${hours}:${minutes}:${seconds}`;
+            case 'datetime':
+                return `${day} ${shortMonths[month]} ${year} ${hours}:${minutes}`;
+            case 'datetime-full':
+                return `${day} ${months[month]} ${year} ${hours}:${minutes}:${seconds}`;
+            case 'iso':
+                return d.toISOString();
+            case 'iso-date':
+                return d.toISOString().split('T')[0];
+            default:
+                return `${day} ${months[month]} ${year}`;
         }
-        
-        return d.toLocaleDateString(locale, options[format] || options.full);
-    }
-
-    /**
-     * Format time ago (e.g., "5 menit yang lalu")
-     */
+    },
+    
     timeAgo(date) {
-        const now = new Date();
-        const past = new Date(date);
+        if (!date) return '-';
+        
+        const now = Date.now();
+        const past = new Date(date).getTime();
         const diffMs = now - past;
+        
+        if (diffMs < 0) return 'Akan datang';
+        
         const diffSec = Math.floor(diffMs / 1000);
         const diffMin = Math.floor(diffSec / 60);
         const diffHour = Math.floor(diffMin / 60);
@@ -63,96 +73,78 @@ class Utils {
         const diffMonth = Math.floor(diffDay / 30);
         const diffYear = Math.floor(diffDay / 365);
         
-        if (diffSec < 60) return 'Baru saja';
+        if (diffSec < 10) return 'Baru saja';
+        if (diffSec < 60) return `${diffSec} detik yang lalu`;
         if (diffMin < 60) return `${diffMin} menit yang lalu`;
         if (diffHour < 24) return `${diffHour} jam yang lalu`;
         if (diffDay < 7) return `${diffDay} hari yang lalu`;
-        if (diffWeek < 4) return `${diffWeek} minggu yang lalu`;
+        if (diffWeek < 5) return `${diffWeek} minggu yang lalu`;
         if (diffMonth < 12) return `${diffMonth} bulan yang lalu`;
         return `${diffYear} tahun yang lalu`;
-    }
-
-    /**
-     * Add days to date
-     */
+    },
+    
     addDays(date, days) {
         const result = new Date(date);
         result.setDate(result.getDate() + days);
         return result;
-    }
-
-    /**
-     * Get date range
-     */
-    getDateRange(startDate, endDate) {
-        const dates = [];
-        let currentDate = new Date(startDate);
-        const end = new Date(endDate);
-        
-        while (currentDate <= end) {
-            dates.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        
-        return dates;
-    }
-
-    /**
-     * Check if date is today
-     */
+    },
+    
     isToday(date) {
         const today = new Date();
         const d = new Date(date);
-        return d.getDate() === today.getDate() &&
-               d.getMonth() === today.getMonth() &&
-               d.getFullYear() === today.getFullYear();
-    }
-
+        return d.toDateString() === today.toDateString();
+    },
+    
+    isPast(date) {
+        return new Date(date).getTime() < Date.now();
+    },
+    
+    isFuture(date) {
+        return new Date(date).getTime() > Date.now();
+    },
+    
+    getDaysBetween(start, end) {
+        const diff = new Date(end).getTime() - new Date(start).getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    },
+    
     // ============================================
     // STRING UTILITIES
     // ============================================
     
-    /**
-     * Generate random string
-     */
-    generateRandomString(length = 10, charset = 'alphanumeric') {
-        const charsets = {
-            numeric: '0123456789',
-            alpha: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            alphanumeric: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            hex: '0123456789abcdef',
-            special: '!@#$%^&*()_+-=[]{}|;:,.<>?'
-        };
-        
-        const chars = charsets[charset] || charsets.alphanumeric;
+    generateId(length = 10) {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
         let result = '';
         
-        // Use crypto for better randomness
-        const array = new Uint32Array(length);
-        crypto.getRandomValues(array);
-        
-        for (let i = 0; i < length; i++) {
-            result += chars[array[i] % chars.length];
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            const array = new Uint32Array(length);
+            crypto.getRandomValues(array);
+            for (let i = 0; i < length; i++) {
+                result += chars[array[i] % chars.length];
+            }
+        } else {
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
         }
         
         return result;
-    }
-
-    /**
-     * Generate UUID v4
-     */
+    },
+    
     generateUUID() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16 | 0;
-            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
             return v.toString(16);
         });
-    }
-
-    /**
-     * Slugify string
-     */
+    },
+    
     slugify(text) {
+        if (!text) return '';
         return text
             .toString()
             .toLowerCase()
@@ -162,130 +154,113 @@ class Utils {
             .replace(/--+/g, '-')
             .replace(/^-+/, '')
             .replace(/-+$/, '');
-    }
-
-    /**
-     * Truncate text with ellipsis
-     */
+    },
+    
     truncate(text, length = 100, ellipsis = '...') {
         if (!text || text.length <= length) return text;
         return text.substring(0, length - ellipsis.length) + ellipsis;
-    }
-
-    /**
-     * Capitalize first letter
-     */
+    },
+    
     capitalize(text) {
         if (!text) return '';
         return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-    }
-
-    /**
-     * Convert camelCase to Title Case
-     */
+    },
+    
     camelToTitle(text) {
+        if (!text) return '';
         const result = text.replace(/([A-Z])/g, ' $1');
         return result.charAt(0).toUpperCase() + result.slice(1);
-    }
-
-    /**
-     * Strip HTML tags
-     */
+    },
+    
     stripHtml(html) {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        return doc.body.textContent || '';
-    }
-
-    /**
-     * Highlight search text
-     */
-    highlightText(text, query, tag = 'mark') {
-        if (!query) return text;
-        const regex = new RegExp(`(${this.escapeRegex(query)})`, 'gi');
-        return text.replace(regex, `<${tag} class="highlight">$1</${tag}>`);
-    }
-
-    /**
-     * Escape regex special characters
-     */
+        if (!html) return '';
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        return div.textContent || div.innerText || '';
+    },
+    
+    escapeHtml(str) {
+        if (!str) return '';
+        const entities = {
+            '&': '&amp;', '<': '&lt;', '>': '&gt;',
+            '"': '&quot;', "'": '&#x27;', '/': '&#x2F;'
+        };
+        return String(str).replace(/[&<>"'\/]/g, char => entities[char]);
+    },
+    
     escapeRegex(text) {
+        if (!text) return '';
         return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
+    },
+    
+    highlightText(text, query, tag = 'mark') {
+        if (!query || !text) return this.escapeHtml(text);
+        const escaped = this.escapeRegex(query);
+        const regex = new RegExp(`(${escaped})`, 'gi');
+        return this.escapeHtml(text).replace(regex, `<${tag} class="highlight">$1</${tag}>`);
+    },
+    
     // ============================================
-    // NUMBER & CURRENCY UTILITIES
+    // NUMBER & CURRENCY
     // ============================================
     
-    /**
-     * Format currency (IDR)
-     */
     formatCurrency(amount, currency = 'IDR', locale = 'id-ID') {
-        const options = {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        };
+        const num = Number(amount);
+        if (isNaN(num)) return 'Rp 0';
         
-        return new Intl.NumberFormat(locale, options).format(amount);
-    }
-
-    /**
-     * Format number with thousand separator
-     */
+        try {
+            return new Intl.NumberFormat(locale, {
+                style: 'currency',
+                currency,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(num);
+        } catch {
+            return `Rp ${num.toLocaleString('id-ID')}`;
+        }
+    },
+    
     formatNumber(number, decimals = 0, locale = 'id-ID') {
+        const num = Number(number);
+        if (isNaN(num)) return '0';
+        
         return new Intl.NumberFormat(locale, {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
-        }).format(number);
-    }
-
-    /**
-     * Format file size
-     */
+        }).format(num);
+    },
+    
     formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        
+        if (!bytes || bytes === 0) return '0 B';
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    /**
-     * Format percentage
-     */
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    },
+    
     formatPercentage(value, decimals = 1) {
-        return `${(value * 100).toFixed(decimals)}%`;
-    }
-
-    /**
-     * Generate random number between min and max
-     */
+        return `${(Number(value) * 100).toFixed(decimals)}%`;
+    },
+    
     randomNumber(min, max) {
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return min + (array[0] % (max - min + 1));
-    }
-
-    /**
-     * Clamp number between min and max
-     */
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            return min + (array[0] % (max - min + 1));
+        }
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    },
+    
     clamp(number, min, max) {
-        return Math.min(Math.max(number, min), max);
-    }
-
+        return Math.min(Math.max(Number(number), min), max);
+    },
+    
     // ============================================
-    // OBJECT & ARRAY UTILITIES
+    // OBJECT & ARRAY
     // ============================================
     
-    /**
-     * Deep clone object
-     */
     deepClone(obj) {
         if (obj === null || typeof obj !== 'object') return obj;
-        
         if (obj instanceof Date) return new Date(obj);
         if (obj instanceof RegExp) return new RegExp(obj);
         if (obj instanceof Map) return new Map(obj);
@@ -300,154 +275,126 @@ class Utils {
         }
         
         return clone;
-    }
-
-    /**
-     * Deep merge objects
-     */
+    },
+    
     deepMerge(target, ...sources) {
         if (!sources.length) return target;
         
-        const source = sources.shift();
-        
-        if (this.isObject(target) && this.isObject(source)) {
+        for (const source of sources) {
+            if (!source) continue;
+            
             for (const key in source) {
-                if (this.isObject(source[key])) {
-                    if (!target[key]) Object.assign(target, { [key]: {} });
-                    this.deepMerge(target[key], source[key]);
-                } else if (Array.isArray(source[key])) {
-                    target[key] = target[key] || [];
-                    target[key] = [...new Set([...target[key], ...source[key]])];
-                } else {
-                    Object.assign(target, { [key]: source[key] });
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                        target[key] = this.deepMerge(target[key] || {}, source[key]);
+                    } else if (Array.isArray(source[key])) {
+                        target[key] = [...(target[key] || []), ...source[key]];
+                    } else {
+                        target[key] = source[key];
+                    }
                 }
             }
         }
         
-        return this.deepMerge(target, ...sources);
-    }
-
-    /**
-     * Pick specific keys from object
-     */
+        return target;
+    },
+    
     pick(obj, keys) {
         return keys.reduce((result, key) => {
-            if (obj && obj.hasOwnProperty(key)) {
+            if (obj && Object.prototype.hasOwnProperty.call(obj, key)) {
                 result[key] = obj[key];
             }
             return result;
         }, {});
-    }
-
-    /**
-     * Omit specific keys from object
-     */
+    },
+    
     omit(obj, keys) {
         const result = { ...obj };
         keys.forEach(key => delete result[key]);
         return result;
-    }
-
-    /**
-     * Check if value is object
-     */
-    isObject(item) {
-        return item && typeof item === 'object' && !Array.isArray(item);
-    }
-
-    /**
-     * Check if object is empty
-     */
-    isEmpty(obj) {
-        if (!obj) return true;
-        if (Array.isArray(obj)) return obj.length === 0;
-        if (typeof obj === 'object') return Object.keys(obj).length === 0;
-        return !obj;
-    }
-
-    /**
-     * Sort array of objects by key
-     */
+    },
+    
+    isEmpty(value) {
+        if (value === null || value === undefined) return true;
+        if (Array.isArray(value)) return value.length === 0;
+        if (typeof value === 'object') return Object.keys(value).length === 0;
+        if (typeof value === 'string') return value.trim().length === 0;
+        return false;
+    },
+    
     sortBy(array, key, order = 'asc') {
+        if (!Array.isArray(array)) return [];
+        
         return [...array].sort((a, b) => {
-            let valA = a[key];
-            let valB = b[key];
+            let valA = a?.[key];
+            let valB = b?.[key];
             
             if (typeof valA === 'string') valA = valA.toLowerCase();
             if (typeof valB === 'string') valB = valB.toLowerCase();
             
-            if (order === 'asc') {
-                return valA > valB ? 1 : valA < valB ? -1 : 0;
-            } else {
-                return valA < valB ? 1 : valA > valB ? -1 : 0;
-            }
+            if (valA === valB) return 0;
+            
+            const comparison = valA > valB ? 1 : -1;
+            return order === 'desc' ? -comparison : comparison;
         });
-    }
-
-    /**
-     * Group array by key
-     */
+    },
+    
     groupBy(array, key) {
+        if (!Array.isArray(array)) return {};
+        
         return array.reduce((result, item) => {
-            const groupKey = typeof key === 'function' ? key(item) : item[key];
-            if (!result[groupKey]) {
-                result[groupKey] = [];
-            }
+            const groupKey = typeof key === 'function' ? key(item) : item?.[key];
+            if (!result[groupKey]) result[groupKey] = [];
             result[groupKey].push(item);
             return result;
         }, {});
-    }
-
-    /**
-     * Unique array values
-     */
+    },
+    
     unique(array, key = null) {
+        if (!Array.isArray(array)) return [];
+        
         if (key) {
             const seen = new Set();
             return array.filter(item => {
-                const value = item[key];
+                const value = item?.[key];
                 if (seen.has(value)) return false;
                 seen.add(value);
                 return true;
             });
         }
+        
         return [...new Set(array)];
-    }
-
-    /**
-     * Chunk array into smaller arrays
-     */
+    },
+    
     chunk(array, size) {
+        if (!Array.isArray(array)) return [];
+        
         const chunks = [];
         for (let i = 0; i < array.length; i += size) {
             chunks.push(array.slice(i, i + size));
         }
         return chunks;
-    }
-
-    /**
-     * Shuffle array (Fisher-Yates)
-     */
+    },
+    
     shuffle(array) {
+        if (!Array.isArray(array)) return [];
+        
         const arr = [...array];
         for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
         return arr;
-    }
-
+    },
+    
     // ============================================
-    // DOM UTILITIES
+    // FUNCTION UTILITIES
     // ============================================
     
-    /**
-     * Debounce function
-     */
     debounce(func, wait = 300, immediate = false) {
         let timeout;
         
-        return function executedFunction(...args) {
+        const debounced = function(...args) {
             const context = this;
             
             const later = () => {
@@ -461,49 +408,40 @@ class Utils {
             
             if (callNow) func.apply(context, args);
         };
-    }
-
-    /**
-     * Throttle function
-     */
+        
+        debounced.cancel = () => {
+            clearTimeout(timeout);
+            timeout = null;
+        };
+        
+        return debounced;
+    },
+    
     throttle(func, limit = 300) {
         let inThrottle;
+        let lastArgs;
+        let lastThis;
         
-        return function executedFunction(...args) {
-            const context = this;
+        const throttled = function(...args) {
+            lastArgs = args;
+            lastThis = this;
             
             if (!inThrottle) {
-                func.apply(context, args);
+                func.apply(this, args);
                 inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
+                setTimeout(() => {
+                    inThrottle = false;
+                    if (lastArgs) {
+                        throttled.apply(lastThis, lastArgs);
+                        lastArgs = null;
+                    }
+                }, limit);
             }
-        };
-    }
-
-    /**
-     * Memoize function results
-     */
-    memoize(func, resolver = null) {
-        const memoizeFn = (...args) => {
-            const key = resolver ? resolver(...args) : JSON.stringify(args);
-            
-            if (memoizeFn.cache.has(key)) {
-                return memoizeFn.cache.get(key);
-            }
-            
-            const result = func.apply(this, args);
-            memoizeFn.cache.set(key, result);
-            
-            return result;
         };
         
-        memoizeFn.cache = new Map();
-        return memoizeFn;
-    }
-
-    /**
-     * Once function (run only once)
-     */
+        return throttled;
+    },
+    
     once(func) {
         let called = false;
         let result;
@@ -515,82 +453,80 @@ class Utils {
             }
             return result;
         };
-    }
-
-    /**
-     * Retry function with exponential backoff
-     */
+    },
+    
     async retry(func, options = {}) {
-        const {
-            retries = 3,
-            delay = 1000,
-            backoff = 2,
-            onRetry = null
-        } = options;
+        const { retries = 3, delay = 1000, backoff = 2, onRetry = null } = options;
+        
+        let lastError;
         
         for (let i = 0; i <= retries; i++) {
             try {
                 return await func();
             } catch (error) {
-                if (i === retries) throw error;
+                lastError = error;
                 
-                const waitTime = delay * Math.pow(backoff, i);
-                if (onRetry) onRetry(error, i + 1, waitTime);
-                await this.sleep(waitTime);
+                if (i < retries) {
+                    const waitTime = delay * Math.pow(backoff, i);
+                    if (onRetry) onRetry(error, i + 1, waitTime);
+                    await this.sleep(waitTime);
+                }
             }
         }
-    }
-
-    /**
-     * Sleep/delay function
-     */
+        
+        throw lastError;
+    },
+    
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
-     * Copy to clipboard
-     */
+    },
+    
+    // ============================================
+    // DOM UTILITIES
+    // ============================================
+    
     async copyToClipboard(text) {
         try {
-            await navigator.clipboard.writeText(text);
-            return true;
-        } catch {
-            // Fallback
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch {}
+        
+        // Fallback
+        try {
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';
             textarea.style.opacity = '0';
+            textarea.style.left = '-9999px';
             document.body.appendChild(textarea);
             textarea.select();
-            
-            try {
-                document.execCommand('copy');
-                return true;
-            } catch {
-                return false;
-            } finally {
-                document.body.removeChild(textarea);
-            }
+            textarea.setSelectionRange(0, text.length);
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return true;
+        } catch {
+            return false;
         }
-    }
-
-    /**
-     * Download file
-     */
+    },
+    
     downloadFile(url, filename) {
         const link = document.createElement('a');
         link.href = url;
-        link.download = filename;
+        link.download = filename || '';
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-    }
-
-    /**
-     * Scroll to element
-     */
+        
+        setTimeout(() => {
+            document.body.removeChild(link);
+            if (link.href.startsWith('blob:')) {
+                URL.revokeObjectURL(link.href);
+            }
+        }, 100);
+    },
+    
     scrollTo(element, options = {}) {
         const target = typeof element === 'string' 
             ? document.querySelector(element) 
@@ -603,31 +539,37 @@ class Utils {
             block: 'start',
             ...options
         });
-    }
-
+    },
+    
+    getUrlParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    },
+    
+    setUrlParam(name, value) {
+        const params = new URLSearchParams(window.location.search);
+        if (value) {
+            params.set(name, value);
+        } else {
+            params.delete(name);
+        }
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    },
+    
     // ============================================
-    // VALIDATION UTILITIES
+    // VALIDATION
     // ============================================
     
-    /**
-     * Validate email
-     */
     isValidEmail(email) {
-        const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        return re.test(email);
-    }
-
-    /**
-     * Validate phone number (Indonesia)
-     */
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+    },
+    
     isValidPhone(phone) {
-        const re = /^(\+62|62|0)8[1-9][0-9]{6,10}$/;
-        return re.test(phone.replace(/[\s-]/g, ''));
-    }
-
-    /**
-     * Validate URL
-     */
+        const cleaned = String(phone).replace(/[\s\-()]/g, '');
+        return /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(cleaned);
+    },
+    
     isValidUrl(url) {
         try {
             new URL(url);
@@ -635,100 +577,79 @@ class Utils {
         } catch {
             return false;
         }
-    }
-
-    /**
-     * Validate NIP (Indonesian civil servant number)
-     */
+    },
+    
     isValidNIP(nip) {
-        const re = /^\d{18}$/;
-        if (!re.test(nip)) return false;
+        const cleaned = String(nip).replace(/\s/g, '');
+        if (!/^\d{18}$/.test(cleaned)) return false;
         
-        // Additional validation logic for NIP
-        const birthDate = nip.substring(0, 8);
-        const birthYear = parseInt(birthDate.substring(0, 4));
-        const birthMonth = parseInt(birthDate.substring(4, 6));
-        const birthDay = parseInt(birthDate.substring(6, 8));
+        const year = parseInt(cleaned.substring(0, 4));
+        const month = parseInt(cleaned.substring(4, 6));
+        const day = parseInt(cleaned.substring(6, 8));
         
-        if (birthYear < 1900 || birthYear > new Date().getFullYear()) return false;
-        if (birthMonth < 1 || birthMonth > 12) return false;
-        if (birthDay < 1 || birthDay > 31) return false;
+        if (year < 1940 || year > new Date().getFullYear() - 18) return false;
+        if (month < 1 || month > 12) return false;
+        if (day < 1 || day > 31) return false;
         
         return true;
-    }
-
+    },
+    
     // ============================================
     // FILE UTILITIES
     // ============================================
     
-    /**
-     * Get file extension
-     */
     getFileExtension(filename) {
-        return filename.split('.').pop().toLowerCase();
-    }
-
-    /**
-     * Get MIME type from extension
-     */
+        if (!filename) return '';
+        const parts = filename.split('.');
+        return parts.length > 1 ? parts.pop().toLowerCase() : '';
+    },
+    
     getMimeType(extension) {
         const mimeTypes = {
-            pdf: 'application/pdf',
-            doc: 'application/msword',
-            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            xls: 'application/vnd.ms-excel',
-            xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            jpg: 'image/jpeg',
-            jpeg: 'image/jpeg',
-            png: 'image/png',
-            gif: 'image/gif',
-            svg: 'image/svg+xml',
-            txt: 'text/plain',
-            csv: 'text/csv',
-            zip: 'application/zip'
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls': 'application/vnd.ms-excel',
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt': 'application/vnd.ms-powerpoint',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'svg': 'image/svg+xml',
+            'txt': 'text/plain',
+            'csv': 'text/csv',
+            'zip': 'application/zip',
+            'rar': 'application/x-rar-compressed'
         };
         
         return mimeTypes[extension] || 'application/octet-stream';
-    }
-
-    /**
-     * Read file as base64
-     */
+    },
+    
     readFileAsBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Failed to read file'));
             reader.readAsDataURL(file);
         });
-    }
-
+    },
+    
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    },
+    
     // ============================================
     // COLOR UTILITIES
     // ============================================
     
-    /**
-     * Generate random color
-     */
-    randomColor(format = 'hex') {
-        const r = this.randomNumber(0, 255);
-        const g = this.randomNumber(0, 255);
-        const b = this.randomNumber(0, 255);
-        
-        if (format === 'rgb') return `rgb(${r}, ${g}, ${b})`;
-        if (format === 'hsl') {
-            const h = this.randomNumber(0, 360);
-            const s = this.randomNumber(40, 70);
-            const l = this.randomNumber(40, 60);
-            return `hsl(${h}, ${s}%, ${l}%)`;
-        }
-        
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    }
-
-    /**
-     * Hex to RGB
-     */
     hexToRgb(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -736,413 +657,168 @@ class Utils {
             g: parseInt(result[2], 16),
             b: parseInt(result[3], 16)
         } : null;
-    }
-
-    /**
-     * Get contrast color (black or white)
-     */
+    },
+    
+    rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => {
+            const hex = x.toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }).join('');
+    },
+    
     getContrastColor(hex) {
         const rgb = this.hexToRgb(hex);
         if (!rgb) return '#000000';
-        
         const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
         return luminance > 0.5 ? '#000000' : '#ffffff';
-    }
-
+    },
+    
     // ============================================
-    // ENCODING UTILITIES
+    // ENCODING
     // ============================================
     
-    /**
-     * Base64 encode
-     */
     base64Encode(text) {
-        return btoa(unescape(encodeURIComponent(text)));
-    }
-
-    /**
-     * Base64 decode
-     */
+        try {
+            return btoa(unescape(encodeURIComponent(text)));
+        } catch {
+            return btoa(text);
+        }
+    },
+    
     base64Decode(encoded) {
-        return decodeURIComponent(escape(atob(encoded)));
-    }
-
-    /**
-     * URL encode object to query string
-     */
+        try {
+            return decodeURIComponent(escape(atob(encoded)));
+        } catch {
+            return atob(encoded);
+        }
+    },
+    
     objectToQueryString(obj) {
+        if (!obj) return '';
+        
         return Object.entries(obj)
-            .filter(([_, value]) => value !== null && value !== undefined)
-            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+            .map(([key, value]) => {
+                if (Array.isArray(value)) {
+                    return value.map(v => 
+                        `${encodeURIComponent(key)}[]=${encodeURIComponent(v)}`
+                    ).join('&');
+                }
+                return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+            })
             .join('&');
-    }
-
-    /**
-     * Parse query string to object
-     */
+    },
+    
     queryStringToObject(queryString) {
         const params = new URLSearchParams(queryString);
         const obj = {};
         
         for (const [key, value] of params) {
-            obj[key] = value;
+            if (key.endsWith('[]')) {
+                const cleanKey = key.slice(0, -2);
+                if (!obj[cleanKey]) obj[cleanKey] = [];
+                obj[cleanKey].push(value);
+            } else if (obj[key]) {
+                if (!Array.isArray(obj[key])) obj[key] = [obj[key]];
+                obj[key].push(value);
+            } else {
+                obj[key] = value;
+            }
         }
         
         return obj;
-    }
-
+    },
+    
     // ============================================
-    // DEBOUNCE/THROTTLE WITH MEMORY
+    // ENVIRONMENT
     // ============================================
     
-    debounceWithKey(key, func, wait = 300) {
-        if (this.debounceTimers.has(key)) {
-            clearTimeout(this.debounceTimers.get(key));
-        }
-        
-        this.debounceTimers.set(key, setTimeout(() => {
-            this.debounceTimers.delete(key);
-            func();
-        }, wait));
-    }
-
-    throttleWithKey(key, func, limit = 300) {
-        const now = Date.now();
-        const lastRun = this.throttleTimestamps.get(key) || 0;
-        
-        if (now - lastRun >= limit) {
-            this.throttleTimestamps.set(key, now);
-            func();
-        }
-    }
-
-    // ============================================
-    // CACHE UTILITIES
-    // ============================================
-    
-    memoizeWithTTL(func, ttl = 60000, resolver = null) {
-        const cache = new Map();
-        
-        return (...args) => {
-            const key = resolver ? resolver(...args) : JSON.stringify(args);
-            const cached = cache.get(key);
-            
-            if (cached && Date.now() - cached.timestamp < ttl) {
-                return cached.value;
-            }
-            
-            const value = func.apply(this, args);
-            cache.set(key, { value, timestamp: Date.now() });
-            
-            return value;
-        };
-    }
-
-    clearMemoizeCache() {
-        this.memoizeCache.clear();
-    }
-
-    // ============================================
-    // ENVIRONMENT UTILITIES
-    // ============================================
-    
-    /**
-     * Check if running in browser
-     */
     isBrowser() {
         return typeof window !== 'undefined' && typeof document !== 'undefined';
-    }
-
-    /**
-     * Check if running in development
-     */
-    isDevelopment() {
-        return APP_CONFIG.app.environment === 'development';
-    }
-
-    /**
-     * Check if running in production
-     */
-    isProduction() {
-        return APP_CONFIG.app.environment === 'production';
-    }
-
-    /**
-     * Get browser info
-     */
-    getBrowserInfo() {
-        const ua = navigator.userAgent;
-        let browser = 'Unknown';
-        let version = 'Unknown';
-        
-        if (ua.includes('Firefox')) {
-            browser = 'Firefox';
-            version = ua.match(/Firefox\/(\d+)/)?.[1] || 'Unknown';
-        } else if (ua.includes('Edg')) {
-            browser = 'Edge';
-            version = ua.match(/Edg\/(\d+)/)?.[1] || 'Unknown';
-        } else if (ua.includes('Chrome')) {
-            browser = 'Chrome';
-            version = ua.match(/Chrome\/(\d+)/)?.[1] || 'Unknown';
-        } else if (ua.includes('Safari')) {
-            browser = 'Safari';
-            version = ua.match(/Version\/(\d+)/)?.[1] || 'Unknown';
-        }
-        
-        return { browser, version, userAgent: ua };
-    }
-
-    /**
-     * Get device type
-     */
+    },
+    
+    isPWA() {
+        return typeof window !== 'undefined' && (
+            window.matchMedia('(display-mode: standalone)').matches || 
+            window.navigator.standalone
+        );
+    },
+    
     getDeviceType() {
         const ua = navigator.userAgent;
         
-        if (/mobile/i.test(ua)) return 'mobile';
-        if (/tablet/i.test(ua)) return 'tablet';
-        if (/iPad|Android/.test(ua) && !/Mobile/.test(ua)) return 'tablet';
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) {
+            if (/iPad|Android/.test(ua) && !/Mobile/.test(ua)) return 'tablet';
+            if (window.innerWidth >= 768) return 'tablet';
+            return 'mobile';
+        }
         
         return 'desktop';
-    }
-
+    },
+    
+    getBrowserInfo() {
+        const ua = navigator.userAgent;
+        let name = 'Unknown';
+        let version = 'Unknown';
+        
+        if (ua.includes('Firefox')) {
+            name = 'Firefox';
+            version = ua.match(/Firefox\/(\d+)/)?.[1] || 'Unknown';
+        } else if (ua.includes('Edg')) {
+            name = 'Edge';
+            version = ua.match(/Edg\/(\d+)/)?.[1] || 'Unknown';
+        } else if (ua.includes('Chrome')) {
+            name = 'Chrome';
+            version = ua.match(/Chrome\/(\d+)/)?.[1] || 'Unknown';
+        } else if (ua.includes('Safari')) {
+            name = 'Safari';
+            version = ua.match(/Version\/(\d+)/)?.[1] || 'Unknown';
+        }
+        
+        return { name, version };
+    },
+    
     // ============================================
-    // PERFORMANCE UTILITIES
+    // PERFORMANCE
     // ============================================
     
-    /**
-     * Measure function performance
-     */
     measurePerformance(label, func) {
         const start = performance.now();
         const result = func();
         const end = performance.now();
+        const duration = end - start;
         
-        logger.debug(`Performance [${label}]`, { duration: `${(end - start).toFixed(2)}ms` });
+        if (duration > 16) { // More than one frame
+            console.debug(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
+        }
+        
+        return result;
+    },
+    
+    async measureAsyncPerformance(label, func) {
+        const start = performance.now();
+        const result = await func();
+        const end = performance.now();
+        const duration = end - start;
+        
+        if (duration > 100) {
+            console.debug(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
+        }
         
         return result;
     }
+};
 
-    /**
-     * Batch DOM updates
-     */
-    batchDOMUpdates(callback) {
-        return new Promise(resolve => {
-            requestAnimationFrame(() => {
-                callback();
-                resolve();
-            });
-        });
-    }
-}
+// ============================================
+// EXPORTS
+// ============================================
 
-// Create singleton instance
-const utils = new Utils();
-
-export default utils;
+// ES Module export
+export default Utils;
 export { Utils };
-=======
-// js/utils.js - Utility Functions 2026 (REGULAR SCRIPT)
-/**
- * E-Arsip Digital - Utility Functions
- * Version: 2026.1.0
- * ⬇️ DIUBAH: Dari ES Module ke regular script (window.EArsip.Utils)
- */
-(function() {
-    'use strict';
-    
-    var Utils = {
-        /**
-         * Format tanggal ke format Indonesia
-         */
-        formatDate: function(date, format) {
-            if (!date) return '-';
-            
-            var d = new Date(date);
-            if (isNaN(d.getTime())) return 'Invalid Date';
-            
-            var months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            var shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 
-                              'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            
-            var day = d.getDate();
-            var month = d.getMonth();
-            var year = d.getFullYear();
-            var hours = String(d.getHours()).padStart(2, '0');
-            var minutes = String(d.getMinutes()).padStart(2, '0');
-            
-            switch (format) {
-                case 'full':
-                    return d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                case 'long':
-                    return day + ' ' + months[month] + ' ' + year;
-                case 'medium':
-                    return day + ' ' + shortMonths[month] + ' ' + year;
-                case 'short':
-                    return day + '/' + (month + 1) + '/' + year;
-                case 'time':
-                    return hours + ':' + minutes;
-                case 'datetime':
-                    return day + ' ' + shortMonths[month] + ' ' + year + ' ' + hours + ':' + minutes;
-                case 'iso':
-                    return d.toISOString();
-                default:
-                    return day + ' ' + months[month] + ' ' + year;
-            }
-        },
-        
-        /**
-         * Format waktu relatif (time ago)
-         */
-        timeAgo: function(date) {
-            if (!date) return '-';
-            
-            var now = new Date();
-            var past = new Date(date);
-            var diffMs = now - past;
-            var diffSec = Math.floor(diffMs / 1000);
-            var diffMin = Math.floor(diffSec / 60);
-            var diffHour = Math.floor(diffMin / 60);
-            var diffDay = Math.floor(diffHour / 24);
-            
-            if (diffSec < 60) return 'Baru saja';
-            if (diffMin < 60) return diffMin + ' menit yang lalu';
-            if (diffHour < 24) return diffHour + ' jam yang lalu';
-            if (diffDay < 7) return diffDay + ' hari yang lalu';
-            if (diffDay < 30) return Math.floor(diffDay / 7) + ' minggu yang lalu';
-            if (diffDay < 365) return Math.floor(diffDay / 30) + ' bulan yang lalu';
-            return Math.floor(diffDay / 365) + ' tahun yang lalu';
-        },
-        
-        /**
-         * Format mata uang
-         */
-        formatCurrency: function(amount) {
-            return 'Rp ' + Number(amount).toLocaleString('id-ID');
-        },
-        
-        /**
-         * Format nomor
-         */
-        formatNumber: function(number) {
-            return Number(number).toLocaleString('id-ID');
-        },
-        
-        /**
-         * Format ukuran file
-         */
-        formatFileSize: function(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            var k = 1024;
-            var sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            var i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        },
-        
-        /**
-         * Generate UUID
-         */
-        generateUUID: function() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0;
-                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-            });
-        },
-        
-        /**
-         * Truncate text
-         */
-        truncate: function(text, length) {
-            length = length || 100;
-            if (!text || text.length <= length) return text;
-            return text.substring(0, length) + '...';
-        },
-        
-        /**
-         * Strip HTML tags
-         */
-        stripHtml: function(html) {
-            var div = document.createElement('div');
-            div.innerHTML = html;
-            return div.textContent || div.innerText || '';
-        },
-        
-        /**
-         * Debounce function
-         */
-        debounce: function(func, wait) {
-            var timeout;
-            return function() {
-                var context = this, args = arguments;
-                clearTimeout(timeout);
-                timeout = setTimeout(function() {
-                    func.apply(context, args);
-                }, wait || 300);
-            };
-        },
-        
-        /**
-         * Validasi email
-         */
-        isValidEmail: function(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        },
-        
-        /**
-         * Download file
-         */
-        downloadFile: function(url, filename) {
-            var link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        },
-        
-        /**
-         * Copy to clipboard
-         */
-        copyToClipboard: function(text) {
-            return navigator.clipboard.writeText(text).catch(function() {
-                var textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            });
-        },
-        
-        /**
-         * Get URL parameter
-         */
-        getUrlParam: function(name) {
-            var params = new URLSearchParams(window.location.search);
-            return params.get(name);
-        },
-        
-        /**
-         * Set URL parameter tanpa reload
-         */
-        setUrlParam: function(name, value) {
-            var params = new URLSearchParams(window.location.search);
-            if (value) {
-                params.set(name, value);
-            } else {
-                params.delete(name);
-            }
-            var newUrl = window.location.pathname + '?' + params.toString();
-            window.history.replaceState({}, '', newUrl);
-        }
-    };
-    
-    // Expose ke global
+
+// Global fallback
+if (typeof window !== 'undefined') {
+    window.EArsip = window.EArsip || {};
     window.EArsip.Utils = Utils;
-    
-    console.log('Utils ready');
-})();
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+}

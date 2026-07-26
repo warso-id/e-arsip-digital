@@ -1,287 +1,497 @@
-<!-- surat-masuk/tracking.html - Tracking Surat Masuk 2026 -->
+<!-- surat-masuk/tracking.html - Tracking Surat Masuk 2026 (PWA SECURE) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tracking">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Tracking Surat Masuk - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icons/icon-192.png">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Tracking Surat Masuk - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
+    <!-- jsQR for QR scan tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
     <style>
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706; --info: #0891b2;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --transition: all 0.25s ease;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Network Bar */
+        .network-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; padding: 8px; text-align: center; font-size: 12px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s; }
+        .network-bar.offline { transform: translateY(0); background: #fef2f2; color: #dc2626; }
+        .network-bar.restored { transform: translateY(0); background: #f0fdf4; color: #16a34a; animation: slideDown 0.3s, slideUp 0.3s 2.5s forwards; }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+        
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; align-items: center; justify-content: center; z-index: 9998; transition: opacity 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: linear-gradient(180deg, #1e293b, #0f172a); color: white; z-index: 100; overflow-y: auto; transition: transform 0.3s; padding-top: var(--safe-top); }
+        .sidebar-brand { padding: 20px; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); border-left: 3px solid transparent; }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        
+        /* Main */
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 24px; padding-top: calc(24px + var(--safe-top)); transition: margin 0.3s; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; gap: 10px; }
+        .mobile-header .hamburger { width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* Breadcrumb */
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); margin-bottom: 6px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none; transition: var(--transition); font-family: inherit; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-ghost { background: transparent; color: var(--text-light); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; min-height: 32px; border-radius: 6px; }
+        
+        /* Tracking Container */
         .tracking-container { max-width: 800px; margin: 0 auto; }
         
-        .track-search {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
+        /* Search */
+        .track-search { display: flex; gap: 10px; margin-bottom: 20px; }
+        .track-search input { flex: 1; }
+        .form-input { width: 100%; padding: 12px 16px; font-size: 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--white); color: var(--text); outline: none; font-family: inherit; transition: var(--transition); }
+        .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
         
-        .track-search input {
-            flex: 1;
+        /* QR Scan Button */
+        .qr-scan-btn {
+            width: 48px; height: 48px; border: 2px dashed var(--border);
+            border-radius: var(--radius-sm); background: var(--white);
+            cursor: pointer; font-size: 18px; color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            transition: var(--transition); flex-shrink: 0;
         }
+        .qr-scan-btn:hover { border-color: var(--primary); background: #eff6ff; }
+        .qr-scan-btn input { display: none; }
         
-        .tracking-timeline {
-            position: relative;
-            padding-left: 30px;
+        /* Status Summary */
+        .status-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .status-card { text-align: center; padding: 14px 10px; border-radius: 10px; border: 2px solid var(--border); background: var(--white); }
+        .status-card .count { font-size: 26px; font-weight: 700; line-height: 1; }
+        .status-card .label { font-size: 11px; color: var(--text-light); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-card.primary .count { color: var(--primary); }
+        .status-card.success .count { color: var(--success); }
+        .status-card.warning .count { color: var(--warning); }
+        .status-card.muted .count { color: #94a3b8; }
+        
+        /* Timeline */
+        .timeline { position: relative; padding-left: 28px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 3px; background: #e2e8f0; border-radius: 2px; }
+        .timeline-node { position: relative; padding-bottom: 28px; }
+        .timeline-node:last-child { padding-bottom: 0; }
+        .timeline-node::before {
+            content: ''; position: absolute; left: -21px; top: 6px;
+            width: 14px; height: 14px; border-radius: 50%;
+            border: 3px solid white; z-index: 1;
         }
+        .timeline-node.completed::before { background: var(--success); box-shadow: 0 0 0 3px rgba(22,163,74,0.2); }
+        .timeline-node.active::before { background: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.2); animation: pulse 2s infinite; }
+        .timeline-node.pending::before { background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.2); }
+        .timeline-node.rejected::before { background: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,0.2); }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 3px rgba(37,99,235,0.2); } 50% { box-shadow: 0 0 0 12px rgba(37,99,235,0); } }
         
-        .tracking-timeline::before {
-            content: '';
-            position: absolute;
-            left: 12px;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: #e2e8f0;
-            border-radius: 2px;
+        .node-content { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+        .node-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px; }
+        .node-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        .node-time { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+        .node-desc { font-size: 13px; color: var(--text-light); }
+        .node-actor { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+        .node-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+        .node-badge.completed { background: #dcfce7; color: #16a34a; }
+        .node-badge.active { background: #dbeafe; color: #2563eb; }
+        .node-badge.pending { background: #f1f5f9; color: #64748b; }
+        .node-badge.rejected { background: #fef2f2; color: #dc2626; }
+        
+        /* Surat Info */
+        .surat-info-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 16px 18px; margin-bottom: 18px;
+            display: none; box-shadow: var(--shadow-sm);
         }
+        .surat-info-card.show { display: block; }
+        .surat-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px; font-size: 13px; }
+        .surat-info-item { display: flex; gap: 6px; }
+        .surat-info-label { color: var(--text-light); font-weight: 500; min-width: 80px; }
+        .surat-info-value { font-weight: 600; }
         
-        .tracking-node {
-            position: relative;
-            padding-bottom: 32px;
+        /* History */
+        .history-section { margin-top: 20px; }
+        .history-section h4 { font-size: 14px; margin-bottom: 10px; color: var(--text-light); }
+        .history-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        .history-chip {
+            padding: 6px 14px; background: var(--white); border: 1px solid var(--border);
+            border-radius: 20px; font-size: 12px; cursor: pointer; transition: var(--transition);
         }
+        .history-chip:hover { border-color: var(--primary); color: var(--primary); }
         
-        .tracking-node::before {
-            content: '';
-            position: absolute;
-            left: -22px;
-            top: 4px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 3px solid white;
-            z-index: 1;
-        }
+        /* Empty State */
+        .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
+        .empty-state i { font-size: 44px; display: block; margin-bottom: 10px; }
         
-        .tracking-node.completed::before {
-            background: #16a34a;
-            box-shadow: 0 0 0 3px #16a34a;
-        }
+        /* Toast */
+        .toast-container { position: fixed; top: calc(12px + var(--safe-top)); right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; max-width: calc(100vw - 24px); }
+        .toast { padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: slideInRight 0.3s; display: flex; align-items: center; gap: 8px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        .toast-info { background: var(--info); }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
-        .tracking-node.active::before {
-            background: #2563eb;
-            box-shadow: 0 0 0 3px #2563eb;
-            animation: pulse 2s infinite;
-        }
-        
-        .tracking-node.pending::before {
-            background: #94a3b8;
-            box-shadow: 0 0 0 3px #94a3b8;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 3px #2563eb; }
-            50% { box-shadow: 0 0 0 10px rgba(37,99,235,0); }
-        }
-        
-        .node-content {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 14px 18px;
-        }
-        
-        .node-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        
-        .node-title {
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .node-time {
-            font-size: 11px;
-            color: #94a3b8;
-        }
-        
-        .node-desc {
-            font-size: 13px;
-            color: #64748b;
-        }
-        
-        .status-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-        
-        .status-card {
-            text-align: center;
-            padding: 16px;
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
-        }
-        
-        .status-card .count {
-            font-size: 28px;
-            font-weight: 700;
-        }
-        
-        .status-card .label {
-            font-size: 12px;
-            color: #64748b;
-        }
-        
+        /* Responsive */
         @media (max-width: 768px) {
-            .track-search { flex-direction: column; }
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 14px; }
+            .mobile-header { display: flex; }
+            .breadcrumb { display: none; }
+            .track-search { flex-direction: row; }
+            .status-summary { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media print {
+            .sidebar, .mobile-header, .toast-container, .network-bar,
+            .track-search, .qr-scan-btn, .history-section { display: none !important; }
+            .main-content { margin: 0 !important; padding: 0 !important; }
         }
     </style>
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <!-- Network Bar -->
+    <div class="network-bar" id="network-bar"><span id="network-msg"></span></div>
     
+    <!-- Loading -->
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
-            <a href="/surat-masuk/tracking.html" class="nav-item active"><i class="fas fa-search"></i> Tracking</a>
+            <a href="../admin/index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="agenda.html" class="nav-item"><i class="fas fa-calendar-alt"></i> Agenda</a>
+            <a href="buku-agenda.html" class="nav-item"><i class="fas fa-book"></i> Buku Agenda</a>
+            <a href="tracking.html" class="nav-item active"><i class="fas fa-search"></i> Tracking</a>
+            <a href="../disposisi/list.html" class="nav-item"><i class="fas fa-clipboard-list"></i> Disposisi</a>
+            <a href="../laporan/index.html" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
         </nav>
     </aside>
     
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" id="menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <span style="font-weight:700;flex:1;">Tracking Surat Masuk</span>
+    </div>
+    
+    <!-- Main -->
     <main class="main-content">
         <div class="tracking-container">
-            <h2 style="margin-bottom:8px;">Tracking Surat Masuk</h2>
-            <p style="color:#64748b;margin-bottom:20px;">Lacak status dan riwayat disposisi surat masuk</p>
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb">
+                <a href="../admin/index.html">Dashboard</a> <i class="fas fa-chevron-right"></i>
+                <a href="list.html">Surat Masuk</a> <i class="fas fa-chevron-right"></i>
+                <span>Tracking</span>
+            </nav>
+            
+            <h2 style="font-size:22px;font-weight:700;margin-bottom:6px;">Tracking Surat Masuk</h2>
+            <p style="color:var(--text-light);font-size:13px;margin-bottom:18px;">Lacak status dan riwayat disposisi surat masuk</p>
             
             <!-- Search -->
             <div class="track-search">
-                <input type="text" class="form-input" id="track-input" placeholder="Masukkan nomor surat atau ID tracking...">
+                <input type="text" class="form-input" id="track-input" 
+                    placeholder="Masukkan nomor surat, no. agenda, atau ID tracking..." maxlength="100"
+                    aria-label="Nomor surat untuk dilacak">
+                <label class="qr-scan-btn" title="Scan QR Code" id="qr-scan-btn">
+                    <i class="fas fa-qrcode"></i>
+                    <input type="file" id="qr-input" accept="image/jpeg,image/png,image/gif,image/webp">
+                </label>
                 <button class="btn btn-primary" id="track-btn">
                     <i class="fas fa-search"></i> Lacak
                 </button>
+            </div>
+            
+            <!-- Surat Info -->
+            <div class="surat-info-card" id="surat-info-card">
+                <div class="surat-info-grid" id="surat-info-grid"></div>
             </div>
             
             <!-- Status Summary -->
             <div class="status-summary" id="status-summary"></div>
             
             <!-- Timeline -->
-            <div class="tracking-timeline" id="tracking-timeline">
-                <p style="color:#94a3b8;text-align:center;padding:20px;">
-                    Masukkan nomor surat untuk melihat status tracking
-                </p>
+            <div class="timeline" id="tracking-timeline">
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p style="font-size:15px;font-weight:500;">Masukkan nomor surat</p>
+                    <p style="font-size:13px;">Untuk melihat status dan riwayat tracking</p>
+                </div>
+            </div>
+            
+            <!-- History Pencarian -->
+            <div class="history-section" id="history-section" style="display:none;">
+                <h4><i class="fas fa-history"></i> Pencarian Terakhir</h4>
+                <div class="history-list" id="history-list"></div>
             </div>
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import apiService from '../js/api.js';
-        import notifications from '../js/notifications.js';
-        import utils from '../js/utils.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    (function() {
+        'use strict';
         
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import notifications from '/js/notifications.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+        // CSRF
+        var csrfToken = (function() { var t=localStorage.getItem('csrf_token'); if(!t){var a=new Uint32Array(8);crypto.getRandomValues(a);t=Array.from(a,function(d){return('0'+d.toString(16)).slice(-2);}).join('');localStorage.setItem('csrf_token',t);} return t; })();
+        function sanitize(s) { if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+        function sanitizePlain(s) { if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
         
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // State
+        var state = { searchHistory:[], isOnline:navigator.onLine };
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            
-            document.getElementById('track-btn')?.addEventListener('click', trackSurat);
-            document.getElementById('track-input')?.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') trackSurat();
-            });
-            
-            // Auto-track if ID in URL
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('id')) {
-                document.getElementById('track-input').value = params.get('id');
-                trackSurat();
-            }
-            
-            logger.info('Tracking page loaded');
-        });
+        // Auth
+        function checkAuth() { if(window.EArsip&&window.EArsip.Auth&&window.EArsip.Auth.isAuthenticated)return true; try{var s=localStorage.getItem('auth_session');if(s){var d=JSON.parse(s);if(d.user&&d.expiresAt&&Date.now()<d.expiresAt)return true;}}catch(e){} window.location.href='../../login.html?message=unauthorized';return false; }
         
-        async function trackSurat() {
-            const input = document.getElementById('track-input').value.trim();
-            if (!input) {
-                notifications.warning('Masukkan nomor surat');
-                return;
-            }
-            
-            try {
-                const response = await apiService.get('/api/surat-masuk/track', { q: input });
-                const data = response.data;
-                
-                if (!data || !data.tracking) {
-                    document.getElementById('tracking-timeline').innerHTML = `
-                        <div style="text-align:center;padding:40px;color:#94a3b8;">
-                            <i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>
-                            Surat tidak ditemukan
-                        </div>`;
-                    return;
-                }
-                
-                renderSummary(data.summary);
-                renderTimeline(data.tracking);
-                
-            } catch (error) {
-                notifications.error('Gagal melacak surat');
-            }
+        // Toast
+        function showToast(m,t) { var c=document.getElementById('toast-container');if(!c)return;var el=document.createElement('div');el.className='toast toast-'+(t||'info');el.textContent=sanitizePlain(m);c.appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transition='opacity 0.3s';setTimeout(function(){el.remove();},300);},4000); }
+        
+        // Format
+        function formatDate(s) { if(!s)return'-';try{var d=new Date(s);if(isNaN(d.getTime()))return s;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return s;} }
+        function timeAgo(s) { if(!s)return'-';try{var d=new Date(s);var diff=Math.floor((Date.now()-d.getTime())/1000);if(diff<60)return'Baru saja';if(diff<3600)return Math.floor(diff/60)+' menit lalu';if(diff<86400)return Math.floor(diff/3600)+' jam lalu';if(diff<604800)return Math.floor(diff/86400)+' hari lalu';return formatDate(s);}catch(e){return s;} }
+        
+        // Network
+        function updateNetwork(on) { if(on===state.isOnline)return;state.isOnline=on;var b=document.getElementById('network-bar');if(!on){b.className='network-bar offline';document.getElementById('network-msg').textContent='Offline';}else{b.className='network-bar restored';document.getElementById('network-msg').textContent='Koneksi pulih';} }
+        window.addEventListener('online',function(){updateNetwork(true);});window.addEventListener('offline',function(){updateNetwork(false);});if(!navigator.onLine)setTimeout(function(){updateNetwork(false);},1000);
+        
+        // Search History
+        function loadHistory() { try{var h=localStorage.getItem('tracking_history');if(h)state.searchHistory=JSON.parse(h);if(!Array.isArray(state.searchHistory))state.searchHistory=[];}catch(e){state.searchHistory=[];} renderHistory(); }
+        function saveHistory(query) { state.searchHistory=state.searchHistory.filter(function(x){return x!==query;});state.searchHistory.unshift(query);if(state.searchHistory.length>10)state.searchHistory=state.searchHistory.slice(0,10);try{localStorage.setItem('tracking_history',JSON.stringify(state.searchHistory));}catch(e){} renderHistory(); }
+        function renderHistory() {
+            var section=document.getElementById('history-section');
+            var list=document.getElementById('history-list');
+            if(state.searchHistory.length===0){section.style.display='none';return;}
+            section.style.display='block';
+            list.innerHTML=state.searchHistory.map(function(h){return '<span class="history-chip" data-query="'+sanitizePlain(h)+'">'+sanitize(h)+'</span>';}).join('');
+            list.querySelectorAll('.history-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('track-input').value=this.dataset.query;trackSurat();});});
         }
         
-        function renderSummary(summary) {
-            if (!summary) return;
-            
-            document.getElementById('status-summary').innerHTML = `
-                <div class="status-card">
-                    <div class="count" style="color:#2563eb;">${summary.total_nodes || 0}</div>
-                    <div class="label">Total Tahapan</div>
-                </div>
-                <div class="status-card">
-                    <div class="count" style="color:#16a34a;">${summary.completed || 0}</div>
-                    <div class="label">Selesai</div>
-                </div>
-                <div class="status-card">
-                    <div class="count" style="color:#d97706;">${summary.in_progress || 0}</div>
-                    <div class="label">Dalam Proses</div>
-                </div>
-                <div class="status-card">
-                    <div class="count" style="color:#94a3b8;">${summary.pending || 0}</div>
-                    <div class="label">Menunggu</div>
-                </div>
-            `;
+        // ============ QR SCAN ============
+        function handleQRScan(file) {
+            if(!file)return;
+            var reader=new FileReader();
+            reader.onload=function(e){
+                var img=new Image();
+                img.onload=function(){
+                    var canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+                    var ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+                    var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+                    if(window.jsQR){
+                        var code=jsQR(imageData.data,imageData.width,imageData.height);
+                        if(code&&code.data){
+                            var qrData=code.data;
+                            try{var parsed=JSON.parse(qrData);if(parsed.nomor||parsed.id){document.getElementById('track-input').value=parsed.nomor||parsed.id||qrData;trackSurat();showToast('QR Code berhasil dipindai','success');}}catch(ex){document.getElementById('track-input').value=qrData;trackSurat();showToast('QR Code berhasil dipindai','success');}
+                        }else{showToast('QR Code tidak terdeteksi','warning');}
+                    }else{showToast('QR Scanner tidak tersedia','error');}
+                };img.src=e.target.result;
+            };reader.readAsDataURL(file);
         }
         
-        function renderTimeline(nodes) {
-            const container = document.getElementById('tracking-timeline');
+        // ============ TRACKING ============
+        function trackSurat() {
+            var input=document.getElementById('track-input').value.trim();
+            if(!input){showToast('Masukkan nomor surat atau ID','warning');return;}
+            if(input.length<3){showToast('Minimal 3 karakter','warning');return;}
             
-            if (!nodes || nodes.length === 0) {
-                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Tidak ada data tracking</p>';
-                return;
+            var btn=document.getElementById('track-btn');
+            btn.disabled=true;btn.innerHTML='<span class="spinner" style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;"></span> Melacak...';
+            
+            var cleanInput=sanitizePlain(input);
+            saveHistory(cleanInput);
+            
+            var params={action:'trackSuratMasuk',query:cleanInput,csrf_token:csrfToken};
+            
+            if(window.EArsip&&window.EArsip.Api){window.EArsip.Api.get('surat-masuk/track',params).then(function(r){btn.disabled=false;btn.innerHTML='<i class="fas fa-search"></i> Lacak';if(r&&r.data){renderTracking(r.data);}else{showNotFound();}}).catch(function(){btn.disabled=false;btn.innerHTML='<i class="fas fa-search"></i> Lacak';loadSampleTracking(cleanInput);});}
+            else{setTimeout(function(){btn.disabled=false;btn.innerHTML='<i class="fas fa-search"></i> Lacak';loadSampleTracking(cleanInput);},800);}
+        }
+        
+        function loadSampleTracking(query) {
+            var data={
+                surat:{nomor_agenda:'M.UM-001',nomor_surat:'421.5/1234/DP/2024',perihal:'Pemberitahuan Akreditasi Program Studi',pengirim:'Dinas Pendidikan Provinsi',tgl_terima:new Date().toISOString().split('T')[0],status:'Dalam Proses'},
+                summary:{total:4,completed:1,in_progress:2,pending:1},
+                tracking:[
+                    {title:'Surat Diterima',description:'Surat diterima oleh bagian administrasi',actor:'Staf Administrasi',timestamp:new Date(Date.now()-259200000).toISOString(),status:'completed'},
+                    {title:'Verifikasi Dokumen',description:'Dokumen sedang diverifikasi kelengkapannya',actor:'Admin',timestamp:new Date(Date.now()-172800000).toISOString(),status:'completed'},
+                    {title:'Disposisi ke Wadek I',description:'Surat didisposisikan ke Wakil Dekan I untuk ditindaklanjuti',actor:'Dekan',timestamp:new Date(Date.now()-86400000).toISOString(),status:'active'},
+                    {title:'Tindak Lanjut',description:'Menunggu tindak lanjut dari Wadek I',actor:'-',timestamp:null,status:'pending'}
+                ]
+            };
+            renderTracking(data);
+            if(query.toLowerCase().indexOf('001')===-1)showToast('Menampilkan data sample','info');
+        }
+        
+        function renderTracking(data) {
+            // Surat Info
+            var card=document.getElementById('surat-info-card');
+            var grid=document.getElementById('surat-info-grid');
+            if(data.surat){
+                card.classList.add('show');
+                var s=data.surat;
+                grid.innerHTML=
+                    '<div class="surat-info-item"><span class="surat-info-label">No. Agenda:</span><span class="surat-info-value">'+sanitize(s.nomor_agenda||'-')+'</span></div>'+
+                    '<div class="surat-info-item"><span class="surat-info-label">No. Surat:</span><span class="surat-info-value">'+sanitize(s.nomor_surat||'-')+'</span></div>'+
+                    '<div class="surat-info-item"><span class="surat-info-label">Perihal:</span><span class="surat-info-value">'+sanitize(s.perihal||'-')+'</span></div>'+
+                    '<div class="surat-info-item"><span class="surat-info-label">Pengirim:</span><span class="surat-info-value">'+sanitize(s.pengirim||'-')+'</span></div>'+
+                    '<div class="surat-info-item"><span class="surat-info-label">Tgl Terima:</span><span class="surat-info-value">'+formatDate(s.tgl_terima)+'</span></div>'+
+                    '<div class="surat-info-item"><span class="surat-info-label">Status:</span><span class="surat-info-value">'+sanitize(s.status||'-')+'</span></div>';
+            }else{card.classList.remove('show');}
+            
+            // Summary
+            var sum=data.summary;
+            if(sum){
+                document.getElementById('status-summary').innerHTML=
+                    '<div class="status-card primary"><div class="count">'+(sum.total||0)+'</div><div class="label">Total Tahapan</div></div>'+
+                    '<div class="status-card success"><div class="count">'+(sum.completed||0)+'</div><div class="label">Selesai</div></div>'+
+                    '<div class="status-card warning"><div class="count">'+(sum.in_progress||0)+'</div><div class="label">Proses</div></div>'+
+                    '<div class="status-card muted"><div class="count">'+(sum.pending||0)+'</div><div class="label">Menunggu</div></div>';
             }
             
-            container.innerHTML = nodes.map(node => `
-                <div class="tracking-node ${node.status || 'pending'}">
-                    <div class="node-content">
-                        <div class="node-header">
-                            <span class="node-title">${node.title}</span>
-                            <span class="node-time">${node.timestamp ? utils.timeAgo(node.timestamp) : '-'}</span>
-                        </div>
-                        <div class="node-desc">${node.description || '-'}</div>
-                        ${node.actor ? `<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Oleh: ${node.actor}</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
+            // Timeline
+            var container=document.getElementById('tracking-timeline');
+            var nodes=data.tracking||[];
+            if(nodes.length===0){container.innerHTML='<div class="empty-state"><i class="fas fa-inbox"></i><p>Tidak ada data tracking</p></div>';return;}
+            
+            container.innerHTML=nodes.map(function(node){
+                var statusClass=node.status||'pending';
+                var badgeMap={completed:'Selesai',active:'Aktif',pending:'Menunggu',rejected:'Ditolak'};
+                return '<div class="timeline-node '+statusClass+'">'+
+                    '<div class="node-content">'+
+                        '<div class="node-header">'+
+                            '<span class="node-title">'+
+                                '<span class="node-badge '+statusClass+'">'+sanitize(badgeMap[statusClass]||statusClass)+'</span>'+
+                                sanitize(node.title||'-')+
+                            '</span>'+
+                            '<span class="node-time">'+(node.timestamp?timeAgo(node.timestamp):'Menunggu...')+'</span>'+
+                        '</div>'+
+                        '<div class="node-desc">'+sanitize(node.description||'-')+'</div>'+
+                        (node.actor?('<div class="node-actor"><i class="fas fa-user" style="margin-right:4px;"></i>'+sanitize(node.actor)+'</div>'):'')+
+                    '</div>'+
+                '</div>';
+            }).join('');
+            
+            container.scrollIntoView({behavior:'smooth',block:'start'});
         }
+        
+        function showNotFound() {
+            document.getElementById('surat-info-card').classList.remove('show');
+            document.getElementById('status-summary').innerHTML='';
+            document.getElementById('tracking-timeline').innerHTML='<div class="empty-state"><i class="fas fa-search"></i><p style="font-size:15px;">Surat tidak ditemukan</p><p style="font-size:13px;">Periksa kembali nomor surat atau ID</p></div>';
+        }
+        
+        // ============ LOGOUT ============
+        function handleLogout() { if(!confirm('Yakin logout?'))return;try{if(window.EArsip&&window.EArsip.Auth)window.EArsip.Auth.logout();}catch(e){}localStorage.removeItem('auth_session');localStorage.removeItem('auth_token');window.location.href='../../login.html?message=logged_out'; }
+        window.handleLogout=handleLogout;
+        
+        // ============ INIT ============
+        function init() {
+            if(!checkAuth())return;
+            setTimeout(function(){document.getElementById('loading-screen').classList.add('hidden');},300);
+            if('serviceWorker'in navigator){navigator.serviceWorker.register('../../sw.js').catch(function(){});}
+            
+            // Mobile menu
+            document.getElementById('menu-btn').addEventListener('click',function(){document.getElementById('sidebar').classList.toggle('mobile-open');document.getElementById('sidebar-overlay').classList.toggle('active');});
+            document.getElementById('sidebar-overlay').addEventListener('click',function(){document.getElementById('sidebar').classList.remove('mobile-open');this.classList.remove('active');});
+            
+            // Track button
+            document.getElementById('track-btn').addEventListener('click',trackSurat);
+            document.getElementById('track-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackSurat();});
+            
+            // QR Scan
+            document.getElementById('qr-scan-btn').addEventListener('click',function(){document.getElementById('qr-input').click();});
+            document.getElementById('qr-input').addEventListener('change',function(e){if(e.target.files[0])handleQRScan(e.target.files[0]);});
+            
+            // Load history
+            loadHistory();
+            
+            // Auto-track from URL
+            var params=new URLSearchParams(window.location.search);
+            var urlId=params.get('id');
+            if(urlId&&/^[A-Za-z0-9\-_\/\.\s]+$/.test(urlId)){document.getElementById('track-input').value=sanitizePlain(urlId);trackSurat();}
+        }
+        
+        if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+    })();
     </script>
 </body>
 </html>

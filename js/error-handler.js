@@ -1,311 +1,192 @@
-<<<<<<< HEAD
-// js/error-handler.js - Global Error Handler 2026
+// js/error-handler.js - Global Error Handler 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Global Error Handler
  * Version: 2026.1.0
- * Features: Centralized error handling, error classification, 
- *           recovery strategies, error reporting
+ * 
+ * Features:
+ * - Global error catching (window.onerror, unhandledrejection)
+ * - Error classification
+ * - Recovery strategies
+ * - Error history
+ * - No external dependencies
  */
 
-import { Logger } from './logger.js';
-import { navigateToAppPath } from './path-utils.js';
-import notifications from './notifications.js';
-=======
-// js/error-handler.js - Global Error Handler 2026 (FIXED)
-/**
- * E-Arsip Digital - Global Error Handler
- * Version: 2026.1.0
- * ⬇️ FIXED: Import notifications secara dinamis, bukan statis
- */
-
-import { Logger } from './logger.js';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-import APP_CONFIG from '../config/config.js';
-
-class ErrorHandler {
-    constructor() {
-        this.logger = new Logger('ErrorHandler');
-        
-<<<<<<< HEAD
-        // Error severity levels
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        this.SEVERITY = {
-            LOW: 'low',
-            MEDIUM: 'medium',
-            HIGH: 'high',
-            CRITICAL: 'critical'
-        };
-        
-<<<<<<< HEAD
-        // Error categories
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        this.CATEGORIES = {
-            NETWORK: 'network',
-            AUTH: 'auth',
-            VALIDATION: 'validation',
-            API: 'api',
-            RUNTIME: 'runtime',
-            SECURITY: 'security',
-            UNKNOWN: 'unknown'
-        };
-        
-<<<<<<< HEAD
-        // Error history
-        this.errorHistory = [];
-        this.maxHistory = 50;
-        
-        // Recovery strategies
-        this.recoveryStrategies = new Map();
-        
-        // Error rate tracking
-        this.errorRate = {
-            window: 60000, // 1 minute
-            errors: [],
-            threshold: 5 // Max errors per window
-        };
-=======
-        this.errorHistory = [];
-        this.maxHistory = 50;
-        this.recoveryStrategies = new Map();
-        this.errorRate = { window: 60000, errors: [], threshold: 5 };
-        
-        // ⬇️ FIX: Lazy load notifications
-        this._notifications = null;
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        
-        this.init();
+var ErrorHandler = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONSTANTS
+    // ============================================
+    var SEVERITY = {
+        LOW: 'low',
+        MEDIUM: 'medium',
+        HIGH: 'high',
+        CRITICAL: 'critical'
+    };
+    
+    var CATEGORY = {
+        NETWORK: 'network',
+        AUTH: 'auth',
+        VALIDATION: 'validation',
+        API: 'api',
+        RUNTIME: 'runtime',
+        SECURITY: 'security',
+        UNKNOWN: 'unknown'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _errorHistory = [];
+    var _maxHistory = 50;
+    var _recoveryStrategies = {};
+    var _errorRate = {
+        window: 60000,
+        errors: [],
+        threshold: 5
+    };
+    var _initialized = false;
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    
+    function generateErrorId() {
+        return 'err_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6);
     }
     
-<<<<<<< HEAD
-=======
-    // ⬇️ FIX: Lazy getter untuk notifications
-    async getNotifications() {
-        if (!this._notifications) {
-            try {
-                const module = await import('./notifications.js');
-                this._notifications = module.default || module;
-            } catch (error) {
-                console.warn('Notifications module not available');
-                this._notifications = {
-                    error: function(msg) { console.error(msg); },
-                    warning: function(msg) { console.warn(msg); },
-                    info: function(msg) { console.info(msg); },
-                    success: function(msg) { console.log(msg); }
-                };
+    function sanitizeURL(url) {
+        if (!url) return '';
+        try {
+            var parsed = new URL(url);
+            return parsed.origin + parsed.pathname;
+        } catch(e) {
+            return '';
+        }
+    }
+    
+    // ============================================
+    // ERROR CLASSIFICATION
+    // ============================================
+    
+    function classifyError(error, context) {
+        var info = {
+            id: generateErrorId(),
+            timestamp: new Date().toISOString(),
+            message: error ? (error.message || String(error)) : 'Unknown error',
+            name: error ? (error.name || 'Error') : 'Error',
+            category: (context && context.category) || CATEGORY.UNKNOWN,
+            severity: (context && context.severity) || SEVERITY.MEDIUM,
+            source: (context && context.source) || 'unknown',
+            code: (error && (error.code || error.status)) || null,
+            recoverable: (context && context.recoverable !== false),
+            recovered: false,
+            handled: false
+        };
+        
+        // Auto-classify
+        if (error) {
+            if (error.name === 'TypeError' || error.name === 'ReferenceError') {
+                info.category = CATEGORY.RUNTIME;
+            } else if (error.message && (error.message.indexOf('network') !== -1 || error.message.indexOf('fetch') !== -1)) {
+                info.category = CATEGORY.NETWORK;
+            } else if (error.status === 401 || error.status === 403) {
+                info.category = CATEGORY.AUTH;
+                info.severity = SEVERITY.HIGH;
+            } else if (error.name === 'SecurityError') {
+                info.category = CATEGORY.SECURITY;
+                info.severity = SEVERITY.CRITICAL;
             }
         }
-        return this._notifications;
-    }
-    
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-    init() {
-        this.registerDefaultRecoveryStrategies();
-        this.setupGlobalHandlers();
         
-        this.logger.info('Error handler initialized');
-    }
-    
-<<<<<<< HEAD
-    // ============================================
-    // GLOBAL HANDLERS
-    // ============================================
-    
-    setupGlobalHandlers() {
-        // Uncaught errors
-=======
-    setupGlobalHandlers() {
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        window.addEventListener('error', (event) => {
-            this.handleError(event.error || new Error(event.message), {
-                category: this.CATEGORIES.RUNTIME,
-                severity: this.SEVERITY.HIGH,
-                source: 'window.onerror'
-            });
-        });
-        
-<<<<<<< HEAD
-        // Unhandled promise rejections
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        window.addEventListener('unhandledrejection', (event) => {
-            const error = event.reason instanceof Error ? 
-                event.reason : new Error(String(event.reason));
-            
-            this.handleError(error, {
-                category: this.CATEGORIES.RUNTIME,
-                severity: this.SEVERITY.HIGH,
-                source: 'unhandledrejection'
-            });
-        });
-<<<<<<< HEAD
-        
-        // Resource loading errors
-        window.addEventListener('error', (event) => {
-            if (event.target !== window) {
-                this.handleError(new Error(`Failed to load: ${event.target.src || event.target.href}`), {
-                    category: this.CATEGORIES.NETWORK,
-                    severity: this.SEVERITY.LOW,
-                    source: 'resource'
-                });
-            }
-        }, true);
+        return info;
     }
     
     // ============================================
     // ERROR HANDLING
     // ============================================
     
-    handleError(error, context = {}) {
-        const errorInfo = this.classifyError(error, context);
+    function handleError(error, context) {
+        var info = classifyError(error, context);
         
-        // Log error
-        this.logError(errorInfo);
+        // Log ke console
+        logError(info);
         
         // Track error rate
-        this.trackErrorRate(errorInfo);
+        trackErrorRate(info);
         
-        // Store in history
-        this.addToHistory(errorInfo);
+        // Add to history
+        addToHistory(info);
         
-        // Show user notification based on severity
-        this.notifyUser(errorInfo);
+        // Notify user
+        notifyUser(info);
         
         // Attempt recovery
-        this.attemptRecovery(errorInfo);
+        attemptRecovery(info);
         
-        // Report to server
-=======
+        // Mark as handled
+        info.handled = true;
+        
+        return info;
     }
     
-    handleError(error, context = {}) {
-        const errorInfo = this.classifyError(error, context);
+    function logError(info) {
+        var method = 'error';
+        if (info.severity === SEVERITY.LOW) method = 'warn';
         
-        this.logError(errorInfo);
-        this.trackErrorRate(errorInfo);
-        this.addToHistory(errorInfo);
-        this.notifyUser(errorInfo);
-        this.attemptRecovery(errorInfo);
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        this.reportError(errorInfo);
-        
-        return errorInfo;
+        console[method]('[ErrorHandler] ' + info.message + ' (' + info.id + ')');
     }
     
-    classifyError(error, context) {
-        const errorInfo = {
-            id: this.generateErrorId(),
-            timestamp: new Date().toISOString(),
-            message: error.message || 'Unknown error',
-            stack: error.stack || '',
-            name: error.name || 'Error',
-            category: context.category || this.CATEGORIES.UNKNOWN,
-            severity: context.severity || this.SEVERITY.MEDIUM,
-            source: context.source || 'unknown',
-            code: error.code || error.status || null,
-            recoverable: context.recoverable !== false,
-<<<<<<< HEAD
-            context: context,
-            handled: false
-        };
+    function notifyUser(info) {
+        // Jangan tampilkan notifikasi untuk severity low
+        if (info.severity === SEVERITY.LOW) return;
         
-        // Auto-classify based on error properties
-        if (error.name === 'TypeError' || error.name === 'ReferenceError') {
-            errorInfo.category = this.CATEGORIES.RUNTIME;
-        } else if (error.name === 'NetworkError' || error.message?.includes('network')) {
-            errorInfo.category = this.CATEGORIES.NETWORK;
-        } else if (error.status === 401 || error.status === 403) {
-            errorInfo.category = this.CATEGORIES.AUTH;
-        } else if (error.status === 422 || error.name === 'ValidationError') {
-            errorInfo.category = this.CATEGORIES.VALIDATION;
-        } else if (error.name === 'SecurityError') {
-            errorInfo.category = this.CATEGORIES.SECURITY;
-            errorInfo.severity = this.SEVERITY.CRITICAL;
-=======
-            handled: false
-        };
+        var messages = {};
+        messages[CATEGORY.NETWORK] = 'Gagal terhubung ke server. Periksa koneksi internet.';
+        messages[CATEGORY.AUTH] = 'Sesi telah berakhir. Silakan login kembali.';
+        messages[CATEGORY.API] = 'Terjadi kesalahan server. Silakan coba lagi.';
+        messages[CATEGORY.RUNTIME] = 'Terjadi kesalahan aplikasi.';
+        messages[CATEGORY.UNKNOWN] = 'Terjadi kesalahan.';
         
-        if (error.name === 'TypeError' || error.name === 'ReferenceError') {
-            errorInfo.category = this.CATEGORIES.RUNTIME;
-        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-            errorInfo.category = this.CATEGORIES.NETWORK;
-        } else if (error.status === 401 || error.status === 403) {
-            errorInfo.category = this.CATEGORIES.AUTH;
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        }
+        var message = messages[info.category] || info.message;
         
-        return errorInfo;
-    }
-    
-    logError(errorInfo) {
-<<<<<<< HEAD
-        const logMethod = {
-            [this.SEVERITY.LOW]: 'warn',
-            [this.SEVERITY.MEDIUM]: 'error',
-            [this.SEVERITY.HIGH]: 'error',
-            [this.SEVERITY.CRITICAL]: 'fatal'
-        };
-        
-        const method = logMethod[errorInfo.severity] || 'error';
-        
-        this.logger[method](errorInfo.message, {
-            errorId: errorInfo.id,
-            category: errorInfo.category,
-            severity: errorInfo.severity,
-            stack: errorInfo.stack?.split('\n').slice(0, 3).join('\n')
-        });
-    }
-    
-    notifyUser(errorInfo) {
-        // Don't show notification for low severity in production
-        if (errorInfo.severity === this.SEVERITY.LOW && 
-            APP_CONFIG.app.environment === 'production') {
-            return;
-        }
-        
-        const messages = {
-            [this.CATEGORIES.NETWORK]: 'Gagal terhubung ke server. Periksa koneksi internet Anda.',
-            [this.CATEGORIES.AUTH]: 'Sesi Anda telah berakhir. Silakan login kembali.',
-            [this.CATEGORIES.VALIDATION]: 'Data yang dimasukkan tidak valid.',
-            [this.CATEGORIES.API]: 'Terjadi kesalahan pada server. Silakan coba lagi.',
-            [this.CATEGORIES.RUNTIME]: 'Terjadi kesalahan aplikasi.',
-            [this.CATEGORIES.SECURITY]: 'Terjadi pelanggaran keamanan.',
-            [this.CATEGORIES.UNKNOWN]: 'Terjadi kesalahan yang tidak diketahui.'
-=======
-        const method = errorInfo.severity === this.SEVERITY.CRITICAL ? 'fatal' :
-                       errorInfo.severity === this.SEVERITY.LOW ? 'warn' : 'error';
-        
-        this.logger[method](errorInfo.message, {
-            errorId: errorInfo.id,
-            category: errorInfo.category
-        });
-    }
-    
-    async notifyUser(errorInfo) {
-        if (errorInfo.severity === this.SEVERITY.LOW) return;
-        
-        const messages = {
-            network: 'Gagal terhubung ke server. Periksa koneksi internet.',
-            auth: 'Sesi berakhir. Silakan login kembali.',
-            api: 'Terjadi kesalahan server. Silakan coba lagi.',
-            runtime: 'Terjadi kesalahan aplikasi.',
-            unknown: 'Terjadi kesalahan.'
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        };
-        
-        const message = messages[errorInfo.category] || errorInfo.message;
-        
-<<<<<<< HEAD
-        if (errorInfo.severity === this.SEVERITY.CRITICAL) {
-            notifications.error(message, {
-                duration: 0,
-                title: 'Kesalahan Kritis'
-            });
-        } else if (errorInfo.severity === this.SEVERITY.HIGH) {
-            notifications.error(message, { duration: 10000 });
+        // Gunakan toast notification jika tersedia
+        if (typeof NotificationSystem !== 'undefined' && NotificationSystem.error) {
+            if (info.severity === SEVERITY.CRITICAL) {
+                NotificationSystem.error(message, { duration: 0 });
+            } else {
+                NotificationSystem.error(message, { duration: 8000 });
+            }
         } else {
-            notifications.warning(message, { duration: 5000 });
+            console.error(message);
+        }
+    }
+    
+    // ============================================
+    // ERROR TRACKING
+    // ============================================
+    
+    function trackErrorRate(info) {
+        var now = Date.now();
+        
+        _errorRate.errors.push({ timestamp: now });
+        
+        // Remove old entries
+        _errorRate.errors = _errorRate.errors.filter(function(e) {
+            return now - e.timestamp < _errorRate.window;
+        });
+        
+        // Check threshold
+        if (_errorRate.errors.length >= _errorRate.threshold) {
+            console.warn('[ErrorHandler] High error rate: ' + _errorRate.errors.length + ' in ' + (_errorRate.window / 1000) + 's');
+        }
+    }
+    
+    function addToHistory(info) {
+        _errorHistory.unshift(info);
+        
+        if (_errorHistory.length > _maxHistory) {
+            _errorHistory = _errorHistory.slice(0, _maxHistory);
         }
     }
     
@@ -313,355 +194,165 @@ class ErrorHandler {
     // RECOVERY STRATEGIES
     // ============================================
     
-    registerRecoveryStrategy(category, strategy) {
-        this.recoveryStrategies.set(category, strategy);
+    function registerRecoveryStrategy(category, strategy) {
+        _recoveryStrategies[category] = strategy;
     }
     
-    registerDefaultRecoveryStrategies() {
-        // Network errors - retry with exponential backoff
-        this.registerRecoveryStrategy(this.CATEGORIES.NETWORK, {
-            canRecover: () => navigator.onLine,
-            recover: async () => {
-                // Wait for connectivity
-=======
-        try {
-            const notif = await this.getNotifications();
-            
-            if (errorInfo.severity === this.SEVERITY.CRITICAL || errorInfo.severity === this.SEVERITY.HIGH) {
-                notif.error(message, { duration: 10000 });
-            } else {
-                notif.warning(message, { duration: 5000 });
-            }
-        } catch {
-            console.error(message);
-        }
-    }
-    
-    registerDefaultRecoveryStrategies() {
-        this.registerRecoveryStrategy(this.CATEGORIES.NETWORK, {
-            canRecover: () => navigator.onLine,
-            recover: async () => {
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-                await new Promise(resolve => {
-                    if (navigator.onLine) return resolve();
-                    window.addEventListener('online', resolve, { once: true });
-                });
-<<<<<<< HEAD
-                
-                // Reload current page data
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-                window.dispatchEvent(new CustomEvent('app:reconnect'));
-                return true;
-            }
-        });
+    function attemptRecovery(info) {
+        if (!info.recoverable) return false;
         
-<<<<<<< HEAD
-        // Auth errors - redirect to login
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        this.registerRecoveryStrategy(this.CATEGORIES.AUTH, {
-            canRecover: () => true,
-            recover: async () => {
-                localStorage.removeItem('auth_session');
-                localStorage.removeItem('auth_token');
-<<<<<<< HEAD
-                
-                setTimeout(() => {
-                    navigateToAppPath('/login.html?message=session_expired');
-                }, 2000);
-                
-                return true;
-            }
-        });
-        
-        // API errors - retry
-        this.registerRecoveryStrategy(this.CATEGORIES.API, {
-            canRecover: () => true,
-            recover: async (errorInfo) => {
-                // Dispatch retry event
-                window.dispatchEvent(new CustomEvent('app:retry', {
-                    detail: { errorId: errorInfo.id }
-                }));
-=======
-                setTimeout(() => {
-                    window.location.href = 'login.html?message=session_expired';
-                }, 2000);
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-                return true;
-            }
-        });
-    }
-    
-<<<<<<< HEAD
-=======
-    registerRecoveryStrategy(category, strategy) {
-        this.recoveryStrategies.set(category, strategy);
-    }
-    
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-    async attemptRecovery(errorInfo) {
-        if (!errorInfo.recoverable) return false;
-        
-        const strategy = this.recoveryStrategies.get(errorInfo.category);
+        var strategy = _recoveryStrategies[info.category];
         if (!strategy) return false;
         
         try {
-            const canRecover = strategy.canRecover();
+            var canRecover = strategy.canRecover ? strategy.canRecover() : true;
             if (!canRecover) return false;
             
-            const recovered = await strategy.recover(errorInfo);
-<<<<<<< HEAD
+            strategy.recover(info);
+            info.recovered = true;
             
-            if (recovered) {
-                errorInfo.recovered = true;
-                this.logger.info('Error recovered', { errorId: errorInfo.id });
-                
-                window.dispatchEvent(new CustomEvent('error:recovered', {
-                    detail: errorInfo
-                }));
-            }
-            
-            return recovered;
-        } catch (recoveryError) {
-            this.logger.error('Recovery failed', recoveryError);
-=======
-            if (recovered) errorInfo.recovered = true;
-            
-            return recovered;
-        } catch {
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+            return true;
+        } catch(e) {
             return false;
         }
     }
     
-<<<<<<< HEAD
-    // ============================================
-    // ERROR TRACKING
-    // ============================================
-    
-    trackErrorRate(errorInfo) {
-        const now = Date.now();
-        
-        this.errorRate.errors.push({ timestamp: now, ...errorInfo });
-        
-        // Remove old entries
-        this.errorRate.errors = this.errorRate.errors.filter(
-            e => now - e.timestamp < this.errorRate.window
-        );
-        
-        // Check threshold
-        if (this.errorRate.errors.length >= this.errorRate.threshold) {
-            this.logger.warn('High error rate detected', {
-                count: this.errorRate.errors.length,
-                window: this.errorRate.window
-            });
-            
-            window.dispatchEvent(new CustomEvent('error:high_rate', {
-                detail: {
-                    count: this.errorRate.errors.length,
-                    threshold: this.errorRate.threshold
-                }
-            }));
-        }
-=======
-    trackErrorRate(errorInfo) {
-        const now = Date.now();
-        this.errorRate.errors.push({ timestamp: now, ...errorInfo });
-        this.errorRate.errors = this.errorRate.errors.filter(
-            e => now - e.timestamp < this.errorRate.window
-        );
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-    }
-    
-    addToHistory(errorInfo) {
-        this.errorHistory.unshift(errorInfo);
-<<<<<<< HEAD
-        
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        if (this.errorHistory.length > this.maxHistory) {
-            this.errorHistory = this.errorHistory.slice(0, this.maxHistory);
-        }
-    }
-    
-    async reportError(errorInfo) {
-<<<<<<< HEAD
-        // Don't report low severity in development
-        if (errorInfo.severity === this.SEVERITY.LOW && 
-            APP_CONFIG.app.environment === 'development') {
-            return;
-        }
-        
-        try {
-            const { apiService } = await import('./api.js');
-            
-            await apiService.post('/api/errors', {
-                errorId: errorInfo.id,
-                message: errorInfo.message,
-                stack: errorInfo.stack?.substring(0, 1000),
-                category: errorInfo.category,
-                severity: errorInfo.severity,
-                url: window.location.href,
-                userAgent: navigator.userAgent,
-                timestamp: errorInfo.timestamp
-            }, {
-                priority: 'low',
-                retries: 1
-            }).catch(() => {
-                // Silently fail - don't create error loops
-            });
-        } catch {
-            // Ignore
-        }
-    }
-    
-    // ============================================
-    // ERROR HISTORY & ANALYTICS
-    // ============================================
-    
-    getErrorHistory(options = {}) {
-        let history = [...this.errorHistory];
-        
-        if (options.category) {
-            history = history.filter(e => e.category === options.category);
-        }
-        
-        if (options.severity) {
-            history = history.filter(e => e.severity === options.severity);
-        }
-        
-        if (options.limit) {
-            history = history.slice(0, options.limit);
-        }
-        
-        return history;
-    }
-    
-    getErrorStats() {
-        const stats = {
-            total: this.errorHistory.length,
-            byCategory: {},
-            bySeverity: {},
-            recovered: 0,
-            unrecovered: 0,
-            currentRate: this.errorRate.errors.length
-        };
-        
-        this.errorHistory.forEach(error => {
-            stats.byCategory[error.category] = (stats.byCategory[error.category] || 0) + 1;
-            stats.bySeverity[error.severity] = (stats.bySeverity[error.severity] || 0) + 1;
-            
-            if (error.recovered) stats.recovered++;
-            else stats.unrecovered++;
+    function setupDefaultStrategies() {
+        // Network recovery
+        registerRecoveryStrategy(CATEGORY.NETWORK, {
+            canRecover: function() { return navigator.onLine; },
+            recover: function() {
+                window.addEventListener('online', function handler() {
+                    window.removeEventListener('online', handler);
+                    window.dispatchEvent(new CustomEvent('app:reconnect'));
+                }, { once: true });
+            }
         });
         
-        return stats;
-    }
-    
-    getRecentErrors(limit = 10) {
-        return this.errorHistory.slice(0, limit);
+        // Auth recovery
+        registerRecoveryStrategy(CATEGORY.AUTH, {
+            recover: function() {
+                localStorage.removeItem('auth_session');
+                localStorage.removeItem('auth_token');
+                setTimeout(function() {
+                    window.location.href = '../login.html?message=session_expired';
+                }, 2000);
+            }
+        });
     }
     
     // ============================================
-    // UTILITY METHODS
+    // GLOBAL HANDLERS
     // ============================================
     
-    generateErrorId() {
-        return `ERR-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 6)}`.toUpperCase();
-    }
-    
-    isNetworkError(error) {
-        return error.name === 'NetworkError' ||
-               error.message?.includes('network') ||
-               error.message?.includes('fetch') ||
-               error.message?.includes('Failed to fetch');
-    }
-    
-    isAuthError(error) {
-        return error.status === 401 || 
-               error.status === 403 ||
-               error.message?.includes('unauthorized') ||
-               error.message?.includes('token');
-    }
-    
-    createError(message, options = {}) {
-        const error = new Error(message);
-        error.name = options.name || 'AppError';
-        error.status = options.status;
-        error.code = options.code;
+    function setupGlobalHandlers() {
+        // Uncaught errors
+        window.addEventListener('error', function(event) {
+            var error = event.error || new Error(event.message);
+            handleError(error, {
+                category: CATEGORY.RUNTIME,
+                severity: SEVERITY.HIGH,
+                source: 'window.onerror'
+            });
+        });
         
-        return error;
+        // Unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            var error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+            handleError(error, {
+                category: CATEGORY.RUNTIME,
+                severity: SEVERITY.HIGH,
+                source: 'unhandledrejection'
+            });
+        });
     }
     
     // ============================================
-    // CLEANUP
+    // PUBLIC API
     // ============================================
     
-=======
-        // Best-effort reporting
-        try {
-            await fetch('https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec?action=createLog', {
-                method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: '',
-                    username: 'system',
-                    action: 'error',
-                    description: errorInfo.message,
-                    details: JSON.stringify({
-                        errorId: errorInfo.id,
-                        category: errorInfo.category,
-                        url: window.location.href
-                    })
-                })
-            }).catch(() => {});
-        } catch {}
+    function init() {
+        if (_initialized) return;
+        
+        setupDefaultStrategies();
+        setupGlobalHandlers();
+        
+        _initialized = true;
+        console.info('[ErrorHandler] Initialized');
     }
     
-    generateErrorId() {
-        return 'ERR-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 6);
-    }
+    // Auto-init
+    setTimeout(init, 50);
     
-    getStats() {
-        return {
-            total: this.errorHistory.length,
-            byCategory: {},
-            bySeverity: {},
-            currentRate: this.errorRate.errors.length
-        };
-    }
-    
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-    clearHistory() {
-        this.errorHistory = [];
-        this.errorRate.errors = [];
-    }
-    
-    destroy() {
-        this.errorHistory = [];
-        this.recoveryStrategies.clear();
-<<<<<<< HEAD
-        this.logger.info('Error handler destroyed');
-    }
-}
+    return {
+        init: init,
+        handle: handleError,
+        
+        /**
+         * Get error history
+         */
+        getHistory: function(limit) {
+            if (limit) return _errorHistory.slice(0, limit);
+            return _errorHistory.slice();
+        },
+        
+        /**
+         * Get error stats
+         */
+        getStats: function() {
+            var stats = {
+                total: _errorHistory.length,
+                byCategory: {},
+                bySeverity: {},
+                recovered: 0,
+                currentRate: _errorRate.errors.length
+            };
+            
+            for (var i = 0; i < _errorHistory.length; i++) {
+                var e = _errorHistory[i];
+                stats.byCategory[e.category] = (stats.byCategory[e.category] || 0) + 1;
+                stats.bySeverity[e.severity] = (stats.bySeverity[e.severity] || 0) + 1;
+                if (e.recovered) stats.recovered++;
+            }
+            
+            return stats;
+        },
+        
+        /**
+         * Register custom recovery strategy
+         */
+        registerRecovery: registerRecoveryStrategy,
+        
+        /**
+         * Clear error history
+         */
+        clearHistory: function() {
+            _errorHistory = [];
+            _errorRate.errors = [];
+        },
+        
+        /**
+         * Check if handler is initialized
+         */
+        isInitialized: function() {
+            return _initialized;
+        },
+        
+        // Constants
+        SEVERITY: SEVERITY,
+        CATEGORY: CATEGORY
+    };
+})();
 
-// Create singleton
-const errorHandler = new ErrorHandler();
-
-// Make available globally for try-catch blocks
-window.handleError = (error, context) => errorHandler.handleError(error, context);
-
-export default errorHandler;
-export { ErrorHandler };
-=======
-    }
-}
-
-const errorHandler = new ErrorHandler();
-window.handleError = (error, context) => errorHandler.handleError(error, context);
-
-export default errorHandler;
-export { ErrorHandler };
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+// ============================================
+// USAGE:
+// ============================================
+// try {
+//     riskyOperation();
+// } catch(e) {
+//     ErrorHandler.handle(e, { category: ErrorHandler.CATEGORY.API });
+// }
+// 
+// var stats = ErrorHandler.getStats();
+// var recent = ErrorHandler.getHistory(5);
+// ============================================

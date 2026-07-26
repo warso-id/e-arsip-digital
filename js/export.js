@@ -1,567 +1,350 @@
-// js/export.js - Advanced Data Export Handler 2026
+// js/export.js - Data Export Handler 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Data Export Handler
  * Version: 2026.1.0
- * Features: PDF, Excel, CSV, JSON export with templates, watermark, digital signature
+ * 
+ * Features:
+ * - CSV export (reliable, no dependencies)
+ * - JSON export
+ * - Print-friendly HTML export
+ * - Excel export (jika XLSX library tersedia)
+ * - No external dependencies
  */
 
-import { Logger } from './logger.js';
-import utils from './utils.js';
-import apiService from './api.js';
-
-class ExportHandler {
-    constructor(options = {}) {
-        this.logger = new Logger('Export');
-        
-        // Configuration
-        this.config = {
-            defaultFormat: 'pdf',
-            pageSize: 'A4',
-            orientation: 'portrait',
-            margin: { top: 20, right: 20, bottom: 20, left: 20 },
-            watermark: null,
-            signature: null,
-            header: true,
-            footer: true,
-            ...options
-        };
-        
-        // Export tracking
-        this.exportHistory = this.loadExportHistory();
-        
-        this.initialized = true;
-        this.logger.info('Export handler initialized');
-    }
+var ExportHandler = (function() {
+    'use strict';
     
     // ============================================
-    // PDF EXPORT
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        defaultFormat: 'csv',
+        dateFormat: 'id-ID'
+    };
+    
+    // ============================================
+    // UTILITY FUNCTIONS
     // ============================================
     
-    async exportPDF(data, options = {}) {
-        const config = { ...this.config, ...options };
-        
+    function formatDate(value) {
+        if (!value) return '-';
         try {
-            this.showProgress('Menyiapkan PDF...');
-            
-            // Create PDF content
-            const content = this.buildPDFContent(data, config);
-            
-            // Create blob
-            const blob = await this.generatePDFBlob(content, config);
-            
-            // Add watermark if configured
-            if (config.watermark) {
-                await this.addWatermark(blob, config.watermark);
-            }
-            
-            // Add digital signature if configured
-            if (config.signature) {
-                await this.addDigitalSignature(blob, config.signature);
-            }
-            
-            // Download
-            const filename = config.filename || `export-${Date.now()}.pdf`;
-            this.downloadBlob(blob, filename);
-            
-            this.logExport('pdf', filename, data);
-            this.hideProgress();
-            
-            return { success: true, filename };
-            
-        } catch (error) {
-            this.logger.error('PDF export failed', error);
-            this.hideProgress();
-            throw new Error('Gagal mengekspor PDF');
+            var d = new Date(value);
+            if (isNaN(d.getTime())) return String(value);
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch(e) {
+            return String(value);
         }
     }
     
-    buildPDFContent(data, config) {
-        const { pageSize, orientation, margin, header, footer } = config;
-        
-        // Build HTML content for PDF
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    @page {
-                        size: ${pageSize} ${orientation};
-                        margin: ${margin.top}mm ${margin.right}mm ${margin.bottom}mm ${margin.left}mm;
-                    }
-                    
-                    body {
-                        font-family: 'Helvetica', 'Arial', sans-serif;
-                        font-size: 11pt;
-                        line-height: 1.5;
-                        color: #333;
-                    }
-                    
-                    .header {
-                        text-align: center;
-                        border-bottom: 2px solid #2563eb;
-                        padding-bottom: 10px;
-                        margin-bottom: 20px;
-                    }
-                    
-                    .header h1 {
-                        font-size: 16pt;
-                        margin: 0 0 5px 0;
-                        color: #1e3a8a;
-                    }
-                    
-                    .header .subtitle {
-                        font-size: 10pt;
-                        color: #64748b;
-                    }
-                    
-                    .meta {
-                        margin-bottom: 20px;
-                        font-size: 9pt;
-                        color: #64748b;
-                    }
-                    
-                    .meta table {
-                        width: 100%;
-                    }
-                    
-                    .meta td {
-                        padding: 2px 0;
-                    }
-                    
-                    .meta .label {
-                        font-weight: bold;
-                        width: 120px;
-                    }
-                    
-                    table.data {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-top: 15px;
-                    }
-                    
-                    table.data th {
-                        background-color: #2563eb;
-                        color: white;
-                        padding: 8px 10px;
-                        text-align: left;
-                        font-size: 10pt;
-                    }
-                    
-                    table.data td {
-                        padding: 6px 10px;
-                        border-bottom: 1px solid #e2e8f0;
-                        font-size: 10pt;
-                    }
-                    
-                    table.data tr:nth-child(even) {
-                        background-color: #f8fafc;
-                    }
-                    
-                    .footer {
-                        position: fixed;
-                        bottom: 0;
-                        width: 100%;
-                        text-align: center;
-                        font-size: 8pt;
-                        color: #94a3b8;
-                        border-top: 1px solid #e2e8f0;
-                        padding-top: 5px;
-                    }
-                    
-                    .watermark {
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%) rotate(-45deg);
-                        font-size: 60pt;
-                        color: rgba(0,0,0,0.05);
-                        pointer-events: none;
-                        z-index: -1;
-                    }
-                    
-                    @media print {
-                        .footer {
-                            position: fixed;
-                            bottom: 0;
-                        }
-                    }
-                </style>
-            </head>
-            <body>
-                ${config.watermark ? `<div class="watermark">${config.watermark}</div>` : ''}
-                
-                ${header ? `
-                    <div class="header">
-                        <h1>${config.title || 'Laporan E-Arsip Digital'}</h1>
-                        <div class="subtitle">Dicetak pada: ${utils.formatDate(new Date(), 'full')}</div>
-                    </div>
-                ` : ''}
-                
-                <div class="meta">
-                    <table>
-                        ${config.meta ? Object.entries(config.meta).map(([key, value]) => `
-                            <tr>
-                                <td class="label">${key}</td>
-                                <td>: ${value}</td>
-                            </tr>
-                        `).join('') : ''}
-                    </table>
-                </div>
-                
-                ${this.buildDataTable(data, config.columns)}
-                
-                ${footer ? `
-                    <div class="footer">
-                        E-Arsip Digital v2026.1.0 | Halaman <span class="pageNumber"></span> dari <span class="totalPages"></span>
-                    </div>
-                ` : ''}
-            </body>
-            </html>
-        `;
-        
-        return html;
-    }
-    
-    buildDataTable(data, columns) {
-        if (!data || data.length === 0) {
-            return '<p style="text-align:center;color:#94a3b8;">Tidak ada data</p>';
+    function formatDateTime(value) {
+        if (!value) return '-';
+        try {
+            var d = new Date(value);
+            if (isNaN(d.getTime())) return String(value);
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + 
+                ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        } catch(e) {
+            return String(value);
         }
-        
-        const cols = columns || Object.keys(data[0]).map(key => ({
-            key,
-            label: utils.camelToTitle(key)
-        }));
-        
-        return `
-            <table class="data">
-                <thead>
-                    <tr>
-                        <th style="width:30px;">No</th>
-                        ${cols.map(col => `<th>${col.label}</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.map((row, index) => `
-                        <tr>
-                            <td style="text-align:center;">${index + 1}</td>
-                            ${cols.map(col => `<td>${this.formatCellValue(row[col.key], col)}</td>`).join('')}
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
     }
     
-    formatCellValue(value, column) {
+    function formatCurrency(value) {
+        if (value === null || value === undefined) return '-';
+        var num = parseFloat(value);
+        if (isNaN(num)) return String(value);
+        return 'Rp ' + num.toLocaleString('id-ID');
+    }
+    
+    function formatNumber(value) {
+        if (value === null || value === undefined) return '-';
+        var num = parseFloat(value);
+        if (isNaN(num)) return String(value);
+        return num.toLocaleString('id-ID');
+    }
+    
+    function formatCellValue(value, column) {
         if (value === null || value === undefined) return '-';
         
-        if (column.type === 'date') return utils.formatDate(value, 'medium');
-        if (column.type === 'datetime') return utils.formatDate(value, 'datetime');
-        if (column.type === 'currency') return utils.formatCurrency(value);
-        if (column.type === 'number') return utils.formatNumber(value);
-        if (column.type === 'boolean') return value ? 'Ya' : 'Tidak';
+        if (column && column.type === 'date') return formatDate(value);
+        if (column && column.type === 'datetime') return formatDateTime(value);
+        if (column && column.type === 'currency') return formatCurrency(value);
+        if (column && column.type === 'number') return formatNumber(value);
+        if (column && column.type === 'boolean') return value ? 'Ya' : 'Tidak';
         
         return String(value);
     }
     
-    async generatePDFBlob(html) {
-        // Create a print window for PDF generation
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(html);
-        printWindow.document.close();
-        
-        return new Promise((resolve) => {
-            printWindow.onload = () => {
-                printWindow.print();
-                printWindow.close();
-                
-                // Create a placeholder blob
-                // In production, use a proper PDF library like jsPDF or pdfmake
-                const blob = new Blob([html], { type: 'application/pdf' });
-                resolve(blob);
-            };
-        });
+    function sanitizeHTML(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
     
-    async addWatermark(blob, watermark) {
-        // Watermark implementation with PDF-lib
-        this.logger.debug('Adding watermark:', watermark);
-    }
-    
-    async addDigitalSignature(blob, signature) {
-        // Digital signature implementation
-        this.logger.debug('Adding digital signature');
-    }
-    
-    // ============================================
-    // EXCEL EXPORT
-    // ============================================
-    
-    async exportExcel(data, options = {}) {
-        const config = { ...this.config, ...options };
-        
-        try {
-            this.showProgress('Menyiapkan Excel...');
-            
-            const XLSX = await import('xlsx');
-            
-            // Prepare worksheet data
-            const worksheet = this.buildExcelSheet(data, config);
-            
-            // Create workbook
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, config.sheetName || 'Data');
-            
-            // Add metadata
-            workbook.Props = {
-                Title: config.title || 'Export Data',
-                Author: config.author || 'E-Arsip Digital',
-                CreatedDate: new Date()
-            };
-            
-            // Style the worksheet
-            this.styleExcelSheet(worksheet, config);
-            
-            // Generate and download
-            const filename = config.filename || `export-${Date.now()}.xlsx`;
-            XLSX.writeFile(workbook, filename);
-            
-            this.logExport('excel', filename, data);
-            this.hideProgress();
-            
-            return { success: true, filename };
-            
-        } catch (error) {
-            this.logger.error('Excel export failed', error);
-            this.hideProgress();
-            throw new Error('Gagal mengekspor Excel');
+    function escapeCSV(str) {
+        if (str === null || str === undefined) return '';
+        var s = String(str);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"';
         }
+        return s;
     }
     
-    buildExcelSheet(data, config) {
-        const columns = config.columns || Object.keys(data[0] || {}).map(key => ({
-            key,
-            label: utils.camelToTitle(key)
-        }));
-        
-        // Build headers
-        const headers = columns.map(col => col.label);
-        
-        // Build rows
-        const rows = data.map(row => 
-            columns.map(col => this.formatCellValue(row[col.key], col))
-        );
-        
-        return XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    }
-    
-    styleExcelSheet(worksheet, config) {
-        // Set column widths
-        const columns = config.columns || [];
-        const colWidths = columns.map(col => ({ wch: col.width || 20 }));
-        worksheet['!cols'] = colWidths;
-    }
-    
-    // ============================================
-    // CSV EXPORT
-    // ============================================
-    
-    async exportCSV(data, options = {}) {
-        const config = { ...this.config, ...options };
-        
-        try {
-            this.showProgress('Menyiapkan CSV...');
-            
-            const columns = config.columns || Object.keys(data[0] || {}).map(key => ({
-                key,
-                label: utils.camelToTitle(key)
-            }));
-            
-            // Build CSV content
-            const headers = columns.map(col => col.label);
-            const rows = data.map(row => 
-                columns.map(col => {
-                    const value = this.formatCellValue(row[col.key], col);
-                    // Escape CSV special characters
-                    return `"${String(value).replace(/"/g, '""')}"`;
-                })
-            );
-            
-            const csv = [
-                headers.join(','),
-                ...rows.map(row => row.join(','))
-            ].join('\n');
-            
-            // Add BOM for Excel compatibility
-            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-            
-            const filename = config.filename || `export-${Date.now()}.csv`;
-            this.downloadBlob(blob, filename);
-            
-            this.logExport('csv', filename, data);
-            this.hideProgress();
-            
-            return { success: true, filename };
-            
-        } catch (error) {
-            this.logger.error('CSV export failed', error);
-            this.hideProgress();
-            throw new Error('Gagal mengekspor CSV');
-        }
-    }
-    
-    // ============================================
-    // JSON EXPORT
-    // ============================================
-    
-    async exportJSON(data, options = {}) {
-        const config = { ...this.config, ...options };
-        
-        try {
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            
-            const filename = config.filename || `export-${Date.now()}.json`;
-            this.downloadBlob(blob, filename);
-            
-            this.logExport('json', filename, data);
-            
-            return { success: true, filename };
-            
-        } catch (error) {
-            this.logger.error('JSON export failed', error);
-            throw new Error('Gagal mengekspor JSON');
-        }
-    }
-    
-    // ============================================
-    // BATCH EXPORT
-    // ============================================
-    
-    async exportMultiple(formats, data, options = {}) {
-        const results = [];
-        
-        for (const format of formats) {
-            try {
-                const result = await this.exportFormat(format, data, options);
-                results.push({ format, success: true, ...result });
-            } catch (error) {
-                results.push({ format, success: false, error: error.message });
-            }
-        }
-        
-        return results;
-    }
-    
-    async exportFormat(format, data, options) {
-        switch (format.toLowerCase()) {
-            case 'pdf': return this.exportPDF(data, options);
-            case 'excel':
-            case 'xlsx': return this.exportExcel(data, options);
-            case 'csv': return this.exportCSV(data, options);
-            case 'json': return this.exportJSON(data, options);
-            default: throw new Error(`Unsupported format: ${format}`);
-        }
-    }
-    
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    downloadBlob(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+    function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
         link.href = url;
         link.download = filename;
-        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
         
-        setTimeout(() => {
-            document.body.removeChild(link);
+        setTimeout(function() {
             URL.revokeObjectURL(url);
-        }, 100);
+        }, 1000);
     }
     
-    showProgress(message) {
-        const progress = document.createElement('div');
-        progress.className = 'export-progress-overlay';
-        progress.innerHTML = `
-            <div class="export-progress-content">
-                <div class="spinner"></div>
-                <p>${message}</p>
-            </div>
-        `;
-        progress.id = 'export-progress';
-        document.body.appendChild(progress);
+    function getColumns(data, customColumns) {
+        if (customColumns && customColumns.length > 0) {
+            return customColumns;
+        }
+        
+        if (!data || data.length === 0) return [];
+        
+        var firstRow = data[0];
+        var columns = [];
+        var keys = Object.keys(firstRow);
+        
+        for (var i = 0; i < keys.length; i++) {
+            columns.push({
+                key: keys[i],
+                label: keys[i].replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); })
+            });
+        }
+        
+        return columns;
     }
     
-    hideProgress() {
-        const progress = document.getElementById('export-progress');
-        if (progress) {
-            progress.remove();
+    // ============================================
+    // CSV EXPORT (RELIABLE)
+    // ============================================
+    
+    function exportCSV(data, options) {
+        if (!options) options = {};
+        
+        try {
+            var columns = getColumns(data, options.columns);
+            var filename = options.filename || 'export-' + Date.now() + '.csv';
+            
+            // Build CSV
+            var rows = [];
+            
+            // Header
+            var headers = [];
+            for (var i = 0; i < columns.length; i++) {
+                headers.push(escapeCSV(columns[i].label));
+            }
+            rows.push(headers.join(','));
+            
+            // Data rows
+            for (var j = 0; j < data.length; j++) {
+                var row = [];
+                for (var k = 0; k < columns.length; k++) {
+                    var value = formatCellValue(data[j][columns[k].key], columns[k]);
+                    row.push(escapeCSV(value));
+                }
+                rows.push(row.join(','));
+            }
+            
+            // BOM untuk Excel compatibility
+            var csv = '\uFEFF' + rows.join('\n');
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            
+            downloadBlob(blob, filename);
+            
+            console.log('[Export] CSV exported: ' + filename + ' (' + data.length + ' rows)');
+            
+            return { success: true, filename: filename, rowCount: data.length };
+        } catch(e) {
+            console.error('[Export] CSV failed:', e.message);
+            throw new Error('Gagal mengekspor CSV: ' + e.message);
         }
     }
     
     // ============================================
-    // EXPORT HISTORY
+    // JSON EXPORT (RELIABLE)
     // ============================================
     
-    logExport(format, filename, data) {
-        const entry = {
-            id: utils.generateUUID(),
-            format,
-            filename,
-            rowCount: Array.isArray(data) ? data.length : 1,
-            timestamp: new Date().toISOString(),
-            user: this.getCurrentUser()
-        };
+    function exportJSON(data, options) {
+        if (!options) options = {};
         
-        this.exportHistory.unshift(entry);
-        
-        // Keep only last 50 entries
-        if (this.exportHistory.length > 50) {
-            this.exportHistory = this.exportHistory.slice(0, 50);
-        }
-        
-        this.saveExportHistory();
-        
-        this.logger.info('Export completed', entry);
-    }
-    
-    loadExportHistory() {
         try {
-            const stored = localStorage.getItem('export_history');
-            return stored ? JSON.parse(stored) : [];
-        } catch {
-            return [];
+            var filename = options.filename || 'export-' + Date.now() + '.json';
+            var json = JSON.stringify(data, null, 2);
+            var blob = new Blob([json], { type: 'application/json' });
+            
+            downloadBlob(blob, filename);
+            
+            console.log('[Export] JSON exported: ' + filename);
+            
+            return { success: true, filename: filename, rowCount: Array.isArray(data) ? data.length : 1 };
+        } catch(e) {
+            console.error('[Export] JSON failed:', e.message);
+            throw new Error('Gagal mengekspor JSON: ' + e.message);
         }
     }
     
-    saveExportHistory() {
+    // ============================================
+    // PRINT EXPORT (HTML - Safe)
+    // ============================================
+    
+    function exportPrint(data, options) {
+        if (!options) options = {};
+        
         try {
-            localStorage.setItem('export_history', JSON.stringify(this.exportHistory));
-        } catch (error) {
-            this.logger.warn('Failed to save export history', error);
+            var columns = getColumns(data, options.columns);
+            var title = options.title || 'Laporan';
+            
+            // Build safe HTML
+            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + sanitizeHTML(title) + '</title>';
+            html += '<style>body{font-family:Arial,sans-serif;font-size:11pt;padding:20px;}';
+            html += 'h1{font-size:16pt;text-align:center;margin-bottom:5px;}';
+            html += '.subtitle{text-align:center;font-size:9pt;color:#666;margin-bottom:15px;}';
+            html += 'table{width:100%;border-collapse:collapse;}';
+            html += 'th{background:#2563eb;color:white;padding:8px 10px;text-align:left;font-size:10pt;}';
+            html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:10pt;}';
+            html += 'tr:nth-child(even){background:#f8fafc;}';
+            html += '.footer{text-align:center;font-size:8pt;color:#94a3b8;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:10px;}';
+            html += '@media print{@page{size:A4;margin:15mm;}}';
+            html += '</style></head><body>';
+            
+            // Header
+            html += '<h1>' + sanitizeHTML(title) + '</h1>';
+            html += '<p class="subtitle">Dicetak: ' + new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) + '</p>';
+            
+            // Table
+            html += '<table><thead><tr><th>No</th>';
+            for (var i = 0; i < columns.length; i++) {
+                html += '<th>' + sanitizeHTML(columns[i].label) + '</th>';
+            }
+            html += '</tr></thead><tbody>';
+            
+            for (var j = 0; j < data.length; j++) {
+                html += '<tr><td>' + (j + 1) + '</td>';
+                for (var k = 0; k < columns.length; k++) {
+                    html += '<td>' + sanitizeHTML(formatCellValue(data[j][columns[k].key], columns[k])) + '</td>';
+                }
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table>';
+            
+            // Footer
+            html += '<div class="footer">E-Arsip Digital v2026.1.0</div>';
+            html += '<script>window.onload=function(){window.print();}<\/script>';
+            html += '</body></html>';
+            
+            // Buka di window baru
+            var printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(html);
+                printWindow.document.close();
+            } else {
+                // Fallback: download sebagai HTML
+                var blob = new Blob([html], { type: 'text/html' });
+                downloadBlob(blob, (options.filename || 'export') + '.html');
+            }
+            
+            console.log('[Export] Print sent');
+            
+            return { success: true, rowCount: data.length };
+        } catch(e) {
+            console.error('[Export] Print failed:', e.message);
+            throw new Error('Gagal mengekspor: ' + e.message);
         }
     }
     
-    getExportHistory() {
-        return [...this.exportHistory];
-    }
+    // ============================================
+    // EXCEL EXPORT (Jika XLSX tersedia)
+    // ============================================
     
-    clearExportHistory() {
-        this.exportHistory = [];
-        localStorage.removeItem('export_history');
-    }
-    
-    getCurrentUser() {
+    function exportExcel(data, options) {
+        if (!options) options = {};
+        
+        // Cek apakah XLSX library tersedia
+        if (typeof XLSX === 'undefined') {
+            console.warn('[Export] XLSX library not available, falling back to CSV');
+            return exportCSV(data, options);
+        }
+        
         try {
-            const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
-            return session.user?.username || 'Unknown';
-        } catch {
-            return 'Unknown';
+            var columns = getColumns(data, options.columns);
+            var filename = options.filename || 'export-' + Date.now() + '.xlsx';
+            
+            // Build sheet data
+            var sheetData = [];
+            
+            // Header
+            var headerRow = [];
+            for (var i = 0; i < columns.length; i++) {
+                headerRow.push(columns[i].label);
+            }
+            sheetData.push(headerRow);
+            
+            // Data rows
+            for (var j = 0; j < data.length; j++) {
+                var row = [];
+                for (var k = 0; k < columns.length; k++) {
+                    row.push(formatCellValue(data[j][columns[k].key], columns[k]));
+                }
+                sheetData.push(row);
+            }
+            
+            var worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+            
+            // Set column widths
+            var colWidths = [];
+            for (var l = 0; l < columns.length; l++) {
+                colWidths.push({ wch: columns[l].width || 20 });
+            }
+            worksheet['!cols'] = colWidths;
+            
+            var workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, options.sheetName || 'Data');
+            
+            XLSX.writeFile(workbook, filename);
+            
+            console.log('[Export] Excel exported: ' + filename + ' (' + data.length + ' rows)');
+            
+            return { success: true, filename: filename, rowCount: data.length };
+        } catch(e) {
+            console.warn('[Export] Excel failed, falling back to CSV:', e.message);
+            return exportCSV(data, options);
+        }
+    }
+    
+    // ============================================
+    // GENERIC EXPORT
+    // ============================================
+    
+    function exportData(data, format, options) {
+        if (!format) format = config.defaultFormat;
+        
+        switch (format.toLowerCase()) {
+            case 'csv':
+                return exportCSV(data, options);
+            case 'json':
+                return exportJSON(data, options);
+            case 'print':
+            case 'pdf':
+                return exportPrint(data, options);
+            case 'excel':
+            case 'xlsx':
+                return exportExcel(data, options);
+            default:
+                // Default ke CSV
+                return exportCSV(data, options);
         }
     }
     
@@ -569,28 +352,72 @@ class ExportHandler {
     // PUBLIC API
     // ============================================
     
-    async export(data, format, options = {}) {
-        return this.exportFormat(format, data, options);
-    }
-    
-    async quickExport(data, filename) {
-        // Auto-detect best format
-        const format = filename?.split('.').pop() || 'xlsx';
-        return this.exportFormat(format, data, { filename });
-    }
-    
-    getSupportedFormats() {
-        return ['pdf', 'excel', 'xlsx', 'csv', 'json'];
-    }
-    
-    destroy() {
-        this.hideProgress();
-        this.logger.info('Export handler destroyed');
-    }
-}
+    return {
+        // Primary
+        export: exportData,
+        csv: exportCSV,
+        json: exportJSON,
+        print: exportPrint,
+        excel: exportExcel,
+        
+        /**
+         * Quick export (auto-detect format from filename)
+         */
+        quickExport: function(data, filename) {
+            var ext = 'csv';
+            if (filename) {
+                var parts = filename.split('.');
+                if (parts.length > 1) {
+                    ext = parts[parts.length - 1].toLowerCase();
+                }
+            }
+            return exportData(data, ext, { filename: filename });
+        },
+        
+        /**
+         * Get supported formats
+         */
+        getFormats: function() {
+            return ['csv', 'json', 'print', 'excel'];
+        },
+        
+        /**
+         * Check if Excel export is available
+         */
+        isExcelAvailable: function() {
+            return typeof XLSX !== 'undefined';
+        },
+        
+        /**
+         * Configure
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+            }
+        }
+    };
+})();
 
-// Create singleton
-const exportHandler = new ExportHandler();
-
-export default exportHandler;
-export { ExportHandler };
+// ============================================
+// USAGE:
+// ============================================
+// // CSV
+// ExportHandler.csv(data, { filename: 'surat-keluar.csv' });
+// 
+// // JSON
+// ExportHandler.json(data);
+// 
+// // Print
+// ExportHandler.print(data, { title: 'Laporan Surat Masuk' });
+// 
+// // Excel (jika XLSX tersedia)
+// ExportHandler.excel(data, { filename: 'laporan.xlsx' });
+// 
+// // Generic
+// ExportHandler.export(data, 'csv', { columns: [...] });
+// ============================================

@@ -1,655 +1,566 @@
-<<<<<<< HEAD
-// js/auth.js - Authentication Service 2026 (Google Apps Script Compatible)
+// js/auth.js - Authentication Service 2026 (REGULAR SCRIPT)
 /**
  * E-Arsip Digital - Authentication Service
  * Version: 2026.1.0
- * Google Apps Script Backend Compatible
+ * 
+ * Features:
+ * - Login/logout dengan Google Apps Script
+ * - Session management (localStorage)
+ * - Role-based redirect (16 roles)
+ * - Password validation
+ * - Login attempt lockout
+ * - Activity tracking
+ * - No external dependencies
  */
 
-import APP_CONFIG from '../config/config.js';
-import apiService from './api.js';
-import { Logger } from './logger.js';
-import { SessionManager } from './session.js';
-import { EncryptionService } from './security/encryption.js';
-import { TokenManager } from './security/token-manager.js';
-import { navigateToAppPath, resolveAppPath } from './path-utils.js';
-
-class AuthService {
-    constructor(config = APP_CONFIG) {
-        this.config = config;
-        this.logger = new Logger('AuthService');
-        this.session = new SessionManager();
-        this.encryption = new EncryptionService();
-        this.tokenManager = new TokenManager();
-        
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        this.authListeners = new Set();
-        this.initialized = false;
-        
-        this.loginAttempts = new Map();
-        this.maxLoginAttempts = config.auth?.maxLoginAttempts || 5;
-        this.lockoutDuration = config.auth?.lockoutDuration || 900000;
-        
-        this.init();
-    }
+(function() {
+    'use strict';
     
-    async init() {
-        try {
-            await this.restoreSession();
-            this.setupAutoRefresh();
-            this.setupActivityTracking();
-            this.initialized = true;
-            
-            this.logger.info('Auth Service initialized', {
-                authenticated: this.isAuthenticated,
-                user: this.currentUser?.username
-            });
-        } catch (error) {
-            this.logger.error('Auth Service initialization failed', error);
-        }
-    }
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        sessionTimeout: 3600000,       // 1 jam
+        maxLoginAttempts: 5,
+        lockoutDuration: 900000,       // 15 menit
+        passwordMinLength: 8,
+        passwordRequireUppercase: true,
+        passwordRequireNumber: true,
+        passwordRequireSpecialChar: true,
+        idleTimeout: 1800000,          // 30 menit
+        activityEvents: ['mousedown', 'keydown', 'touchstart', 'scroll']
+    };
     
-    async restoreSession() {
-        try {
-            const encryptedSession = localStorage.getItem('auth_session');
-            if (!encryptedSession) return;
-            
-            const sessionData = await this.encryption.decrypt(encryptedSession);
-            if (!sessionData) {
-                this.clearSession();
-                return;
+    // Override dari EArsip.Config jika tersedia
+    if (window.EArsip && window.EArsip.Config && window.EArsip.Config.auth) {
+        var authConfig = window.EArsip.Config.auth;
+        for (var key in authConfig) {
+            if (authConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                config[key] = authConfig[key];
             }
-            
-            const { token, refreshToken, user, expiresAt } = JSON.parse(sessionData);
-            
-            if (Date.now() > expiresAt) {
-                const refreshed = await this.refreshToken(refreshToken);
-                if (!refreshed) {
-                    this.clearSession();
-                    return;
-                }
-            } else {
-                this.setAuthState(token, user);
-            }
-        } catch (error) {
-            this.logger.error('Session restoration failed', error);
-            this.clearSession();
         }
     }
     
     // ============================================
-    // ⬇️ LOGIN - DISESUAIKAN UNTUK GOOGLE APPS SCRIPT
+    // ROLE ROUTES (16 roles)
     // ============================================
-    async login(credentials) {
-        this.validateCredentials(credentials);
-        
-        // Check lockout
-        const attemptCount = this.loginAttempts.get(credentials.username) || 0;
-        if (attemptCount >= this.maxLoginAttempts) {
-            const lockoutTime = this.getLockoutTime(credentials.username);
-            if (lockoutTime > 0) {
-                throw new Error(`Akun terkunci. Silakan coba lagi dalam ${Math.ceil(lockoutTime / 60000)} menit`);
-            }
+    var ROLE_ROUTES = {
+        'super_admin': '../dashboard/super-admin/index.html',
+        'admin': '../dashboard/admin/index.html',
+        'kasubag': '../dashboard/kasubag/index.html',
+        'kaprodi': '../dashboard/kaprodi/index.html',
+        'admin_kaprodi': '../dashboard/admin-kaprodi/index.html',
+        'wadek': '../dashboard/wadek/index.html',
+        'admin_wadek': '../dashboard/admin-wadek/index.html',
+        'dekan': '../dashboard/dekan/index.html',
+        'admin_dekan': '../dashboard/admin-dekan/index.html',
+        'ketua_upm': '../dashboard/ketua-upm/index.html',
+        'litdianmas': '../dashboard/litdianmas/index.html',
+        'staf': '../dashboard/staf/index.html',
+        'dosen': '../dashboard/dosen/index.html',
+        'lembaga_kemahasiswaan': '../dashboard/lembaga-kemahasiswaan/index.html',
+        'mahasiswa': '../dashboard/mahasiswa/index.html',
+        'user': '../dashboard/user/index.html'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _currentUser = null;
+    var _isAuthenticated = false;
+    var _loginAttempts = {};        // { username: { count, firstAttempt, locked } }
+    var _listeners = [];            // Auth change listeners
+    var _activityTimer = null;
+    var _idleTimer = null;
+    var _lastActivity = Date.now();
+    
+    // ============================================
+    // API HELPER
+    // ============================================
+    
+    function getAPI() {
+        if (window.EArsip && window.EArsip.Api) {
+            return window.EArsip.Api;
         }
-        
-        try {
-            // ⬇️ PANGGIL API GOOGLE APPS SCRIPT DENGAN ACTION 'login'
-            const response = await apiService.post('login', {
-                username: credentials.username,
-                password: credentials.password,
-                timestamp: Date.now(),
-                deviceInfo: this.getDeviceInfo()
-            });
-            
-            // ⬇️ GOOGLE APPS SCRIPT RETURN response.data
-            if (!response || !response.data || !response.data.token) {
-                throw new Error('Login gagal: Respon tidak valid');
-            }
-            
-            const { token, refreshToken, user } = response.data;
-            
-            if (!this.validateUserRoles(user)) {
-                throw new Error('Role pengguna tidak valid');
-            }
-            
-            this.setAuthState(token, user, refreshToken);
-            this.loginAttempts.delete(credentials.username);
-            
-            this.logger.info('Login successful', { 
-                username: user.username, 
-                role: user.role 
-            });
-            
-            this.auditLogin(user, true);
-            this.redirectBasedOnRole(user);
-            
-            return { success: true, user };
-            
-        } catch (error) {
-            const attempts = (this.loginAttempts.get(credentials.username) || 0) + 1;
-            this.loginAttempts.set(credentials.username, attempts);
-            
-            this.auditLogin({ username: credentials.username }, false, error.message);
-            
-            this.logger.warn('Login failed', { 
-                username: credentials.username, 
-                attempts,
-                error: error.message 
-            });
-            
-            throw new Error(this.getLoginErrorMessage(attempts));
-        }
+        return null;
     }
     
     // ============================================
-    // ⬇️ LOGOUT - DISESUAIKAN
+    // SESSION MANAGEMENT
     // ============================================
-    async logout(silent = false) {
+    
+    function saveSession(user, token, refreshToken) {
+        var session = {
+            token: token || ('token-' + Date.now().toString(36)),
+            refreshToken: refreshToken || '',
+            user: user,
+            expiresAt: Date.now() + config.sessionTimeout,
+            lastActivity: Date.now()
+        };
+        
         try {
-            if (!silent && this.currentUser) {
-                // ⬇️ PANGGIL API LOGOUT
-                await apiService.post('logout', {
-                    userId: this.currentUser.id,
-                    username: this.currentUser.username,
-                    sessionId: this.tokenManager.getAccessToken()
-                }).catch(() => {});
+            localStorage.setItem('auth_session', JSON.stringify(session));
+            localStorage.setItem('auth_token', session.token);
+            if (refreshToken) {
+                localStorage.setItem('auth_refresh_token', refreshToken);
             }
-        } finally {
-            this.clearSession();
-            this.clearUI();
-            
-            if (!silent) {
-                this.redirectToLogin();
-            }
-            
-            this.notifyAuthListeners('logout');
+        } catch(e) {
+            console.warn('[Auth] Failed to save session');
         }
     }
     
-    // ============================================
-    // ⬇️ REFRESH TOKEN - DISESUAIKAN
-    // ============================================
-    async refreshToken(refreshToken = null) {
-        const token = refreshToken || this.tokenManager.getRefreshToken();
-        if (!token) return false;
+    function restoreSession() {
+        try {
+            var sessionStr = localStorage.getItem('auth_session');
+            if (!sessionStr) {
+                // Coba sessionStorage
+                sessionStr = sessionStorage.getItem('auth_session');
+            }
+            
+            if (!sessionStr) return false;
+            
+            var session = JSON.parse(sessionStr);
+            
+            if (!session.user || !session.expiresAt) {
+                clearSession();
+                return false;
+            }
+            
+            if (Date.now() >= session.expiresAt) {
+                clearSession();
+                return false;
+            }
+            
+            _currentUser = session.user;
+            _isAuthenticated = true;
+            _lastActivity = session.lastActivity || Date.now();
+            
+            console.log('[Auth] Session restored: ' + session.user.username);
+            return true;
+        } catch(e) {
+            console.warn('[Auth] Session restore failed');
+            clearSession();
+            return false;
+        }
+    }
+    
+    function clearSession() {
+        _currentUser = null;
+        _isAuthenticated = false;
+        
+        localStorage.removeItem('auth_session');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_refresh_token');
+        sessionStorage.removeItem('auth_session');
+    }
+    
+    function updateLastActivity() {
+        _lastActivity = Date.now();
         
         try {
-            // ⬇️ PANGGIL API REFRESH TOKEN
-            const response = await apiService.post('refreshToken', {
-                refreshToken: token
-            });
-            
-            if (response?.data?.token) {
-                this.setAuthState(
-                    response.data.token,
-                    response.data.user || this.currentUser,
-                    response.data.refreshToken
-                );
-                return true;
+            var sessionStr = localStorage.getItem('auth_session');
+            if (sessionStr) {
+                var session = JSON.parse(sessionStr);
+                session.lastActivity = Date.now();
+                localStorage.setItem('auth_session', JSON.stringify(session));
             }
-        } catch (error) {
-            this.logger.warn('Token refresh failed', error);
+        } catch(e) {}
+    }
+    
+    function isSessionExpired() {
+        // Check absolute timeout
+        try {
+            var sessionStr = localStorage.getItem('auth_session');
+            if (sessionStr) {
+                var session = JSON.parse(sessionStr);
+                if (Date.now() >= session.expiresAt) return true;
+            }
+        } catch(e) {}
+        
+        // Check idle timeout
+        if (config.idleTimeout && (Date.now() - _lastActivity > config.idleTimeout)) {
+            return true;
         }
         
         return false;
     }
     
     // ============================================
-    // ⬇️ CHANGE PASSWORD - DISESUAIKAN
+    // ACTIVITY TRACKING
     // ============================================
-    async changePassword(currentPassword, newPassword) {
-        this.validatePasswordStrength(newPassword);
-        
-        try {
-            // ⬇️ PANGGIL API CHANGE PASSWORD
-            const response = await apiService.post('changePassword', {
-                userId: this.currentUser?.id,
-                username: this.currentUser?.username,
-                currentPassword: currentPassword,
-                newPassword: newPassword
-            });
-            
-            this.logger.info('Password changed successfully');
-            return response;
-        } catch (error) {
-            this.logger.error('Password change failed', error);
-            throw error;
-        }
-    }
     
-    // ⬇️ REQUEST PASSWORD RESET - DISESUAIKAN
-    async requestPasswordReset(username) {
-        try {
-            const response = await apiService.post('resetPassword', {
-                username: username
-            });
-            
-            this.logger.info('Password reset requested', { username });
-            return response;
-        } catch (error) {
-            this.logger.error('Password reset request failed', error);
-            throw error;
-        }
-    }
-    
-    setAuthState(token, user, refreshToken = null) {
-        this.tokenManager.setAccessToken(token);
-        if (refreshToken) this.tokenManager.setRefreshToken(refreshToken);
-        
-        this.currentUser = user;
-        this.isAuthenticated = true;
-        
-        const sessionData = {
-            token,
-            refreshToken,
-            user,
-            expiresAt: Date.now() + (this.config.auth?.sessionTimeout || 3600000),
-            lastActivity: Date.now()
+    function startActivityTracking() {
+        var handler = function() {
+            updateLastActivity();
         };
         
-        this.saveSession(sessionData);
-        this.updateUI();
-        this.notifyAuthListeners('login', user);
-    }
-    
-    // ============================================
-    // ⬇️ SESSION & UI METHODS (TETAP SAMA)
-    // ============================================
-    saveSession(sessionData) {
-        try {
-            const encrypted = this.encryption.encrypt(JSON.stringify(sessionData));
-            localStorage.setItem('auth_session', encrypted);
-        } catch (error) {
-            this.logger.error('Failed to save session', error);
-        }
-    }
-    
-    clearSession() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        this.tokenManager.clearTokens();
-        localStorage.removeItem('auth_session');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_refresh_token');
-    }
-    
-    validateCredentials(credentials) {
-        if (!credentials.username || credentials.username.length < 3) {
-            throw new Error('Username minimal 3 karakter');
-        }
-        if (!credentials.password || credentials.password.length < (this.config.auth?.passwordMinLength || 8)) {
-            throw new Error(`Password minimal ${this.config.auth?.passwordMinLength || 8} karakter`);
-        }
-    }
-    
-    validatePasswordStrength(password) {
-        const requirements = [];
-        const cfg = this.config.auth || {};
-        
-        if (password.length < (cfg.passwordMinLength || 8)) {
-            requirements.push(`minimal ${cfg.passwordMinLength || 8} karakter`);
-        }
-        if (cfg.passwordRequireUppercase && !/[A-Z]/.test(password)) {
-            requirements.push('harus mengandung huruf besar');
-        }
-        if (cfg.passwordRequireNumber && !/[0-9]/.test(password)) {
-            requirements.push('harus mengandung angka');
-        }
-        if (cfg.passwordRequireSpecialChar && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-            requirements.push('harus mengandung karakter khusus');
+        for (var i = 0; i < config.activityEvents.length; i++) {
+            document.addEventListener(config.activityEvents[i], handler, { passive: true });
         }
         
-        if (requirements.length > 0) {
-            throw new Error('Password tidak memenuhi syarat: ' + requirements.join(', '));
-        }
-    }
-    
-    validateUserRoles(user) {
-        const validRoles = ['super_admin', 'admin', 'kaprodi', 'admin_kaprodi', 'wadek', 'admin_wadek', 
-                           'dekan', 'admin_dekan', 'kasubag', 'ketua_upm', 'litdianmas', 'staf', 
-                           'dosen', 'mahasiswa', 'lembaga_kemahasiswaan', 'user'];
-        return validRoles.includes(user.role);
-    }
-    
-    hasPermission(permission) {
-        if (!this.currentUser) return false;
-        const permissions = this.currentUser.permissions || [];
-        return permissions.includes(permission) || permissions.includes('all');
-    }
-    
-    hasRole(roles) {
-        if (!this.currentUser) return false;
-        const roleList = Array.isArray(roles) ? roles : [roles];
-        return roleList.includes(this.currentUser.role);
-    }
-    
-    setupAutoRefresh() {
-        const refreshInterval = (this.config.auth?.sessionTimeout || 3600000) - 300000;
-        
-        this.refreshInterval = setInterval(() => {
-            if (this.isAuthenticated) {
-                this.refreshToken();
-            }
-        }, refreshInterval);
-    }
-    
-    setupActivityTracking() {
-        const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
-        
-        this.activityHandler = () => {
-            if (this.isAuthenticated) {
-                this.updateLastActivity();
-            }
-        };
-        
-        events.forEach(event => {
-            document.addEventListener(event, this.activityHandler, { passive: true });
-        });
-        
-        this.inactivityInterval = setInterval(() => {
-            if (this.isAuthenticated && this.isSessionExpired()) {
-                this.logout(true);
-                this.showSessionExpiredMessage();
+        // Cek idle setiap 60 detik
+        _idleTimer = setInterval(function() {
+            if (_isAuthenticated && isSessionExpired()) {
+                console.warn('[Auth] Session expired');
+                logout(true);
             }
         }, 60000);
     }
     
-    updateLastActivity() {
-        const sessionData = this.getSessionData();
-        if (sessionData) {
-            sessionData.lastActivity = Date.now();
-            this.saveSession(sessionData);
-        }
-    }
-    
-    isSessionExpired() {
-        const sessionData = this.getSessionData();
-        if (!sessionData) return true;
-        
-        const inactiveTime = Date.now() - sessionData.lastActivity;
-        return inactiveTime > (this.config.auth?.sessionTimeout || 3600000);
-    }
-    
-    getSessionData() {
-        try {
-            const encrypted = localStorage.getItem('auth_session');
-            if (!encrypted) return null;
-            
-            const decrypted = this.encryption.decrypt(encrypted);
-            return decrypted ? JSON.parse(decrypted) : null;
-        } catch {
-            return null;
-        }
-    }
-    
-    getDeviceInfo() {
-        return {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language,
-            screenResolution: `${window.screen.width}x${window.screen.height}`,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            timestamp: Date.now()
-        };
-    }
-    
-    getLockoutTime(username) {
-        const attempts = this.loginAttempts.get(username) || 0;
-        if (attempts < this.maxLoginAttempts) return 0;
-        
-        // Return remaining lockout time
-        const lockoutStart = this.loginLockoutTimes?.get(username) || Date.now();
-        const remaining = this.lockoutDuration - (Date.now() - lockoutStart);
-        return Math.max(0, remaining);
-    }
-    
-    getLoginErrorMessage(attempts) {
-        const remainingAttempts = this.maxLoginAttempts - attempts;
-        
-        if (remainingAttempts <= 0) {
-            return 'Akun terkunci karena terlalu banyak percobaan. Silakan coba lagi dalam 15 menit';
-        } else if (remainingAttempts <= 2) {
-            return `Login gagal. Percobaan tersisa: ${remainingAttempts}`;
-        } else {
-            return 'Username atau password salah';
-        }
-    }
-    
     // ============================================
-    // UI METHODS
+    // LOGIN
     // ============================================
-    updateUI() {
-        document.querySelectorAll('.auth-hidden').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('.auth-visible').forEach(el => el.style.display = '');
+    
+    function login(username, password, rememberMe) {
+        // Validasi input
+        if (!username || username.trim().length < 3) {
+            return Promise.reject(new Error('Username minimal 3 karakter'));
+        }
         
-        const userElements = document.querySelectorAll('[data-user-info]');
-        userElements.forEach(el => {
-            const field = el.dataset.userInfo;
-            if (this.currentUser && this.currentUser[field]) {
-                el.textContent = this.currentUser[field];
+        if (!password || password.length < config.passwordMinLength) {
+            return Promise.reject(new Error('Password minimal ' + config.passwordMinLength + ' karakter'));
+        }
+        
+        // Check lockout
+        var attempt = _loginAttempts[username];
+        if (attempt && attempt.locked) {
+            var remaining = config.lockoutDuration - (Date.now() - attempt.lockedAt);
+            if (remaining > 0) {
+                return Promise.reject(new Error('Akun terkunci. Coba lagi dalam ' + 
+                    Math.ceil(remaining / 60000) + ' menit'));
             }
-        });
-    }
-    
-    clearUI() {
-        document.querySelectorAll('.auth-hidden').forEach(el => el.style.display = '');
-        document.querySelectorAll('.auth-visible').forEach(el => el.style.display = 'none');
-    }
-    
-    showSessionExpiredMessage() {
-        const message = document.createElement('div');
-        message.className = 'session-expired-message';
-        message.innerHTML = `
-            <div class="session-expired-content">
-                <i class="fas fa-clock"></i>
-                <h3>Sesi Berakhir</h3>
-                <p>Sesi Anda telah berakhir karena tidak ada aktivitas.</p>
-                <button onclick="window.location.href='${resolveAppPath('/login.html')}'">Login</button>
-            </div>
-        `;
-        document.body.appendChild(message);
-    }
-    
-    // ============================================
-    // NAVIGATION
-    // ============================================
-    redirectBasedOnRole(user) {
-        const roleRoutes = {
-            'super_admin': '/dashboard/super-admin/index.html',
-            'admin': '/dashboard/admin/index.html',
-            'kaprodi': '/dashboard/kaprodi/index.html',
-            'admin_kaprodi': '/dashboard/admin-kaprodi/index.html',
-            'wadek': '/dashboard/wadek/index.html',
-            'admin_wadek': '/dashboard/admin-wadek/index.html',
-            'dekan': '/dashboard/dekan/index.html',
-            'admin_dekan': '/dashboard/admin-dekan/index.html',
-            'kasubag': '/dashboard/kasubag/index.html',
-            'ketua_upm': '/dashboard/ketua_upm/index.html',
-            'litdianmas': '/dashboard/litdianmas/index.html',
-            'staf': '/dashboard/staf/index.html',
-            'dosen': '/dashboard/dosen/index.html',
-            'mahasiswa': '/dashboard/mahasiswa/index.html',
-            'lembaga_kemahasiswaan': '/dashboard/lembaga_kemahasiswaan/index.html',
-            'user': '/dashboard/user/index.html'
-        };
-        
-        const route = roleRoutes[user.role] || '/dashboard/user/index.html';
-        navigateToAppPath(route, false);
-    }
-    
-    redirectToLogin() {
-        navigateToAppPath('/login.html', false);
-    }
-    
-    // ============================================
-    // AUDIT
-    // ============================================
-    async auditLogin(user, success, error = null) {
-        try {
-            await apiService.post('createLog', {
-                userId: user.id || '',
-                username: user.username || 'unknown',
-                action: success ? 'login' : 'login_failed',
-                description: success ? 'Login berhasil' : `Login gagal: ${error}`,
-                details: JSON.stringify({
-                    deviceInfo: this.getDeviceInfo(),
-                    success
-                })
-            }).catch(() => {});
-        } catch {
-            // Ignore audit errors
-        }
-    }
-    
-    // ============================================
-    // EVENT SYSTEM
-    // ============================================
-    onAuthChange(listener) {
-        this.authListeners.add(listener);
-        return () => this.authListeners.delete(listener);
-    }
-    
-    notifyAuthListeners(action, user = null) {
-        this.authListeners.forEach(listener => {
-            try {
-                listener(action, user);
-            } catch (error) {
-                this.logger.error('Auth listener error', error);
-            }
-        });
-    }
-    
-    // ============================================
-    // CLEANUP
-    // ============================================
-    destroy() {
-        clearInterval(this.refreshInterval);
-        clearInterval(this.inactivityInterval);
-        
-        if (this.activityHandler) {
-            ['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(event => {
-                document.removeEventListener(event, this.activityHandler);
-            });
+            // Unlock
+            delete _loginAttempts[username];
         }
         
-        this.authListeners.clear();
-    }
-}
-
-const authService = new AuthService();
-
-export default authService;
-export { AuthService };
-=======
-// js/auth.js - Authentication Service 2026 (REGULAR SCRIPT)
-/**
- * E-Arsip Digital - Authentication Service
- * Version: 2026.1.0
- * ⬇️ DIUBAH: Dari ES Module ke regular script (window.EArsip.Auth)
- */
-(function() {
-    'use strict';
-    
-    var api = null; // Akan di-set setelah API siap
-    
-    function AuthService() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        this.init();
-    }
-    
-    AuthService.prototype.init = function() {
-        // Tunggu API siap
-        var self = this;
-        
-        function checkAPI() {
-            if (window.EArsip && window.EArsip.Api) {
-                api = window.EArsip.Api;
-                self.restoreSession();
-                console.log('Auth Service initialized');
-            } else {
-                setTimeout(checkAPI, 100);
-            }
+        var api = getAPI();
+        if (!api) {
+            return Promise.reject(new Error('API service tidak tersedia'));
         }
-        
-        checkAPI();
-    };
-    
-    AuthService.prototype.restoreSession = function() {
-        try {
-            var session = localStorage.getItem('auth_session');
-            if (session) {
-                var data = JSON.parse(session);
-                if (data.user && data.expiresAt && Date.now() < data.expiresAt) {
-                    this.currentUser = data.user;
-                    this.isAuthenticated = true;
-                    console.log('Session restored: ' + data.user.username);
-                }
-            }
-        } catch(e) {
-            console.warn('Session restore failed:', e);
-        }
-    };
-    
-    AuthService.prototype.login = function(username, password) {
-        var self = this;
         
         return api.post('login', {
-            username: username,
-            password: password
+            username: username.trim(),
+            password: password,
+            timestamp: Date.now()
         }).then(function(response) {
-            var userData = response.data || response;
+            // Reset attempts
+            delete _loginAttempts[username];
             
-            if (userData.user) {
-                self.currentUser = userData.user;
-                self.isAuthenticated = true;
-                
-                // Simpan session
-                var session = {
-                    token: userData.token || 'token-' + Date.now(),
-                    refreshToken: userData.refreshToken || '',
-                    user: userData.user,
-                    expiresAt: Date.now() + 3600000,
-                    lastActivity: Date.now()
-                };
-                
-                localStorage.setItem('auth_session', JSON.stringify(session));
-                localStorage.setItem('auth_token', session.token);
-                
-                console.log('Login success: ' + userData.user.username);
+            // Extract user data
+            var userData = response.data || response;
+            var user = userData.user || userData;
+            
+            if (!user || !user.role) {
+                throw new Error('Response tidak valid');
             }
             
-            return userData;
+            // Validate role
+            if (!ROLE_ROUTES[user.role]) {
+                throw new Error('Role tidak valid: ' + user.role);
+            }
+            
+            // Set auth state
+            _currentUser = user;
+            _isAuthenticated = true;
+            
+            // Save session
+            var storage = rememberMe ? localStorage : sessionStorage;
+            if (!rememberMe) {
+                // Pindahkan dari localStorage ke sessionStorage
+                localStorage.removeItem('auth_session');
+                localStorage.removeItem('auth_token');
+            }
+            
+            saveSession(user, userData.token, userData.refreshToken);
+            
+            // Start activity tracking
+            startActivityTracking();
+            
+            // Notify listeners
+            notifyListeners('login', user);
+            
+            console.log('[Auth] Login success: ' + user.username + ' (' + user.role + ')');
+            
+            return {
+                success: true,
+                user: user,
+                redirect: ROLE_ROUTES[user.role] || ROLE_ROUTES['user']
+            };
+        }).catch(function(error) {
+            // Record failed attempt
+            if (!_loginAttempts[username]) {
+                _loginAttempts[username] = { count: 0, firstAttempt: Date.now() };
+            }
+            
+            _loginAttempts[username].count++;
+            
+            if (_loginAttempts[username].count >= config.maxLoginAttempts) {
+                _loginAttempts[username].locked = true;
+                _loginAttempts[username].lockedAt = Date.now();
+                
+                console.warn('[Auth] Account locked: ' + username);
+                throw new Error('Akun terkunci karena terlalu banyak percobaan');
+            }
+            
+            var remaining = config.maxLoginAttempts - _loginAttempts[username].count;
+            var msg = 'Login gagal. ';
+            if (remaining <= 2) {
+                msg += 'Percobaan tersisa: ' + remaining;
+            } else {
+                msg += 'Username atau password salah';
+            }
+            
+            throw new Error(msg);
         });
-    };
+    }
     
-    AuthService.prototype.logout = function() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        
-        localStorage.removeItem('auth_session');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_refresh_token');
-        
-        console.log('Logged out');
-    };
+    // ============================================
+    // LOGOUT
+    // ============================================
     
-    AuthService.prototype.hasRole = function(roles) {
-        if (!this.currentUser) return false;
+    function logout(silent) {
+        var user = _currentUser;
+        
+        // Clear state
+        clearSession();
+        
+        // Stop timers
+        if (_idleTimer) {
+            clearInterval(_idleTimer);
+            _idleTimer = null;
+        }
+        
+        // Notify listeners
+        notifyListeners('logout', user);
+        
+        console.log('[Auth] Logged out');
+        
+        // Redirect jika bukan silent
+        if (!silent) {
+            window.location.href = '../login.html?message=logged_out';
+        }
+    }
+    
+    // ============================================
+    // ROLE & PERMISSION
+    // ============================================
+    
+    function hasRole(roles) {
+        if (!_currentUser) return false;
         var roleList = Array.isArray(roles) ? roles : [roles];
-        return roleList.indexOf(this.currentUser.role) !== -1;
-    };
+        return roleList.indexOf(_currentUser.role) !== -1;
+    }
     
-    AuthService.prototype.hasPermission = function(permission) {
-        if (!this.currentUser) return false;
-        var perms = this.currentUser.permissions || [];
+    function hasPermission(permission) {
+        if (!_currentUser) return false;
+        var perms = _currentUser.permissions || [];
         return perms.indexOf(permission) !== -1 || perms.indexOf('all') !== -1;
+    }
+    
+    function getRedirectURL(role) {
+        return ROLE_ROUTES[role] || ROLE_ROUTES['user'];
+    }
+    
+    // ============================================
+    // VALIDATION
+    // ============================================
+    
+    function validatePassword(password) {
+        var errors = [];
+        
+        if (password.length < config.passwordMinLength) {
+            errors.push('minimal ' + config.passwordMinLength + ' karakter');
+        }
+        if (config.passwordRequireUppercase && !/[A-Z]/.test(password)) {
+            errors.push('harus mengandung huruf besar');
+        }
+        if (config.passwordRequireNumber && !/[0-9]/.test(password)) {
+            errors.push('harus mengandung angka');
+        }
+        if (config.passwordRequireSpecialChar && !/[^a-zA-Z0-9]/.test(password)) {
+            errors.push('harus mengandung karakter khusus');
+        }
+        
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
+    }
+    
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    
+    function onAuthChange(callback) {
+        _listeners.push(callback);
+        
+        // Return unsubscribe function
+        return function() {
+            _listeners = _listeners.filter(function(cb) {
+                return cb !== callback;
+            });
+        };
+    }
+    
+    function notifyListeners(action, user) {
+        for (var i = 0; i < _listeners.length; i++) {
+            try {
+                _listeners[i](action, user);
+            } catch(e) {}
+        }
+    }
+    
+    // ============================================
+    // CHANGE PASSWORD
+    // ============================================
+    
+    function changePassword(currentPassword, newPassword) {
+        // Validate new password
+        var validation = validatePassword(newPassword);
+        if (!validation.valid) {
+            return Promise.reject(new Error('Password baru tidak valid: ' + validation.errors.join(', ')));
+        }
+        
+        if (currentPassword === newPassword) {
+            return Promise.reject(new Error('Password baru tidak boleh sama dengan password lama'));
+        }
+        
+        var api = getAPI();
+        if (!api) {
+            return Promise.reject(new Error('API service tidak tersedia'));
+        }
+        
+        return api.post('changePassword', {
+            username: _currentUser ? _currentUser.username : '',
+            currentPassword: currentPassword,
+            newPassword: newPassword
+        });
+    }
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    function init() {
+        // Restore session
+        if (restoreSession()) {
+            startActivityTracking();
+        }
+        
+        // Listen for storage changes (other tabs)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'auth_session') {
+                if (!e.newValue) {
+                    // Session dihapus di tab lain
+                    clearSession();
+                    notifyListeners('logout', null);
+                }
+            }
+        });
+        
+        console.log('[Auth] Service initialized (authenticated: ' + _isAuthenticated + ')');
+    }
+    
+    // ============================================
+    // PUBLIC API
+    // ============================================
+    
+    var AuthService = {
+        // Properties
+        get currentUser() { return _currentUser; },
+        get isAuthenticated() { return _isAuthenticated; },
+        
+        // Methods
+        login: login,
+        logout: logout,
+        hasRole: hasRole,
+        hasPermission: hasPermission,
+        getRedirectURL: getRedirectURL,
+        validatePassword: validatePassword,
+        changePassword: changePassword,
+        onAuthChange: onAuthChange,
+        
+        /**
+         * Check if session is valid
+         */
+        checkSession: function() {
+            if (!_isAuthenticated) return false;
+            if (isSessionExpired()) {
+                logout(true);
+                return false;
+            }
+            return true;
+        },
+        
+        /**
+         * Get current user (safe copy)
+         */
+        getCurrentUser: function() {
+            return _currentUser ? JSON.parse(JSON.stringify(_currentUser)) : null;
+        },
+        
+        /**
+         * Update user data in session
+         */
+        updateUser: function(userData) {
+            if (!_currentUser) return;
+            
+            for (var key in userData) {
+                if (userData.hasOwnProperty(key)) {
+                    _currentUser[key] = userData[key];
+                }
+            }
+            
+            // Update session storage
+            try {
+                var sessionStr = localStorage.getItem('auth_session') || sessionStorage.getItem('auth_session');
+                if (sessionStr) {
+                    var session = JSON.parse(sessionStr);
+                    session.user = _currentUser;
+                    if (localStorage.getItem('auth_session')) {
+                        localStorage.setItem('auth_session', JSON.stringify(session));
+                    } else {
+                        sessionStorage.setItem('auth_session', JSON.stringify(session));
+                    }
+                }
+            } catch(e) {}
+        },
+        
+        /**
+         * Get login attempts info
+         */
+        getLoginAttempts: function(username) {
+            if (username && _loginAttempts[username]) {
+                return {
+                    count: _loginAttempts[username].count,
+                    locked: !!_loginAttempts[username].locked,
+                    remaining: Math.max(0, config.maxLoginAttempts - (_loginAttempts[username].count || 0))
+                };
+            }
+            return { count: 0, locked: false, remaining: config.maxLoginAttempts };
+        },
+        
+        /**
+         * Reset login attempts
+         */
+        resetLoginAttempts: function(username) {
+            if (username) {
+                delete _loginAttempts[username];
+            } else {
+                _loginAttempts = {};
+            }
+        }
     };
     
-    // Expose ke global
-    window.EArsip.Auth = new AuthService();
+    // ============================================
+    // EXPOSE
+    // ============================================
+    
+    window.EArsip = window.EArsip || {};
+    window.EArsip.Auth = AuthService;
+    
+    // Initialize
+    init();
     
     console.log('Auth Service ready');
 })();
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

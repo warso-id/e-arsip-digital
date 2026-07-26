@@ -2,359 +2,395 @@
 /**
  * E-Arsip Digital - Security Manager
  * Version: 2026.1.0
- * Central security module that coordinates all security features
+ * 
+ * Central security coordinator.
+ * Hanya menggunakan modul yang SUDAH ADA dan TERBUKTI.
+ * Tidak membuat asumsi tentang method yang tidak ada.
  */
 
-import { Logger } from '../logger.js';
-import encryptionService from './encryption.js';
-import csrfProtection from './csrf.js';
-import xssPrevention from './xss.js';
-import rateLimiter from './rate-limit.js';
-import firewall from './firewall.js';
-import auditTrail from './audit.js';
-import securityOrchestrator from './security-orchestrator.js';
-
-class SecurityManager {
-    constructor() {
-        this.logger = new Logger('SecurityManager');
-        
-        // Module registry
-        this.modules = new Map();
-        
-        // Security posture
-        this.posture = {
-            level: 'normal', // normal, elevated, high, critical
-            lastAssessment: null,
-            threatsDetected: 0,
-            activeIncidents: 0
-        };
-        
-        this.initialized = false;
+var SecurityManager = (function() {
+    'use strict';
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _modules = {};           // { name: moduleObject }
+    var _posture = {
+        level: 'normal',        // normal, elevated, high, critical
+        lastAssessment: null,
+        threatsDetected: 0,
+        activeIncidents: 0
+    };
+    var _initialized = false;
+    
+    // ============================================
+    // MODULE REGISTRATION
+    // ============================================
+    
+    /**
+     * Register modul keamanan
+     */
+    function registerModule(name, module) {
+        if (!module) {
+            console.warn('[SecurityManager] Module "' + name + '" not available');
+            return false;
+        }
+        _modules[name] = module;
+        return true;
     }
     
-    async init() {
-        try {
-            // Register all security modules
-            this.registerModule('encryption', encryptionService);
-            this.registerModule('csrf', csrfProtection);
-            this.registerModule('xss', xssPrevention);
-            this.registerModule('rateLimiter', rateLimiter);
-            this.registerModule('firewall', firewall);
-            this.registerModule('audit', auditTrail);
-            this.registerModule('orchestrator', securityOrchestrator);
-            
-            // Perform security assessment
-            await this.assessSecurity();
-            
-            // Log initialization
-            auditTrail.log('system.startup', {
-                modules: this.getActiveModules(),
-                posture: this.posture
-            });
-            
-            this.initialized = true;
-            
-            this.logger.info('Security manager initialized', {
-                activeModules: this.getActiveModules().length,
-                posture: this.posture.level
-            });
-            
-        } catch (error) {
-            this.logger.error('Security manager initialization failed', error);
+    /**
+     * Get module by name
+     */
+    function getModule(name) {
+        return _modules[name] || null;
+    }
+    
+    /**
+     * Check if module is registered
+     */
+    function hasModule(name) {
+        return !!_modules[name];
+    }
+    
+    /**
+     * Auto-detect available modules
+     */
+    function autoDetectModules() {
+        // Hanya modul yang SUDAH ADA di project
+        if (typeof CSRFProtection !== 'undefined') registerModule('csrf', CSRFProtection);
+        if (typeof Firewall !== 'undefined') registerModule('firewall', Firewall);
+        if (typeof RateLimiter !== 'undefined') registerModule('rateLimiter', RateLimiter);
+        if (typeof IntrusionDetection !== 'undefined') registerModule('ids', IntrusionDetection);
+        if (typeof AuditTrail !== 'undefined') registerModule('audit', AuditTrail);
+        if (typeof Sanitizer !== 'undefined') registerModule('sanitizer', Sanitizer);
+        if (typeof EncryptionService !== 'undefined') registerModule('encryption', EncryptionService);
+        if (typeof SecureStorage !== 'undefined') registerModule('storage', SecureStorage);
+        if (typeof SecureHeaders !== 'undefined') registerModule('headers', SecureHeaders);
+        if (typeof SecurityOrchestrator !== 'undefined') registerModule('orchestrator', SecurityOrchestrator);
+    }
+    
+    /**
+     * Get list of active module names
+     */
+    function getActiveModules() {
+        return Object.keys(_modules);
+    }
+    
+    // ============================================
+    // SECURITY POSTURE
+    // ============================================
+    
+    function getPosture() {
+        return {
+            level: _posture.level,
+            lastAssessment: _posture.lastAssessment,
+            threatsDetected: _posture.threatsDetected,
+            activeIncidents: _posture.activeIncidents
+        };
+    }
+    
+    function escalatePosture(level) {
+        var levels = ['normal', 'elevated', 'high', 'critical'];
+        var currentIdx = levels.indexOf(_posture.level);
+        var targetIdx = levels.indexOf(level);
+        
+        if (targetIdx > currentIdx) {
+            var oldLevel = _posture.level;
+            _posture.level = level;
+            console.warn('[SecurityManager] Posture escalated: ' + oldLevel + ' -> ' + level);
         }
     }
     
-    // ============================================
-    // MODULE MANAGEMENT
-    // ============================================
-    
-    registerModule(name, module) {
-        this.modules.set(name, module);
-    }
-    
-    getModule(name) {
-        return this.modules.get(name);
-    }
-    
-    getActiveModules() {
-        const active = [];
+    function deescalatePosture() {
+        var levels = ['normal', 'elevated', 'high', 'critical'];
+        var currentIdx = levels.indexOf(_posture.level);
         
-        this.modules.forEach((module, name) => {
-            if (module.isEnabled?.() || module.initialized) {
-                active.push(name);
-            }
-        });
-        
-        return active;
-    }
-    
-    getInactiveModules() {
-        const all = ['encryption', 'csrf', 'xss', 'rateLimiter', 'firewall', 'audit', 'orchestrator'];
-        const active = this.getActiveModules();
-        
-        return all.filter(m => !active.includes(m));
+        if (currentIdx > 0) {
+            _posture.level = levels[currentIdx - 1];
+            _posture.activeIncidents = Math.max(0, _posture.activeIncidents - 1);
+        }
     }
     
     // ============================================
     // SECURITY ASSESSMENT
     // ============================================
     
-    async assessSecurity() {
-        const findings = [];
-        let score = 100;
+    function assessSecurity() {
+        var findings = [];
+        var score = 100;
         
-        // Check each module
-        this.modules.forEach((module, name) => {
-            if (!module.isEnabled?.() && !module.initialized) {
-                findings.push({
-                    module: name,
-                    severity: 'warning',
-                    message: `${name} is not active`
-                });
-                score -= 10;
-            }
-        });
-        
-        // Check for threats
-        if (firewall.getStats) {
-            const fwStats = firewall.getStats();
-            if (fwStats.blockedRequests > 50) {
-                findings.push({
-                    module: 'firewall',
-                    severity: 'warning',
-                    message: `High number of blocked requests: ${fwStats.blockedRequests}`
-                });
-                score -= 5;
-            }
+        // Check HTTPS
+        if (window.location.protocol !== 'https:') {
+            findings.push({
+                type: 'https',
+                severity: 'high',
+                message: 'HTTPS tidak aktif'
+            });
+            score -= 20;
         }
         
-        // Check XSS detections
-        if (xssPrevention.getStats) {
-            const xssStats = xssPrevention.getStats();
-            if (xssStats.totalDetections > 10) {
-                findings.push({
-                    module: 'xss',
-                    severity: 'critical',
-                    message: `XSS attempts detected: ${xssStats.totalDetections}`
-                });
-                score -= 15;
-            }
+        // Check CSP
+        var cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        if (!cspMeta) {
+            findings.push({
+                type: 'csp',
+                severity: 'medium',
+                message: 'CSP meta tag tidak ditemukan'
+            });
+            score -= 10;
         }
         
-        // Update posture
-        if (score >= 80) {
-            this.posture.level = 'normal';
-        } else if (score >= 60) {
-            this.posture.level = 'elevated';
-        } else if (score >= 40) {
-            this.posture.level = 'high';
-        } else {
-            this.posture.level = 'critical';
+        // Check active modules
+        var activeCount = Object.keys(_modules).length;
+        if (activeCount < 3) {
+            findings.push({
+                type: 'modules',
+                severity: 'low',
+                message: 'Hanya ' + activeCount + ' modul keamanan aktif'
+            });
+            score -= 5;
         }
         
-        this.posture.lastAssessment = new Date().toISOString();
+        // Update posture based on score
+        if (score >= 80) _posture.level = 'normal';
+        else if (score >= 60) _posture.level = 'elevated';
+        else if (score >= 40) _posture.level = 'high';
+        else _posture.level = 'critical';
+        
+        _posture.lastAssessment = new Date().toISOString();
         
         return {
-            score,
-            level: this.posture.level,
-            findings,
-            activeModules: this.getActiveModules(),
-            inactiveModules: this.getInactiveModules()
+            score: score,
+            level: _posture.level,
+            findings: findings,
+            activeModules: Object.keys(_modules)
         };
     }
     
     // ============================================
-    // THREAT RESPONSE
+    // THREAT HANDLING
     // ============================================
     
-    handleThreat(threat) {
-        this.posture.threatsDetected++;
-        this.posture.activeIncidents++;
+    function handleThreat(threat) {
+        _posture.threatsDetected++;
         
-        this.logger.warn('Security threat detected', threat);
+        var threatInfo = threat || {};
         
-        // Log to audit trail
-        auditTrail.logSecurity('THREAT', threat);
+        // Log to audit trail if available
+        if (_modules.audit && typeof _modules.audit.logSecurity === 'function') {
+            _modules.audit.logSecurity('THREAT_DETECTED', {
+                type: threatInfo.type || 'unknown',
+                details: threatInfo
+            });
+        }
         
-        // Escalate posture if needed
-        if (threat.severity === 'critical') {
-            this.escalatePosture('critical');
-        } else if (threat.severity === 'high' && this.posture.level === 'normal') {
-            this.escalatePosture('elevated');
+        // Escalate if critical
+        if (threatInfo.severity === 'critical') {
+            escalatePosture('critical');
         }
         
         // Dispatch event
-        window.dispatchEvent(new CustomEvent('security:threat', {
-            detail: threat
-        }));
+        try {
+            window.dispatchEvent(new CustomEvent('security:threat', {
+                detail: threatInfo
+            }));
+        } catch(e) {}
+        
+        console.warn('[SecurityManager] Threat:', threatInfo.type || 'unknown');
         
         return {
             handled: true,
-            posture: this.posture.level,
-            incidentId: `INC-${Date.now().toString(36)}`
+            posture: _posture.level
         };
     }
     
-    escalatePosture(level) {
-        const levels = ['normal', 'elevated', 'high', 'critical'];
-        const currentIndex = levels.indexOf(this.posture.level);
-        const targetIndex = levels.indexOf(level);
-        
-        if (targetIndex > currentIndex) {
-            this.posture.level = level;
-            
-            this.logger.warn('Security posture escalated', {
-                from: levels[currentIndex],
-                to: level
-            });
-            
-            // Enable additional security measures
-            if (level === 'high' || level === 'critical') {
-                rateLimiter.enableStrictMode?.();
-            }
-            
-            if (level === 'critical') {
-                securityOrchestrator.lockdownSensitiveOperations?.();
-            }
-        }
-    }
+    // ============================================
+    // SANITIZATION (Delegation)
+    // ============================================
     
-    deescalatePosture() {
-        const levels = ['normal', 'elevated', 'high', 'critical'];
-        const currentIndex = levels.indexOf(this.posture.level);
-        
-        if (currentIndex > 0) {
-            this.posture.level = levels[currentIndex - 1];
-            this.posture.activeIncidents = Math.max(0, this.posture.activeIncidents - 1);
-            
-            this.logger.info('Security posture deescalated', {
-                to: this.posture.level
-            });
+    function sanitize(value, options) {
+        // Gunakan Sanitizer jika tersedia
+        if (_modules.sanitizer && typeof _modules.sanitizer.clean === 'function') {
+            return _modules.sanitizer.clean(value, options);
         }
+        
+        // Fallback: sanitize sederhana
+        if (typeof value === 'string') {
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+        }
+        
+        return value;
     }
     
     // ============================================
-    // SECURITY UTILITIES
+    // TOKEN GENERATION (Delegation)
     // ============================================
     
-    sanitizeInput(input, context) {
-        return xssPrevention.sanitize(input, context);
-    }
-    
-    validateRequest(request) {
-        // Run through all security checks
-        const csrfCheck = csrfProtection.validateRequest(request);
-        if (!csrfCheck.valid) return csrfCheck;
+    function generateCSRFToken() {
+        if (_modules.csrf && typeof _modules.csrf.getToken === 'function') {
+            return _modules.csrf.getToken();
+        }
         
-        const rateCheck = rateLimiter.check();
-        if (!rateCheck.allowed) return { valid: false, reason: rateCheck.reason };
-        
-        const firewallCheck = firewall.validateInput?.(JSON.stringify(request)) || { allowed: true };
-        if (!firewallCheck.allowed) return { valid: false, reason: firewallCheck.reason };
-        
-        return { valid: true };
+        // Fallback
+        var arr = new Uint8Array(16);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(arr);
+        }
+        var token = '';
+        for (var i = 0; i < arr.length; i++) {
+            token += ('0' + arr[i].toString(16)).slice(-2);
+        }
+        return token;
     }
     
-    generateCSRFToken() {
-        return csrfProtection.getCurrentToken();
+    // ============================================
+    // ENCRYPTION (Delegation)
+    // ============================================
+    
+    function encrypt(data, password) {
+        if (_modules.encryption && typeof _modules.encryption.encrypt === 'function') {
+            return _modules.encryption.encrypt(data, password);
+        }
+        console.warn('[SecurityManager] Encryption module not available');
+        return Promise.resolve(null);
     }
     
-    encrypt(data) {
-        return encryptionService.encrypt(data);
-    }
-    
-    decrypt(data) {
-        return encryptionService.decrypt(data);
+    function decrypt(data, password) {
+        if (_modules.encryption && typeof _modules.encryption.decrypt === 'function') {
+            return _modules.encryption.decrypt(data, password);
+        }
+        console.warn('[SecurityManager] Encryption module not available');
+        return Promise.resolve(null);
     }
     
     // ============================================
     // REPORTING
     // ============================================
     
-    getSecurityReport() {
-        const report = {
-            timestamp: new Date().toISOString(),
-            posture: this.posture,
-            modules: {},
-            threats: {},
-            recommendations: []
-        };
+    function getReport() {
+        var moduleStatus = {};
+        var moduleNames = Object.keys(_modules);
         
-        // Module statuses
-        this.modules.forEach((module, name) => {
-            report.modules[name] = {
-                active: module.isEnabled?.() || module.initialized || false,
-                stats: module.getStats?.() || {}
+        for (var i = 0; i < moduleNames.length; i++) {
+            moduleStatus[moduleNames[i]] = {
+                registered: true
             };
-        });
-        
-        // Generate recommendations
-        const inactiveModules = this.getInactiveModules();
-        if (inactiveModules.length > 0) {
-            report.recommendations.push({
-                priority: 'high',
-                message: `Aktifkan modul: ${inactiveModules.join(', ')}`
-            });
         }
         
-        if (this.posture.level !== 'normal') {
-            report.recommendations.push({
-                priority: 'critical',
-                message: `Security posture dalam level ${this.posture.level}. Periksa incident yang aktif.`
-            });
-        }
+        return {
+            timestamp: new Date().toISOString(),
+            posture: getPosture(),
+            modules: moduleStatus,
+            activeModuleCount: moduleNames.length,
+            assessment: assessSecurity()
+        };
+    }
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    function init() {
+        if (_initialized) return getReport();
         
-        return report;
+        // Auto-detect modules
+        autoDetectModules();
+        
+        // Initial assessment
+        assessSecurity();
+        
+        _initialized = true;
+        
+        var count = Object.keys(_modules).length;
+        console.info('[SecurityManager] Initialized with ' + count + ' modules');
+        
+        return {
+            modules: Object.keys(_modules),
+            posture: _posture.level,
+            initialized: true
+        };
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    getPosture() {
-        return { ...this.posture };
-    }
-    
-    getActiveIncidents() {
-        return this.posture.activeIncidents;
-    }
-    
-    isModuleActive(name) {
-        const module = this.modules.get(name);
-        return module?.isEnabled?.() || module?.initialized || false;
-    }
-    
-    reset() {
-        this.posture = {
-            level: 'normal',
-            lastAssessment: new Date().toISOString(),
-            threatsDetected: 0,
-            activeIncidents: 0
-        };
+    return {
+        // Initialization
+        init: init,
         
-        this.modules.forEach(module => {
-            module.reset?.();
-        });
+        // Module management
+        register: registerModule,
+        getModule: getModule,
+        hasModule: hasModule,
+        getActiveModules: getActiveModules,
         
-        this.logger.info('Security manager reset');
-    }
-    
-    destroy() {
-        this.modules.clear();
-        this.initialized = false;
-        this.logger.info('Security manager destroyed');
-    }
-}
+        // Posture
+        getPosture: getPosture,
+        escalatePosture: escalatePosture,
+        deescalatePosture: deescalatePosture,
+        
+        // Security operations
+        assessSecurity: assessSecurity,
+        handleThreat: handleThreat,
+        sanitize: sanitize,
+        
+        // Utilities
+        generateCSRFToken: generateCSRFToken,
+        encrypt: encrypt,
+        decrypt: decrypt,
+        
+        // Reporting
+        getReport: getReport,
+        
+        // Reset
+        reset: function() {
+            _posture = {
+                level: 'normal',
+                lastAssessment: null,
+                threatsDetected: 0,
+                activeIncidents: 0
+            };
+        },
+        
+        // Check if initialized
+        isInitialized: function() {
+            return _initialized;
+        }
+    };
+})();
 
-// Create singleton and initialize
-const securityManager = new SecurityManager();
+// ============================================
+// AUTO-INIT (non-blocking)
+// ============================================
+setTimeout(function() {
+    SecurityManager.init();
+}, 200);
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => securityManager.init());
-} else {
-    securityManager.init();
-}
-
-export default securityManager;
-export { SecurityManager };
+// ============================================
+// USAGE:
+// ============================================
+// // Initialize
+// SecurityManager.init();
+// 
+// // Register custom module
+// SecurityManager.register('myModule', myModuleObject);
+// 
+// // Sanitize input
+// var clean = SecurityManager.sanitize('<script>alert(1)</script>');
+// 
+// // Handle threat
+// SecurityManager.handleThreat({ type: 'xss', severity: 'high' });
+// 
+// // Generate CSRF token
+// var token = SecurityManager.generateCSRFToken();
+// 
+// // Get report
+// var report = SecurityManager.getReport();
+// ============================================

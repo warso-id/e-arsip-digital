@@ -1,51 +1,471 @@
-/* FILE: css/themes/red.css */
-/* ============================================ */
-/* RED THEME - E-ARSIP DIGITAL                  */
-/* ============================================ */
+/* ============================================
+ * css/themes/red.css - Red Theme 2026 (COMPLETE)
+ * E-Arsip Digital - Ruby Red Theme
+ * Version: 2026.1.0
+ * 
+ * Aktivasi: <html data-theme="red">
+ * 
+ * Color Palette:
+ *   50:  #fef2f2  (paling terang - background)
+ *   100: #fee2e2  (terang - border/hover)
+ *   200: #fecaca  (medium terang)
+ *   300: #fca5a5  (medium)
+ *   400: #f87171  (medium gelap - hover state)
+ *   500: #ef4444  (warna utama - primary)
+ *   600: #dc2626  (primary hover)
+ *   700: #b91c1c  (primary active)
+ *   800: #991b1b  (gelap)
+ *   900: #7f1d1d  (paling gelap - teks/heading)
+ * ============================================ */
 
-.theme-red {
-    --primary: #b71c1c;
-    --primary-light: #f05545;
-    --primary-dark: #7f0000;
-    --secondary: #c62828;
-    --secondary-light: #ff5f52;
-    --secondary-dark: #8e0000;
-    --accent: #ff1744;
-    --accent-light: #ff616f;
-    --accent-dark: #c4001d;
-    --gold: #ffd700;
-    --bg-primary: #ffebee;
-    --bg-secondary: #ffcdd2;
-    --bg-card: #ffffff;
-    --text-primary: #b71c1c;
-    --text-secondary: #c62828;
-    --text-muted: #ef5350;
+/* ============================================
+ * 1. RED THEME - LIGHT VARIANT
+ * ============================================ */
+[data-theme="red"],
+[data-theme="red-light"] {
+    /* ==========================================
+     * PRIMARY COLOR PALETTE
+     * ========================================== */
+    --color-primary-50: #fef2f2;
+    --color-primary-100: #fee2e2;
+    --color-primary-200: #fecaca;
+    --color-primary-300: #fca5a5;
+    --color-primary-400: #f87171;
+    --color-primary-500: #ef4444;
+    --color-primary-600: #dc2626;
+    --color-primary-700: #b91c1c;
+    --color-primary-800: #991b1b;
+    --color-primary-900: #7f1d1d;
+    
+    /* ==========================================
+     * SEMANTIC COLORS
+     * ========================================== */
+    --color-success-50: #f0fdf4;
+    --color-success-100: #dcfce7;
+    --color-success-500: #22c55e;
+    --color-success-600: #16a34a;
+    --color-success-700: #15803d;
+    
+    --color-danger-50: #fef2f2;
+    --color-danger-100: #fee2e2;
+    --color-danger-500: #ef4444;
+    --color-danger-600: #dc2626;
+    --color-danger-700: #b91c1c;
+    
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    
+    --color-info-50: #fef2f2;
+    --color-info-100: #fee2e2;
+    --color-info-500: #ef4444;
+    --color-info-600: #dc2626;
+    --color-info-700: #b91c1c;
+    
+    --color-gold: #ffd700;
+    
+    /* ==========================================
+     * BACKGROUND COLORS
+     * ========================================== */
+    --color-bg-primary: #fef2f2;
+    --color-bg-secondary: #fee2e2;
+    --color-bg-tertiary: #fecaca;
+    --color-bg-white: #ffffff;
+    
+    /* ==========================================
+     * TEXT COLORS
+     * ========================================== */
+    --color-text-primary: #7f1d1d;
+    --color-text-secondary: #991b1b;
+    --color-text-muted: #f87171;
+    --color-text-white: #ffffff;
+    --color-text-link: #b91c1c;
+    --color-text-link-hover: #7f1d1d;
+    
+    /* ==========================================
+     * BORDER COLORS
+     * ========================================== */
+    --color-border: #fecaca;
+    --color-border-light: #fee2e2;
+    --color-border-focus: #ef4444;
+    
+    /* ==========================================
+     * SHADOW
+     * ========================================== */
+    --color-shadow-sm: rgba(127, 29, 29, 0.05);
+    --color-shadow-md: rgba(127, 29, 29, 0.08);
+    --color-shadow-lg: rgba(127, 29, 29, 0.12);
+    
+    /* ==========================================
+     * SIDEBAR
+     * ========================================== */
+    --color-sidebar-bg: linear-gradient(180deg, #7f1d1d 0%, #991b1b 100%);
+    --color-sidebar-bg-solid: #7f1d1d;
+    --color-sidebar-text: rgba(255, 255, 255, 0.75);
+    --color-sidebar-text-active: #ffffff;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+    --color-sidebar-active: #ffd700;
+    --color-sidebar-active-bg: rgba(255, 215, 0, 0.15);
+    --color-sidebar-divider: rgba(255, 255, 255, 0.1);
+    
+    /* ==========================================
+     * CARD
+     * ========================================== */
+    --color-card-bg: #ffffff;
+    --color-card-border: #fecaca;
+    --color-card-header-bg: #fef2f2;
+    
+    /* ==========================================
+     * INPUT / FORM
+     * ========================================== */
+    --color-input-bg: #f8fafc;
+    --color-input-bg-focus: #ffffff;
+    --color-input-border: #fecaca;
+    --color-input-focus: #ef4444;
+    --color-input-focus-ring: rgba(239, 68, 68, 0.15);
+    --color-input-disabled: #fef2f2;
+    --color-input-placeholder: #fca5a5;
+    --color-input-error: #ef4444;
+    --color-input-error-ring: rgba(239, 68, 68, 0.15);
+    --color-input-success: #22c55e;
+    
+    /* ==========================================
+     * TABLE
+     * ========================================== */
+    --color-table-header: #fef2f2;
+    --color-table-header-text: #991b1b;
+    --color-table-hover: #fee2e2;
+    --color-table-stripe: #fff5f5;
+    --color-table-border: #fecaca;
+    
+    /* ==========================================
+     * BUTTON
+     * ========================================== */
+    --color-btn-primary-bg: linear-gradient(135deg, #ef4444, #b91c1c);
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-hover: linear-gradient(135deg, #dc2626, #991b1b);
+    --color-btn-primary-active: #7f1d1d;
+    --color-btn-success-bg: #22c55e;
+    --color-btn-success-text: #ffffff;
+    --color-btn-success-hover: #16a34a;
+    --color-btn-danger-bg: #ef4444;
+    --color-btn-danger-text: #ffffff;
+    --color-btn-danger-hover: #dc2626;
+    --color-btn-outline-border: #ef4444;
+    --color-btn-outline-text: #b91c1c;
+    --color-btn-outline-hover-bg: #ef4444;
+    --color-btn-outline-hover-text: #ffffff;
+    --color-btn-ghost-text: #f87171;
+    --color-btn-ghost-hover-bg: #fef2f2;
+    --color-btn-ghost-hover-text: #b91c1c;
+    --color-btn-disabled-bg: #fee2e2;
+    --color-btn-disabled-text: #fca5a5;
+    
+    /* ==========================================
+     * BADGE / LABEL
+     * ========================================== */
+    --color-badge-success-bg: #f0fdf4;
+    --color-badge-success-text: #15803d;
+    --color-badge-danger-bg: #fef2f2;
+    --color-badge-danger-text: #b91c1c;
+    --color-badge-warning-bg: #fef3c7;
+    --color-badge-warning-text: #b45309;
+    --color-badge-info-bg: #fef2f2;
+    --color-badge-info-text: #7f1d1d;
+    --color-badge-default-bg: #fee2e2;
+    --color-badge-default-text: #991b1b;
+    
+    /* ==========================================
+     * MODAL / DIALOG
+     * ========================================== */
+    --color-modal-overlay: rgba(0, 0, 0, 0.5);
+    --color-modal-bg: #ffffff;
+    --color-modal-border: #fecaca;
+    --color-modal-header-bg: #fef2f2;
+    
+    /* ==========================================
+     * TOAST
+     * ========================================== */
+    --color-toast-success-bg: #22c55e;
+    --color-toast-success-text: #ffffff;
+    --color-toast-error-bg: #ef4444;
+    --color-toast-error-text: #ffffff;
+    --color-toast-warning-bg: #f59e0b;
+    --color-toast-warning-text: #7f1d1d;
+    --color-toast-info-bg: #ef4444;
+    --color-toast-info-text: #ffffff;
+    
+    /* ==========================================
+     * TOOLTIP
+     * ========================================== */
+    --color-tooltip-bg: #7f1d1d;
+    --color-tooltip-text: #ffffff;
+    
+    /* ==========================================
+     * PROGRESS BAR
+     * ========================================== */
+    --color-progress-bg: #fee2e2;
+    --color-progress-fill: #ef4444;
+    --color-progress-success: #22c55e;
+    --color-progress-warning: #f59e0b;
+    --color-progress-danger: #ef4444;
+    
+    /* ==========================================
+     * SCROLLBAR
+     * ========================================== */
+    --color-scrollbar-track: #fef2f2;
+    --color-scrollbar-thumb: #fca5a5;
+    --color-scrollbar-thumb-hover: #ef4444;
+    
+    /* ==========================================
+     * DROPDOWN
+     * ========================================== */
+    --color-dropdown-bg: #ffffff;
+    --color-dropdown-border: #fecaca;
+    --color-dropdown-hover: #fef2f2;
+    --color-dropdown-divider: #fecaca;
+    
+    /* ==========================================
+     * PAGINATION
+     * ========================================== */
+    --color-pagination-bg: #ffffff;
+    --color-pagination-border: #fecaca;
+    --color-pagination-hover: #fef2f2;
+    --color-pagination-active-bg: #ef4444;
+    --color-pagination-active-text: #ffffff;
+    
+    /* ==========================================
+     * TABS
+     * ========================================== */
+    --color-tab-bg: transparent;
+    --color-tab-border: #fecaca;
+    --color-tab-active-bg: #ffffff;
+    --color-tab-active-text: #b91c1c;
+    --color-tab-active-border: #ef4444;
+    --color-tab-hover-bg: #fef2f2;
+    
+    /* ==========================================
+     * SKELETON LOADER
+     * ========================================== */
+    --color-skeleton-base: #fee2e2;
+    --color-skeleton-shine: #fecaca;
+    
+    /* ==========================================
+     * CODE / PRE
+     * ========================================== */
+    --color-code-bg: #fef2f2;
+    --color-code-text: #7f1d1d;
+    --color-code-border: #fecaca;
+    
+    /* ==========================================
+     * TYPOGRAPHY
+     * ========================================== */
+    --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+    
+    /* ==========================================
+     * SPACING
+     * ========================================== */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-12: 3rem;
+    --spacing-16: 4rem;
+    
+    /* ==========================================
+     * BORDER RADIUS
+     * ========================================== */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+    
+    /* ==========================================
+     * SIDEBAR DIMENSIONS
+     * ========================================== */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 64px;
+    
+    /* ==========================================
+     * TRANSITIONS
+     * ========================================== */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+    
+    /* ==========================================
+     * Z-INDEX LAYERS
+     * ========================================== */
+    --z-sidebar: 100;
+    --z-overlay: 99;
+    --z-modal: 1000;
+    --z-toast: 9999;
+    --z-tooltip: 9998;
+    
+    /* ==========================================
+     * PWA SAFE AREAS
+     * ========================================== */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-.theme-red .sidebar {
-    background: linear-gradient(180deg, #b71c1c, #c62828) !important;
+/* ============================================
+ * 2. RED THEME - DARK VARIANT
+ * ============================================ */
+[data-theme="red-dark"] {
+    --color-bg-primary: #1a0000;
+    --color-bg-secondary: #2d0000;
+    --color-bg-tertiary: #4a0000;
+    --color-bg-white: #2d0000;
+    
+    --color-text-primary: #fef2f2;
+    --color-text-secondary: #fecaca;
+    --color-text-muted: #f87171;
+    --color-text-link: #f87171;
+    --color-text-link-hover: #fca5a5;
+    
+    --color-border: #991b1b;
+    --color-border-light: #4a0000;
+    --color-border-focus: #ef4444;
+    
+    --color-shadow-sm: rgba(0, 0, 0, 0.3);
+    --color-shadow-md: rgba(0, 0, 0, 0.4);
+    --color-shadow-lg: rgba(0, 0, 0, 0.5);
+    
+    --color-card-bg: #2d0000;
+    --color-card-border: #991b1b;
+    --color-card-header-bg: #1a0000;
+    
+    --color-input-bg: #2d0000;
+    --color-input-bg-focus: #2d0000;
+    --color-input-border: #991b1b;
+    --color-input-disabled: #1a0000;
+    --color-input-placeholder: #f87171;
+    
+    --color-table-header: #2d0000;
+    --color-table-header-text: #fca5a5;
+    --color-table-hover: #4a0000;
+    --color-table-stripe: #240000;
+    --color-table-border: #991b1b;
+    
+    --color-sidebar-bg: linear-gradient(180deg, #1a0000 0%, #2d0000 100%);
+    --color-sidebar-bg-solid: #1a0000;
+    --color-sidebar-text: rgba(255, 255, 255, 0.65);
+    --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+    
+    --color-modal-bg: #2d0000;
+    --color-modal-border: #991b1b;
+    --color-modal-header-bg: #1a0000;
+    --color-modal-overlay: rgba(0, 0, 0, 0.7);
+    
+    --color-badge-success-bg: rgba(34, 197, 94, 0.2);
+    --color-badge-success-text: #86efac;
+    --color-badge-danger-bg: rgba(239, 68, 68, 0.2);
+    --color-badge-danger-text: #fca5a5;
+    --color-badge-warning-bg: rgba(245, 158, 11, 0.2);
+    --color-badge-warning-text: #fcd34d;
+    --color-badge-info-bg: rgba(239, 68, 68, 0.2);
+    --color-badge-info-text: #fca5a5;
+    --color-badge-default-bg: #4a0000;
+    --color-badge-default-text: #fca5a5;
+    
+    --color-btn-outline-border: #991b1b;
+    --color-btn-outline-text: #fecaca;
+    --color-btn-ghost-text: #f87171;
+    --color-btn-ghost-hover-bg: #4a0000;
+    --color-btn-disabled-bg: #4a0000;
+    --color-btn-disabled-text: #f87171;
+    
+    --color-dropdown-bg: #2d0000;
+    --color-dropdown-border: #991b1b;
+    --color-dropdown-hover: #4a0000;
+    
+    --color-pagination-bg: #2d0000;
+    --color-pagination-border: #991b1b;
+    --color-pagination-hover: #4a0000;
+    
+    --color-progress-bg: #4a0000;
+    --color-scrollbar-track: #2d0000;
+    --color-scrollbar-thumb: #991b1b;
+    --color-scrollbar-thumb-hover: #ef4444;
+    --color-code-bg: #1a0000;
+    --color-code-text: #fecaca;
+    --color-code-border: #991b1b;
+    --color-tooltip-bg: #fef2f2;
+    --color-tooltip-text: #7f1d1d;
 }
 
-.theme-red .btn-primary {
-    background: linear-gradient(135deg, #ff1744, #b71c1c);
+/* ============================================
+ * 3. THEME TRANSITIONS
+ * ============================================ */
+[data-theme="red"] body,
+[data-theme="red-light"] body,
+[data-theme="red-dark"] body {
+    transition: background-color var(--transition-normal),
+                color var(--transition-normal);
 }
 
-.theme-red .btn-primary:hover {
-    background: linear-gradient(135deg, #c4001d, #7f0000);
+/* ============================================
+ * 4. ACCESSIBILITY
+ * ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    [data-theme="red"] *,
+    [data-theme="red-light"] *,
+    [data-theme="red-dark"] * {
+        transition: none !important;
+        animation: none !important;
+    }
 }
 
-.theme-red .stat-icon {
-    background: linear-gradient(135deg, #ff1744, #c62828) !important;
+/* ============================================
+ * 5. PWA STANDALONE
+ * ============================================ */
+@media (display-mode: standalone) {
+    [data-theme="red"] body,
+    [data-theme="red-light"] body,
+    [data-theme="red-dark"] body {
+        padding-top: var(--safe-area-top);
+        padding-bottom: var(--safe-area-bottom);
+    }
 }
 
-.theme-red .avatar-circle {
-    background: linear-gradient(135deg, #b71c1c, #ff1744);
-}
-
-.theme-red .badge-primary {
-    background: #ff1744;
-}
-
-.theme-red .nav-link.active {
-    border-left-color: #ffd700 !important;
+/* ============================================
+ * 6. SYSTEM DARK MODE AUTO-DETECT
+ * ============================================ */
+@media (prefers-color-scheme: dark) {
+    [data-theme="red-auto"] {
+        --color-bg-primary: #1a0000;
+        --color-bg-secondary: #2d0000;
+        --color-text-primary: #fef2f2;
+        --color-text-secondary: #fecaca;
+        --color-card-bg: #2d0000;
+        --color-card-border: #991b1b;
+        --color-input-bg: #2d0000;
+        --color-input-border: #991b1b;
+        --color-table-header: #2d0000;
+        --color-table-hover: #4a0000;
+        --color-border: #991b1b;
+    }
 }

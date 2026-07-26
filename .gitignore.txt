@@ -1,96 +1,251 @@
-# .gitignore - E-Arsip Digital 2026
-# Final comprehensive gitignore for safe GitHub upload
+# ============================================
+# E-ARSIP DIGITAL v2026.1.0
+# Comprehensive .gitignore for Enterprise PWA
+# ============================================
 
 # ============================================
-# SENSITIVE FILES (MOST IMPORTANT)
+# 🔒 SENSITIVE FILES - NEVER COMMIT
 # ============================================
-config/config.js
+# Environment variables
 .env
 .env.*
 !.env.example
+
+# Configuration with secrets
+config/config.js
+config/config.local.js
+config/config.*.local.js
+
+# Credentials & Keys
 credentials.json
+credentials*.json
 service-account.json
+service-account*.json
 private-key.json
+private-key*.json
 secret*.js
+secret*.json
 *.pem
 *.key
+*.crt
+*.pfx
+*.p12
+
+# Google Cloud / Firebase
+gcloud-*.json
+firebase-*.json
+.google-auth.json
 
 # ============================================
-# GOOGLE APPS SCRIPT (BACKEND)
-# ============================================
-Google-Apps-Script/
-*.gs
-
-# ============================================
-# BACKUPS
-# ============================================
-backups/*
-!backups/.gitkeep
-*.backup
-*.bak
-*.sql
-*.tar.gz
-*.zip
-
-# ============================================
-# DEPENDENCIES
+# 🔧 DEPENDENCIES
 # ============================================
 node_modules/
-package-lock.json
-yarn.lock
+.yarn/
+.pnp.*
+yarn-error.log
+npm-debug.log*
+
+# Lock files - KEEP package-lock.json for reproducible builds
+# package-lock.json  ← JANGAN di-ignore!
+# yarn.lock          ← JANGAN di-ignore!
 
 # ============================================
-# BUILD OUTPUT
+# 🏗️ BUILD OUTPUT
 # ============================================
 dist/
 build/
 out/
 .next/
 .nuxt/
+output/
+*.tsbuildinfo
 
 # ============================================
-# IDE & EDITOR
+# 📦 PACKAGE MANAGER
 # ============================================
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.project
-.classpath
-.settings/
+.npm/
+.npmrc
+.yarnrc
+.pnpm-store/
 
 # ============================================
-# OS FILES
+# 💾 BACKUPS
 # ============================================
-.DS_Store
-Thumbs.db
-Desktop.ini
+backups/*
+!backups/.gitkeep
+*.backup
+*.bak
+*.sql
+*.sql.gz
+*.tar
+*.tar.gz
+*.tar.bz2
+*.7z
 
 # ============================================
-# LOGS
+# 📝 LOGS
 # ============================================
 logs/
 *.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # ============================================
-# UPLOAD & TEMP
+# 📤 UPLOADS & TEMP
 # ============================================
 uploads/*
+!uploads/.gitkeep
 temp/*
+!temp/.gitkeep
 tmp/*
+!tmp/.gitkeep
+.tmp/
 *.tmp
 *.temp
+.cache/
+.parcel-cache/
+.turbo/
 
 # ============================================
-# TEST COVERAGE
+# 🧪 TEST COVERAGE & REPORTS
 # ============================================
 coverage/
 .nyc_output/
+.jest/
+test-results/
+playwright-report/
+cypress/videos/
+cypress/screenshots/
+.html-test-results/
 
 # ============================================
-# ENVIRONMENT
+# 📊 ANALYTICS & BUNDLE ANALYSIS
 # ============================================
-.env.development
-.env.production
-.env.local
+stats.html
+stats.json
+bundle-analysis/
+.webpack-bundle-analyzer/
+
+# ============================================
+# 🖥️ IDE & EDITOR
+# ============================================
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# IntelliJ / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.project
+.classpath
+.settings/
+.metadata/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Atom
+.atom/
+
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+[._]*.un~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Kate
+.kateproject
+
+# ============================================
+# 🖥️ OPERATING SYSTEM
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.diskutility_created
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+*~
+
+# ============================================
+# 🐳 DOCKER
+# ============================================
+docker-compose.override.yml
+.docker/
+docker/.env
+*.dockerignore
+
+# ============================================
+# 📱 PWA GENERATED FILES
+# ============================================
+# Service worker (jika di-generate oleh Workbox)
+# sw.js  ← Uncomment jika sw.js di-generate otomatis
+workbox-config.js
+.pwa-cache/
+
+# ============================================
+# 🔍 MISCELLANEOUS
+# ============================================
+# TypeScript
+*.tsbuildinfo
+
+# Debug
+*.heapdump
+*.heapsnapshot
+*.cpuprofile
+
+# Compression
+*.gz
+*.br
+*.zip
+
+# Local development
+.local/
+.localhost
+
+# ============================================
+# GOOGLE APPS SCRIPT
+# ============================================
+# Uncomment jika GAS files tidak perlu di-track
+# Google-Apps-Script/
+# *.gs
+# .clasp.json
+# .claspignore
+
+# ============================================
+# SECURITY SCANS
+# ============================================
+.snyk/
+.njsscan/
+.bandit/
+.semgrep/

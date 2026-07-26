@@ -1,472 +1,464 @@
-// config/config.js - Konfigurasi Utama (JANGAN UPLOAD KE GITHUB)
+// config/config.js - Konfigurasi Utama E-Arsip Digital 2026
 /**
  * E-Arsip Digital - Main Configuration
  * Version: 2026.1.0
- * ⚠️ FILE INI BERISI KREDENSIAL SENSITIF - JANGAN COMMIT KE GIT
-<<<<<<< HEAD
+ * 
+ * ⚠️  FILE INI BERISI KREDENSIAL SENSITIF
+ * ⚠️  JANGAN COMMIT KE GIT REPOSITORY!
+ * ⚠️  SUDAH TERDAFTAR DI .gitignore
+ * 
+ * Setup:
+ *   1. Copy config.example.js ke config.js
+ *   2. Isi kredensial asli
+ *   3. Jangan commit config.js
  */
 
-const APP_CONFIG = {
-=======
- * ⬇️ DIUBAH: Dari ES Module ke regular script (window.EArsip.Config)
- */
-
-// Inisialisasi namespace global
+// ============================================
+// NAMESPACE GLOBAL
+// ============================================
 window.EArsip = window.EArsip || {};
 
-window.EArsip.Config = {
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+// ============================================
+// KONFIGURASI UTAMA
+// ============================================
+window.EArsip.Config = (function() {
+    'use strict';
+    
     // ============================================
-    // APPLICATION INFO
+    // PRIVATE: DEEP FREEZE UTILITY
     // ============================================
-    app: {
-        name: 'E-Arsip Digital',
-        version: '2026.1.0',
-        environment: 'production',
-        debug: false,
-        baseUrl: 'https://warso-id.github.io/arsip-surat-digital-enterprise',
-        apiUrl: 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec',
-        timezone: 'Asia/Jakarta',
-        language: 'id',
-        fallbackLanguage: 'en',
-        tahunAjaranStart: 2025,
-        tahunAjaranEnd: 2026
-    },
-
-    // ============================================
-<<<<<<< HEAD
-    // GOOGLE APPS SCRIPT - CODE.GS CONFIG
-    // ============================================
-    googleAppsScript: {
-        // URL Deployment Code.gs
-        scriptUrl: 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec',
+    function deepFreeze(obj) {
+        if (!obj || typeof obj !== 'object' || Object.isFrozen(obj)) return obj;
         
-        // Google Sheets ID untuk database
-        spreadsheetId: '16eMCGrgTUWEr52_e9qXbFNA_63k45M15EjJsnX7iM30',
+        Object.freeze(obj);
+        Object.getOwnPropertyNames(obj).forEach(function(prop) {
+            if (obj[prop] !== null && (typeof obj[prop] === 'object' || typeof obj[prop] === 'function') && !Object.isFrozen(obj[prop])) {
+                deepFreeze(obj[prop]);
+            }
+        });
         
-        // Google Drive Folder ID - Master ARSIP SURAT
-        driveFolderId: '1Apt9x1XdDckQkrhg5-LhfAEdZaFPkuXt',
-        
-        // Nama Sheet di Google Sheets
-=======
-    // GOOGLE APPS SCRIPT CONFIG
+        return obj;
+    }
+    
     // ============================================
-    googleAppsScript: {
-        scriptUrl: 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec',
-        spreadsheetId: '16eMCGrgTUWEr52_e9qXbFNA_63k45M15EjJsnX7iM30',
-        driveFolderId: '1Apt9x1XdDckQkrhg5-LhfAEdZaFPkuXt',
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        sheets: {
-            users: 'Users',
-            suratKeluar: 'SuratKeluar',
-            suratMasuk: 'SuratMasuk',
-            disposisi: 'Disposisi',
-            approvals: 'Approvals',
-            logs: 'ActivityLogs',
-            settings: 'Settings',
-            penomoran: 'Penomoran',
-            signatures: 'Signatures',
-            notifications: 'Notifications',
-            backups: 'Backups'
+    // PRIVATE: SANITIZE (hapus trailing slash)
+    // ============================================
+    function rtrim(str, char) {
+        while (str.charAt(str.length - 1) === char) {
+            str = str.substring(0, str.length - 1);
+        }
+        return str;
+    }
+    
+    // ============================================
+    // KONFIGURASI
+    // ============================================
+    var config = {
+        // ==========================================
+        // 1. APPLICATION INFO
+        // ==========================================
+        app: {
+            name: 'E-Arsip Digital',
+            version: '2026.1.0',
+            environment: 'production',    // 'development' | 'staging' | 'production'
+            debug: false,
+            baseUrl: 'https://warso-id.github.io/arsip-surat-digital-enterprise',
+            apiUrl: 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec',
+            timezone: 'Asia/Jakarta',
+            language: 'id',
+            tahunAjaranStart: 2025,
+            tahunAjaranEnd: 2026
         },
-<<<<<<< HEAD
         
-        // Klasifikasi Surat -> Folder Mapping
-        folderMapping: {
-            surat_keluar: {
-                root: 'Surat Keluar',
-                subFolders: {
-                    keuangan: 'Surat Keluar Keuangan',
-                    umum: 'Surat Keluar Umum',
-                    keputusan_dekan: 'Surat Keluar Keputusan Dekan',
-                    akademik: 'Surat Keluar Akademik',
-                    kemahasiswaan: 'Surat Keluar Kemahasiswaan',
-                    kepegawaian: 'Surat Keluar Kepegawaian',
-                    kerjasama: 'Surat Keluar Kerjasama'
+        // ==========================================
+        // 2. GOOGLE APPS SCRIPT / SHEETS
+        // ==========================================
+        googleAppsScript: {
+            // URL Deployment
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbxP0G4klL8Ruqu_XFQ8YMYGy-jFyqb8r0mYc5WprLGTq2qdX0mucljUd9sxwokUtJ-d/exec',
+            
+            // Google Sheets Database ID
+            spreadsheetId: '16eMCGrgTUWEr52_e9qXbFNA_63k45M15EjJsnX7iM30',
+            
+            // Google Drive Folder ID - Master ARSIP SURAT
+            driveFolderId: '1Apt9x1XdDckQkrhg5-LhfAEdZaFPkuXt',
+            
+            // Nama Sheet
+            sheets: {
+                users: 'Users',
+                suratKeluar: 'SuratKeluar',
+                suratMasuk: 'SuratMasuk',
+                disposisi: 'Disposisi',
+                approvals: 'Approvals',
+                logs: 'ActivityLogs',
+                settings: 'Settings',
+                penomoran: 'Penomoran',
+                signatures: 'Signatures',
+                notifications: 'Notifications',
+                backups: 'Backups'
+            },
+            
+            // Drive Folder Mapping untuk Surat
+            folderMapping: {
+                surat_keluar: {
+                    root: 'Surat Keluar',
+                    subFolders: {
+                        umum: 'Surat Keluar Umum',
+                        keuangan: 'Surat Keluar Keuangan',
+                        akademik: 'Surat Keluar Akademik',
+                        kemahasiswaan: 'Surat Keluar Kemahasiswaan',
+                        kepegawaian: 'Surat Keluar Kepegawaian',
+                        kerjasama: 'Surat Keluar Kerjasama',
+                        keputusan_dekan: 'Surat Keluar Keputusan Dekan'
+                    }
+                },
+                surat_masuk: {
+                    root: 'Surat Masuk',
+                    subFolders: {
+                        umum: 'Surat Masuk Umum',
+                        keuangan: 'Surat Masuk Keuangan',
+                        akademik: 'Surat Masuk Akademik',
+                        kemahasiswaan: 'Surat Masuk Kemahasiswaan',
+                        kepegawaian: 'Surat Masuk Kepegawaian',
+                        kerjasama: 'Surat Masuk Kerjasama',
+                        keputusan_dekan: 'Surat Masuk Keputusan Dekan'
+                    }
                 }
             },
-            surat_masuk: {
-                root: 'Surat Masuk',
-                subFolders: {
-                    keuangan: 'Surat Masuk Keuangan',
-                    umum: 'Surat Masuk Umum',
-                    keputusan_dekan: 'Surat Masuk Keputusan Dekan',
-                    akademik: 'Surat Masuk Akademik',
-                    kemahasiswaan: 'Surat Masuk Kemahasiswaan',
-                    kepegawaian: 'Surat Masuk Kepegawaian',
-                    kerjasama: 'Surat Masuk Kerjasama'
-                }
+            
+            // Tahun Ajaran
+            tahunAjaran: {
+                startMonth: 9,       // September
+                endMonth: 8,         // Agustus
+                labelFormat: 'TA.{start}/{end}',
+                folderFormat: 'T.A. {end}'
+            },
+            
+            // Performance
+            cacheTimeout: 300000,    // 5 menit
+            retryAttempts: 3,
+            retryDelay: 1000         // 1 detik
+        },
+        
+        // ==========================================
+        // 3. AUTHENTICATION
+        // ==========================================
+        auth: {
+            sessionTimeout: 3600000,         // 1 jam
+            refreshTokenTimeout: 86400000,   // 24 jam
+            maxLoginAttempts: 5,
+            lockoutDuration: 900000,         // 15 menit
+            passwordMinLength: 8,
+            passwordRequireSpecialChar: true,
+            passwordRequireNumber: true,
+            passwordRequireUppercase: true,
+            mfaEnabled: false,
+            idleTimeout: 1800000,            // 30 menit
+            absoluteTimeout: 28800000,       // 8 jam
+            extendOnActivity: true,
+            maxConcurrentSessions: 3,
+            
+            // JWT Configuration
+            // ⚠️  SECRET di-generate saat runtime atau dari environment
+            // ⚠️  JANGAN hardcode secret di sini!
+            jwt: {
+                expiresIn: '1h',
+                algorithm: 'HS256'
             }
         },
         
-        // Tahun Ajaran Config
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        tahunAjaran: {
-            startMonth: 9,
-            endMonth: 8,
-            labelFormat: 'TA.{start}/{end}',
-            folderFormat: 'T.A. {end}'
+        // ==========================================
+        // 4. SECURITY
+        // ==========================================
+        security: {
+            // Encryption untuk data sensitif
+            encryption: {
+                algorithm: 'AES-256-GCM',
+                keyLength: 256,
+                saltLength: 128,
+                ivLength: 12
+            },
+            
+            // CSRF Protection
+            csrf: {
+                enabled: true,
+                cookieName: 'XSRF-TOKEN',
+                headerName: 'X-CSRF-Token',
+                tokenLength: 32,
+                tokenExpiry: 3600000,    // 1 jam
+                renewOnUse: true
+            },
+            
+            // XSS Protection
+            xss: {
+                sanitizeInput: true,
+                sanitizeOutput: true
+            },
+            
+            // Rate Limiting (client-side hint)
+            rateLimit: {
+                enabled: true,
+                windowMs: 60000,         // 1 menit
+                maxRequests: 100
+            },
+            
+            // Firewall Rules
+            firewall: {
+                enabled: true,
+                blockSQLInjection: true,
+                blockXSS: true,
+                blockPathTraversal: true,
+                maxRequestBodySize: 10485760  // 10MB
+            },
+            
+            // Session Cookie Settings
+            session: {
+                httpOnly: true,
+                secure: true,            // FALSE untuk development (HTTP)
+                sameSite: 'Lax',         // 'Lax' untuk PWA + cross-origin
+                path: '/'
+            },
+            
+            // Password Policy
+            password: {
+                minLength: 8,
+                requireUppercase: true,
+                requireNumber: true,
+                requireSpecialChar: true,
+                maxAge: 90,              // hari
+                historySize: 5
+            },
+            
+            // Audit Trail
+            audit: {
+                enabled: true,
+                maxLogs: 1000,
+                flushInterval: 30000     // 30 detik
+            }
         },
-<<<<<<< HEAD
         
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        cacheTimeout: 300000,
-        retryAttempts: 3,
-        retryDelay: 1000
-    },
-
-    // ============================================
-<<<<<<< HEAD
-    // AUTHENTICATION CONFIGURATION
-    // ============================================
-    auth: {
-        sessionTimeout: 3600000, // 1 jam
-        refreshTokenTimeout: 86400000, // 24 jam
-        maxLoginAttempts: 5,
-        lockoutDuration: 900000, // 15 menit
-=======
-    // AUTH CONFIG
-    // ============================================
-    auth: {
-        sessionTimeout: 3600000,
-        refreshTokenTimeout: 86400000,
-        maxLoginAttempts: 5,
-        lockoutDuration: 900000,
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        passwordMinLength: 8,
-        passwordRequireSpecialChar: true,
-        passwordRequireNumber: true,
-        passwordRequireUppercase: true,
-        mfaEnabled: false,
-<<<<<<< HEAD
-        mfaMethod: 'totp',
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        jwt: {
-            secret: 'eArsipDigital2026SecureJWTSecretKey!@#$%^&*()',
-            expiresIn: '1h',
-            algorithm: 'HS256'
-<<<<<<< HEAD
+        // ==========================================
+        // 5. FILE UPLOAD
+        // ==========================================
+        upload: {
+            maxFileSize: 10485760,       // 10MB
+            allowedTypes: [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'image/jpeg',
+                'image/png',
+                'image/gif'
+            ],
+            blockedExtensions: [
+                '.exe', '.bat', '.cmd', '.sh', '.msi', '.dll',
+                '.js', '.vbs', '.ps1', '.scr', '.com'
+            ],
+            maxFiles: 5,
+            chunkSize: 1048576,          // 1MB chunks untuk file besar
+            compress: true,
+            preview: true
         },
-        idleTimeout: 1800000, // 30 menit
-        absoluteTimeout: 28800000, // 8 jam
-        extendOnActivity: true,
-        maxConcurrentSessions: 3
-    },
-
-    // ============================================
-    // SECURITY CONFIGURATION
-    // ============================================
-    security: {
-        encryption: {
-            algorithm: 'AES-256-GCM',
-            keyDerivation: 'PBKDF2',
-            iterations: 200000,
-            keyLength: 256,
-            saltLength: 128,
-            ivLength: 12,
-            tagLength: 128
-        },
-        csrf: {
+        
+        // ==========================================
+        // 6. PWA CONFIGURATION
+        // ==========================================
+        pwa: {
             enabled: true,
-            cookieName: 'XSRF-TOKEN',
-            headerName: 'X-XSRF-TOKEN',
-            formFieldName: '_csrf_token',
-            tokenLength: 32,
-            tokenExpiry: 3600000,
-            renewOnUse: true,
-            validateOrigin: true,
-            allowedOrigins: [
-                'https://warso-id.github.io',
-                'https://script.google.com'
-            ]
+            cacheName: 'earsip-v2026',
+            cacheVersion: '2026.1.0',
+            offlineFallback: 'offline.html',
+            precacheUrls: [
+                'index.html',
+                'login.html',
+                'offline.html',
+                'css/style.css',
+                'js/api.js',
+                'js/auth.js',
+                'js/utils.js',
+                'js/config.js',
+                'manifest.json'
+            ],
+            strategies: {
+                images: 'cache-first',
+                api: 'network-first',
+                static: 'cache-first',
+                html: 'network-first',
+                fonts: 'cache-first'
+            },
+            maxCacheSize: 50 * 1024 * 1024  // 50MB
         },
-        xss: {
-            sanitizeInput: true,
-            sanitizeOutput: true,
-            allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'table', 'tr', 'td', 'th'],
-            allowedAttributes: ['href', 'title', 'target', 'class', 'id', 'style'],
-            allowedSchemes: ['http', 'https', 'mailto', 'tel'],
-            stripComments: true,
-            removeEmptyTags: true
+        
+        // ==========================================
+        // 7. PERFORMANCE
+        // ==========================================
+        performance: {
+            lazyLoading: true,
+            imageOptimization: true,
+            compression: 'gzip',
+            caching: {
+                enabled: true,
+                strategy: 'stale-while-revalidate',
+                maxAge: 86400,           // 24 jam
+                maxEntries: 200
+            }
         },
-        rateLimit: {
+        
+        // ==========================================
+        // 8. NOTIFICATIONS
+        // ==========================================
+        notifications: {
             enabled: true,
-            windowMs: 60000, // 1 menit
-            maxRequests: 100,
-            burstMultiplier: 1.5
+            soundEnabled: true,
+            desktopEnabled: true,
+            channels: ['in-app', 'toast'],
+            position: 'top-right',
+            duration: 5000,              // 5 detik
+            maxVisible: 5,
+            pauseOnHover: true
         },
-        firewall: {
-            enabled: true,
-            blockSuspiciousIPs: true,
-            blockSQLInjection: true,
-            blockXSS: true,
-            blockPathTraversal: true,
-            blockUserAgents: false,
-            maxRequestBodySize: 10485760 // 10MB
+        
+        // ==========================================
+        // 9. LOGGING
+        // ==========================================
+        logging: {
+            level: 'info',              // 'debug' | 'info' | 'warn' | 'error'
+            consoleEnabled: true,
+            remoteEnabled: false,
+            maxEntries: 1000,
+            retention: 30,              // hari
+            // JANGAN log nilai dari field ini
+            sensitive: ['password', 'token', 'secret', 'key', 'auth', 'credential', 'authorization']
         },
-        headers: {
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net https://script.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
-            'X-Content-Type-Options': 'nosniff',
-            'X-Frame-Options': 'DENY',
-            'X-XSS-Protection': '1; mode=block',
-            'Referrer-Policy': 'strict-origin-when-cross-origin',
-            'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-            'Cross-Origin-Opener-Policy': 'same-origin',
-            'Cross-Origin-Resource-Policy': 'cross-origin',
-            'Cross-Origin-Embedder-Policy': 'unsafe-none'
+        
+        // ==========================================
+        // 10. FEATURE FLAGS
+        // ==========================================
+        features: {
+            darkMode: true,
+            qrCode: true,
+            digitalSignature: true,
+            approvalWorkflow: true,
+            autoNumbering: true,
+            exportPdf: true,
+            exportExcel: true,
+            bulkOperations: true,
+            advancedSearch: true,
+            realtimeNotifications: false,
+            offlineMode: true,
+            pwa: true,
+            backupRestore: true,
+            auditTrail: true
         },
-        session: {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'Lax',
-            path: '/',
-            domain: ''
+        
+        // ==========================================
+        // 11. THEME
+        // ==========================================
+        theme: {
+            default: 'light',
+            available: ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'red'],
+            customColors: {
+                primary: '#2563eb',
+                secondary: '#64748b',
+                success: '#10b981',
+                danger: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            },
+            transitionDuration: 300,
+            enableSystemDetection: true
         },
-        password: {
-            minLength: 8,
-            requireUppercase: true,
-            requireNumber: true,
-            requireSpecialChar: true,
-            maxAge: 90,
-            historySize: 5
+        
+        // ==========================================
+        // 12. ROLE-BASED ROUTING (16 ROLES)
+        // ==========================================
+        routes: {
+            login: '../login.html',
+            home: '../index.html',
+            dashboard: {
+                'super_admin': 'super-admin/index.html',
+                'admin': 'admin/index.html',
+                'kasubag': 'kasubag/index.html',
+                'kaprodi': 'kaprodi/index.html',
+                'admin_kaprodi': 'admin-kaprodi/index.html',
+                'wadek': 'wadek/index.html',
+                'admin_wadek': 'admin-wadek/index.html',
+                'dekan': 'dekan/index.html',
+                'admin_dekan': 'admin-dekan/index.html',
+                'ketua_upm': 'ketua-upm/index.html',
+                'litdianmas': 'litdianmas/index.html',
+                'staf': 'staf/index.html',
+                'dosen': 'dosen/index.html',
+                'lembaga_kemahasiswaan': 'lembaga-kemahasiswaan/index.html',
+                'mahasiswa': 'mahasiswa/index.html',
+                'user': 'user/index.html',
+                'default': './'
+            },
+            error: {
+                '403': '../error/403.html',
+                '404': '../error/404.html',
+                '500': '../error/500.html'
+            }
         },
-        audit: {
-            enabled: true,
-            logLevel: 'info',
-            maxLogs: 1000,
-            flushInterval: 30000,
-            batchSize: 10
+        
+        // ==========================================
+        // 13. API ENDPOINTS
+        // ==========================================
+        endpoints: {
+            login: 'login',
+            logout: 'logout',
+            health: 'health',
+            stats: 'statistics',
+            suratKeluar: 'surat-keluar',
+            suratMasuk: 'surat-masuk',
+            disposisi: 'disposisi',
+            approval: 'approval',
+            users: 'users',
+            logs: 'logs',
+            settings: 'settings',
+            verify: 'verify',
+            generate: 'generate'
         }
-    },
-
+    };
+    
     // ============================================
-    // FILE UPLOAD CONFIGURATION
+    // RUNTIME ADJUSTMENTS
     // ============================================
-    upload: {
-        maxFileSize: 10485760, // 10MB
-        allowedTypes: [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'text/plain'
-        ],
-        maxFiles: 5,
-        chunkSize: 1048576, // 1MB chunks
-        endpoint: '/api/upload',
-        compress: true,
-        maxCompressSize: 5242880, // 5MB
-        preview: true
-    },
-
-    // ============================================
-    // PWA CONFIGURATION
-    // ============================================
-    pwa: {
-        enabled: true,
-        cacheName: 'e-arsip-v2026.1',
-        cacheVersion: '2026.1.0',
-        offlineFallback: '/404.html',
-        precacheUrls: [
-            '/',
-            '/index.html',
-            '/login.html',
-            '/404.html',
-            '/css/style.css',
-            '/js/init.js',
-            '/js/auth.js',
-            '/js/api.js',
-            '/js/utils.js'
-        ],
-        strategies: {
-            images: 'cache-first',
-            api: 'network-first',
-            static: 'cache-first',
-            html: 'network-first'
-        }
-    },
-
-    // ============================================
-    // PERFORMANCE CONFIGURATION
-    // ============================================
-    performance: {
-        lazyLoading: true,
-        imageOptimization: true,
-        minifyHTML: true,
-        minifyCSS: true,
-        minifyJS: true,
-        compression: 'gzip',
-        caching: {
-            enabled: true,
-            strategy: 'stale-while-revalidate',
-            maxAge: 86400,
-            maxEntries: 200
-        }
-    },
-
-    // ============================================
-    // NOTIFICATION CONFIGURATION
-    // ============================================
-    notifications: {
-        enabled: true,
-        pushEnabled: false,
-        emailEnabled: false,
-        soundEnabled: true,
-        desktopEnabled: true,
-        channels: ['in-app', 'toast'],
-        frequency: 'realtime',
-        position: 'top-right',
-        duration: 5000,
-        maxVisible: 5,
-        pauseOnHover: true,
-        showProgress: true
-    },
-
-    // ============================================
-    // LOGGING CONFIGURATION
-    // ============================================
-    logging: {
-        level: 'info',
-        consoleEnabled: true,
-        remoteEnabled: false,
-        remoteUrl: '',
-        maxEntries: 1000,
-        retention: 30,
-        sensitive: ['password', 'token', 'secret', 'key', 'auth', 'credential']
-    },
-
-    // ============================================
-    // FEATURE FLAGS
-=======
-        }
-    },
-
-    // ============================================
-    // SECURITY CONFIG
-    // ============================================
-    security: {
-        encryption: { algorithm: 'AES-256-GCM', keyLength: 256 },
-        csrf: { enabled: true, cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN', tokenLength: 32 },
-        xss: { sanitizeInput: true, sanitizeOutput: true },
-        rateLimit: { enabled: true, windowMs: 60000, maxRequests: 100 },
-        firewall: { enabled: true, blockSQLInjection: true, blockXSS: true }
-    },
-
-    // ============================================
-    // UPLOAD CONFIG
-    // ============================================
-    upload: {
-        maxFileSize: 10485760,
-        allowedTypes: ['application/pdf', 'image/jpeg', 'image/png', 'application/msword'],
-        maxFiles: 5
-    },
-
-    // ============================================
-    // FEATURES
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-    // ============================================
-    features: {
-        darkMode: true,
-        qrCode: true,
-        digitalSignature: true,
-<<<<<<< HEAD
-        eSignature: true,
-        approvalWorkflow: true,
-        autoNumbering: true,
-        exportPdf: true,
-        exportExcel: true,
-        bulkOperations: true,
-        advancedSearch: true,
-        realtimeNotifications: false,
-        offlineMode: true,
-        pwa: true,
-        backupRestore: true,
-        auditTrail: true
-    },
-
-    // ============================================
-    // THEME CONFIGURATION
-    // ============================================
-    theme: {
-        default: 'light',
-        available: ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'red', 'custom'],
-        customColors: {
-            primary: '#2563eb',
-            secondary: '#64748b',
-            success: '#10b981',
-            danger: '#ef4444',
-            warning: '#f59e0b',
-            info: '#3b82f6'
-        },
-        transitionDuration: 300,
-        enableSystemDetection: true
-    },
-
-    // ============================================
-    // DEBUG CONFIGURATION (DEVELOPMENT ONLY)
-    // ============================================
-    debug: {
-        enabled: false,
-        showPanel: false,
-        logLevel: 'debug',
-        maxLogEntries: 500
-    },
-
-    // ============================================
-    // HOT RELOAD (DEVELOPMENT ONLY)
-    // ============================================
-    hotReload: {
-        enabled: false,
-        wsUrl: 'ws://localhost:35729',
-        reloadCSS: true,
-        reloadJS: true,
-        reloadHTML: false,
-        preserveState: true
+    
+    // Auto-detect environment
+    var hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        config.app.environment = 'development';
+        config.app.debug = true;
+        config.security.session.secure = false;
+        config.logging.level = 'debug';
     }
-};
-
-// Freeze config in production
-if (APP_CONFIG.app.environment === 'production') {
-    Object.freeze(APP_CONFIG);
-}
-
-export default APP_CONFIG;
-=======
-        approvalWorkflow: true,
-        autoNumbering: true,
-        exportPdf: true,
-        exportExcel: true
-    },
-
-    // ============================================
-    // THEME
-    // ============================================
-    theme: {
-        default: 'light',
-        available: ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'red']
-    },
-
-    // ============================================
-    // LOGGING
-    // ============================================
-    logging: {
-        level: 'info',
-        consoleEnabled: true,
-        remoteEnabled: false
+    
+    // Auto-detect GitHub Pages base path
+    if (hostname.includes('github.io')) {
+        var pathParts = window.location.pathname.split('/');
+        if (pathParts.length > 1 && pathParts[1]) {
+            config.app.baseUrl = window.location.origin + '/' + pathParts[1];
+        }
     }
-};
-
-// Freeze di production
-if (window.EArsip.Config.app.environment === 'production') {
-    Object.freeze(window.EArsip.Config);
-}
-
-console.log('E-Arsip Config loaded: v' + window.EArsip.Config.app.version);
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+    
+    // Clean trailing slashes
+    config.app.apiUrl = rtrim(config.app.apiUrl, '/');
+    config.googleAppsScript.scriptUrl = rtrim(config.googleAppsScript.scriptUrl, '/');
+    
+    // ============================================
+    // FREEZE IN PRODUCTION
+    // ============================================
+    if (config.app.environment === 'production') {
+        deepFreeze(config);
+        console.log('E-Arsip Config: PRODUCTION mode (frozen)');
+    } else {
+        console.log('E-Arsip Config: ' + config.app.environment.toUpperCase() + ' mode');
+    }
+    
+    console.log('E-Arsip Digital v' + config.app.version + ' | ' + config.app.environment);
+    
+    return config;
+})();

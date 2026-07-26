@@ -1,509 +1,592 @@
-<!-- help/index.html - Help Center 2026 -->
+<!-- help/index.html - Help Center 2026 (SECURE PWA) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<<<<<<< HEAD
-    <script>
-        (function () {
-            const getAppBasePath = () => {
-                const pathname = window.location.pathname || '/';
-                const segments = pathname.split('/').filter(Boolean);
-                if (segments.length === 0) return '/';
-                const repoSegment = segments[0];
-                const isLikelySubfolder = pathname.includes(`/${repoSegment}/`) || pathname.endsWith(`/${repoSegment}`);
-                if (isLikelySubfolder && repoSegment !== 'dashboard' && repoSegment !== 'surat-masuk' && repoSegment !== 'surat-keluar') {
-                    return `/${repoSegment}/`;
-                }
-                return '/';
-            };
-            const appBasePath = getAppBasePath();
-            const rewrite = (value) => {
-                if (!value || !value.startsWith('/')) return value;
-                const clean = value.replace(/^\/+/, '');
-                return `${appBasePath}${clean}`.replace(/\/+/g, '/');
-            };
-            document.querySelectorAll('link[href], script[src], img[src], a[href]').forEach((el) => {
-                ['href', 'src'].forEach((attr) => {
-                    if (!el.hasAttribute(attr)) return;
-                    const value = el.getAttribute(attr);
-                    if (value && value.startsWith('/')) {
-                        el.setAttribute(attr, rewrite(value));
-                    }
-                });
-            });
-        })();
-    </script>
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bantuan">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Pusat Bantuan - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
-    <title>Bantuan - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    <link rel="apple-touch-icon" href="../icons/icon-192.png">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self';
+        base-uri 'self';
+    ">
+    
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
+    <title>Pusat Bantuan - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
-        .help-container {
-            max-width: 1000px;
-            margin: 0 auto;
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --transition: all 0.25s ease;
         }
         
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: linear-gradient(180deg, #1e293b, #0f172a); color: white; z-index: 100; overflow-y: auto; transition: transform 0.3s; padding-top: var(--safe-top); }
+        .sidebar-brand { padding: 20px; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); border-left: 3px solid transparent; }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        
+        /* Main */
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 24px; padding-top: calc(24px + var(--safe-top)); transition: margin 0.3s; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; gap: 10px; }
+        .mobile-header .hamburger { width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* Breadcrumb */
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); margin-bottom: 16px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none; transition: var(--transition); font-family: inherit; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; min-height: 34px; }
+        
+        /* Help Container */
+        .help-container { max-width: 1000px; margin: 0 auto; }
+        
+        /* Hero */
         .help-hero {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 16px;
-            padding: 40px;
-            color: white;
-            margin-bottom: 24px;
-            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius); padding: 36px 24px;
+            color: white; margin-bottom: 20px; text-align: center;
+            box-shadow: var(--shadow-md);
         }
+        .help-hero h2 { color: white; margin-bottom: 6px; font-size: 22px; }
+        .help-hero p { opacity: 0.85; font-size: 14px; }
         
-        .help-hero h2 {
-            color: white;
-            margin-bottom: 8px;
-        }
-        
+        /* Search */
         .help-search {
-            max-width: 500px;
-            margin: 20px auto 0;
-            position: relative;
+            max-width: 480px; margin: 18px auto 0; position: relative;
         }
-        
         .help-search input {
-            width: 100%;
-            padding: 14px 20px 14px 48px;
-            border-radius: 25px;
-            border: none;
-            font-size: 15px;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            backdrop-filter: blur(10px);
+            width: 100%; padding: 13px 18px 13px 44px;
+            border-radius: 25px; border: 2px solid rgba(255,255,255,0.3);
+            font-size: 14px; background: rgba(255,255,255,0.15);
+            color: white; outline: none; transition: var(--transition);
+            font-family: inherit;
         }
+        .help-search input::placeholder { color: rgba(255,255,255,0.65); }
+        .help-search input:focus { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.25); }
+        .help-search i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.7); font-size: 16px; }
         
-        .help-search input::placeholder {
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .help-search i {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .help-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        
+        /* Help Grid */
+        .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px; }
         .help-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
+            background: var(--white); border-radius: var(--radius); padding: 20px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            cursor: pointer; transition: var(--transition);
         }
-        
-        .help-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-            border-color: #2563eb;
-        }
-        
+        .help-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary); }
         .help-card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            margin-bottom: 16px;
+            width: 46px; height: 46px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin-bottom: 14px;
         }
-        
         .help-card-icon.blue { background: #eff6ff; color: #2563eb; }
         .help-card-icon.green { background: #f0fdf4; color: #16a34a; }
         .help-card-icon.purple { background: #faf5ff; color: #9333ea; }
         .help-card-icon.orange { background: #fff7ed; color: #ea580c; }
         .help-card-icon.red { background: #fef2f2; color: #dc2626; }
         .help-card-icon.teal { background: #f0fdfa; color: #0d9488; }
+        .help-card h4 { font-size: 15px; margin-bottom: 6px; }
+        .help-card p { font-size: 12px; color: var(--text-light); line-height: 1.5; margin: 0; }
         
-        .help-card h4 {
-            font-size: 16px;
-            margin-bottom: 8px;
-        }
-        
-        .help-card p {
-            font-size: 13px;
-            color: #64748b;
-            line-height: 1.5;
-            margin: 0;
-        }
-        
+        /* FAQ */
         .faq-section {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-            margin-bottom: 24px;
+            background: var(--white); border-radius: var(--radius);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            overflow: hidden; margin-bottom: 20px;
         }
-        
-        .faq-item {
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        .faq-item:last-child {
-            border-bottom: none;
-        }
-        
+        .faq-section .faq-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+        .faq-section .faq-header h3 { font-size: 16px; margin: 0; }
+        .faq-item { border-bottom: 1px solid #f1f5f9; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-item.hidden { display: none; }
         .faq-question {
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s;
+            padding: 14px 20px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; font-weight: 500;
+            font-size: 14px; transition: background 0.2s;
+            min-height: 44px; -webkit-tap-highlight-color: transparent;
         }
-        
-        .faq-question:hover {
-            background: #f8fafc;
-        }
-        
-        .faq-question i {
-            transition: transform 0.3s;
-            color: #94a3b8;
-        }
-        
-        .faq-item.open .faq-question i {
-            transform: rotate(180deg);
-            color: #2563eb;
-        }
-        
+        .faq-question:hover { background: #f8fafc; }
+        .faq-question i { transition: transform 0.3s; color: #94a3b8; font-size: 14px; }
+        .faq-item.open .faq-question i { transform: rotate(180deg); color: var(--primary); }
         .faq-answer {
-            padding: 0 20px;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            color: #64748b;
-            font-size: 14px;
-            line-height: 1.6;
+            padding: 0 20px; max-height: 0; overflow: hidden;
+            transition: all 0.3s ease; color: var(--text-light);
+            font-size: 13px; line-height: 1.7;
         }
+        .faq-answer p { margin-bottom: 8px; }
+        .faq-answer ol, .faq-answer ul { padding-left: 20px; margin-bottom: 8px; }
+        .faq-answer li { padding: 2px 0; }
+        .faq-item.open .faq-answer { padding: 0 20px 14px; max-height: 600px; }
+        .faq-answer .highlight { background: #fef3c7; padding: 1px 3px; border-radius: 2px; }
         
-        .faq-item.open .faq-answer {
-            padding: 0 20px 16px;
-            max-height: 500px;
+        /* No Results */
+        .no-results {
+            text-align: center; padding: 30px; color: var(--text-light);
+            display: none;
         }
+        .no-results.show { display: block; }
+        .no-results i { font-size: 36px; display: block; margin-bottom: 8px; color: #94a3b8; }
         
+        /* Contact */
         .contact-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
+            background: var(--white); border-radius: var(--radius);
+            padding: 24px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border); text-align: center;
         }
-        
-        .contact-methods {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-        
+        .contact-card h3 { margin-bottom: 4px; }
+        .contact-methods { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
         .contact-method {
-            padding: 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            text-align: center;
-            min-width: 120px;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            text-align: center; min-width: 110px; cursor: pointer;
+            transition: var(--transition); text-decoration: none; color: inherit;
+            -webkit-tap-highlight-color: transparent;
         }
+        .contact-method:hover { background: #f8fafc; border-color: var(--primary); }
+        .contact-method i { font-size: 22px; color: var(--primary); margin-bottom: 6px; display: block; }
+        .contact-method .method-title { font-weight: 600; font-size: 13px; }
+        .contact-method .method-detail { font-size: 11px; color: var(--text-light); margin-top: 2px; }
         
-        .contact-method:hover {
-            background: #f8fafc;
-            border-color: #2563eb;
-        }
+        /* Toast */
+        .toast-container { position: fixed; top: calc(12px + var(--safe-top)); right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; }
+        .toast { padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: slideInRight 0.3s; }
+        .toast-info { background: #0891b2; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
-        .contact-method i {
-            font-size: 24px;
-            color: #2563eb;
-            margin-bottom: 8px;
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 14px; }
+            .mobile-header { display: flex; }
+            .breadcrumb { display: none; }
+            .help-hero { padding: 24px 16px; }
+            .help-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .help-card { padding: 16px; }
+            .contact-methods { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen">
-        <div class="spinner"></div>
-    </div>
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <div class="toast-container" id="toast-container"></div>
+    
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
     
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <i class="fas fa-archive"></i>
-            <span>E-Arsip Digital</span>
-        </div>
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
-            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
-            <a href="/help/" class="nav-item active"><i class="fas fa-question-circle"></i> Bantuan</a>
-            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+            <a href="../dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="../surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="index.html" class="nav-item active"><i class="fas fa-question-circle"></i> Bantuan</a>
         </nav>
     </aside>
+    
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" id="menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <span style="font-weight:700;flex:1;">Pusat Bantuan</span>
+    </div>
     
     <!-- Main Content -->
     <main class="main-content">
         <div class="help-container">
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb">
+                <a href="../dashboard/">Dashboard</a> <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+                <span>Bantuan</span>
+            </nav>
+            
             <!-- Hero -->
             <div class="help-hero">
-                <h2>Pusat Bantuan</h2>
-                <p style="opacity:0.9;">Temukan panduan dan jawaban atas pertanyaan Anda</p>
+                <h2><i class="fas fa-question-circle" style="margin-right:8px;"></i>Pusat Bantuan</h2>
+                <p>Temukan panduan dan jawaban atas pertanyaan Anda</p>
                 <div class="help-search">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="help-search-input" placeholder="Cari topik bantuan...">
+                    <input type="text" id="help-search-input" placeholder="Cari topik bantuan..." maxlength="100" aria-label="Cari bantuan">
                 </div>
             </div>
             
             <!-- Help Categories -->
-            <div class="help-grid">
-                <div class="help-card" onclick="scrollToSection('faq')">
-                    <div class="help-card-icon blue">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
+            <div class="help-grid" id="help-grid">
+                <div class="help-card" data-nav="faq">
+                    <div class="help-card-icon blue"><i class="fas fa-question-circle"></i></div>
                     <h4>FAQ</h4>
-                    <p>Pertanyaan yang sering diajukan oleh pengguna</p>
+                    <p>Pertanyaan yang sering diajukan</p>
                 </div>
                 
-                <div class="help-card" onclick="location.href='/surat-keluar/form.html'">
-                    <div class="help-card-icon green">
-                        <i class="fas fa-pen"></i>
-                    </div>
+                <div class="help-card" data-nav="surat-keluar">
+                    <div class="help-card-icon green"><i class="fas fa-pen"></i></div>
                     <h4>Membuat Surat</h4>
                     <p>Panduan membuat surat keluar baru</p>
                 </div>
                 
-                <div class="help-card">
-                    <div class="help-card-icon purple">
-                        <i class="fas fa-inbox"></i>
-                    </div>
+                <div class="help-card" data-nav="surat-masuk">
+                    <div class="help-card-icon purple"><i class="fas fa-inbox"></i></div>
                     <h4>Input Surat Masuk</h4>
-                    <p>Cara mencatat surat masuk ke sistem</p>
+                    <p>Cara mencatat surat masuk</p>
                 </div>
                 
-                <div class="help-card">
-                    <div class="help-card-icon orange">
-                        <i class="fas fa-qrcode"></i>
-                    </div>
+                <div class="help-card" data-nav="qrcode">
+                    <div class="help-card-icon orange"><i class="fas fa-qrcode"></i></div>
                     <h4>Verifikasi QR Code</h4>
-                    <p>Cara memverifikasi keaslian surat</p>
+                    <p>Cara verifikasi keaslian surat</p>
                 </div>
                 
-                <div class="help-card">
-                    <div class="help-card-icon red">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
+                <div class="help-card" data-nav="security">
+                    <div class="help-card-icon red"><i class="fas fa-shield-alt"></i></div>
                     <h4>Keamanan</h4>
-                    <p>Informasi tentang keamanan sistem</p>
+                    <p>Informasi keamanan sistem</p>
                 </div>
                 
-                <div class="help-card" onclick="scrollToSection('contact')">
-                    <div class="help-card-icon teal">
-                        <i class="fas fa-headset"></i>
-                    </div>
+                <div class="help-card" data-nav="contact">
+                    <div class="help-card-icon teal"><i class="fas fa-headset"></i></div>
                     <h4>Kontak Support</h4>
-                    <p>Hubungi tim support untuk bantuan</p>
+                    <p>Hubungi tim support</p>
                 </div>
             </div>
             
             <!-- FAQ -->
-            <div class="faq-section" id="faq">
-                <div style="padding:20px;border-bottom:1px solid #e2e8f0;">
-                    <h3 style="margin:0;">Pertanyaan Umum (FAQ)</h3>
+            <div class="faq-section" id="faq-section">
+                <div class="faq-header"><h3>Pertanyaan Umum (FAQ)</h3></div>
+                <div id="faq-list">
+                    <!-- Populated by JS -->
                 </div>
-                
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span>Bagaimana cara membuat surat keluar baru?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Untuk membuat surat keluar baru:</p>
-                        <ol>
-                            <li>Klik menu <strong>Surat Keluar</strong> di sidebar</li>
-                            <li>Klik tombol <strong>Buat Surat Baru</strong></li>
-                            <li>Ikuti wizard 3 langkah: Informasi Surat, Penerima & Lampiran, Tanda Tangan & Review</li>
-                            <li>Klik <strong>Kirim Surat</strong> untuk mengirim, atau <strong>Simpan Draft</strong> untuk menyimpan sementara</li>
-                        </ol>
-                    </div>
-                </div>
-                
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span>Bagaimana cara verifikasi surat dengan QR Code?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Untuk verifikasi surat:</p>
-                        <ol>
-                            <li>Buka halaman <strong>Verifikasi QR Code</strong> dari menu Surat Keluar</li>
-                            <li>Scan QR Code pada surat menggunakan kamera, atau upload gambar QR Code</li>
-                            <li>Sistem akan menampilkan informasi keaslian surat</li>
-                        </ol>
-                        <p>Anda juga dapat memverifikasi melalui URL yang tertera di bawah QR Code.</p>
-                    </div>
-                </div>
-                
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span>Bagaimana cara reset password?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Untuk mereset password:</p>
-                        <ol>
-                            <li>Buka halaman <strong>Profile</strong></li>
-                            <li>Pilih tab <strong>Keamanan</strong></li>
-                            <li>Masukkan password lama dan password baru</li>
-                            <li>Klik <strong>Ubah Password</strong></li>
-                        </ol>
-                        <p>Jika Anda lupa password, hubungi administrator untuk bantuan reset.</p>
-                    </div>
-                </div>
-                
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span>Bagaimana format penomoran surat?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Format penomoran surat standar:</p>
-                        <pre style="background:#f8fafc;padding:8px;border-radius:4px;">[KODE_UNIT]/[NOMOR]/[KODE_KLASIFIKASI]/[BULAN_ROMawi]/[TAHUN]</pre>
-                        <p>Contoh: <strong>123/UN.01/F/XI/2026</strong></p>
-                        <p>Konfigurasi penomoran dapat diubah di halaman <strong>Pengaturan > Penomoran</strong>.</p>
-                    </div>
-                </div>
-                
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span>Bagaimana cara backup data?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Untuk melakukan backup:</p>
-                        <ol>
-                            <li>Buka <strong>Pengaturan > Backup & Restore</strong></li>
-                            <li>Pilih tipe backup (Full/Surat/Users/Settings)</li>
-                            <li>Klik <strong>Buat Backup</strong></li>
-                            <li>Download file backup untuk disimpan secara lokal</li>
-                        </ol>
-                        <p>Anda juga dapat mengatur jadwal backup otomatis (harian/mingguan/bulanan).</p>
-                    </div>
+                <div class="no-results" id="no-results">
+                    <i class="fas fa-search"></i>
+                    <p>Tidak ada FAQ yang cocok dengan pencarian</p>
                 </div>
             </div>
             
             <!-- Contact -->
-            <div class="contact-card" id="contact">
+            <div class="contact-card" id="contact-section">
                 <h3>Butuh Bantuan Lebih Lanjut?</h3>
-                <p style="color:#64748b;">Hubungi tim support kami melalui:</p>
+                <p style="color:var(--text-light);font-size:14px;">Hubungi tim support kami</p>
                 
                 <div class="contact-methods">
-                    <div class="contact-method">
+                    <a href="mailto:support@e-arsip.digital" class="contact-method">
                         <i class="fas fa-envelope"></i>
-                        <div style="font-weight:500;">Email</div>
-                        <div style="font-size:12px;color:#64748b;">support@e-arsip.id</div>
-                    </div>
+                        <div class="method-title">Email</div>
+                        <div class="method-detail">support@e-arsip.digital</div>
+                    </a>
                     
-                    <div class="contact-method">
+                    <div class="contact-method" onclick="showToast('Nomor telepon: (021) 1234-5678')">
                         <i class="fas fa-phone"></i>
-                        <div style="font-weight:500;">Telepon</div>
-                        <div style="font-size:12px;color:#64748b;">(021) 1234-5678</div>
+                        <div class="method-title">Telepon</div>
+                        <div class="method-detail">Klik untuk lihat</div>
                     </div>
                     
-                    <div class="contact-method">
+                    <div class="contact-method" onclick="showToast('WhatsApp: +62 812-3456-7890')">
                         <i class="fab fa-whatsapp"></i>
-                        <div style="font-weight:500;">WhatsApp</div>
-                        <div style="font-size:12px;color:#64748b;">+62 812-3456-7890</div>
+                        <div class="method-title">WhatsApp</div>
+                        <div class="method-detail">Klik untuk lihat</div>
                     </div>
                     
                     <div class="contact-method">
                         <i class="fas fa-clock"></i>
-                        <div style="font-weight:500;">Jam Kerja</div>
-                        <div style="font-size:12px;color:#64748b;">Sen-Jum, 08:00-16:00</div>
+                        <div class="method-title">Jam Kerja</div>
+                        <div class="method-detail">Senin-Jumat, 08:00-16:00</div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
     
-    <script type="module">
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+    <script>
+    (function() {
+        'use strict';
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
-            
-            // Search functionality
-            const searchInput = document.getElementById('help-search-input');
-            searchInput?.addEventListener('input', utils.debounce((e) => {
-                const query = e.target.value.toLowerCase();
-                highlightFAQ(query);
-            }, 300));
-            
-            logger.info('Help page loaded');
-        });
+        // ============================================
+        // FAQ DATA (Mudah di-update)
+        // ============================================
+        var faqData = [
+            {
+                q: 'Bagaimana cara membuat surat keluar baru?',
+                a: '<p>Untuk membuat surat keluar baru:</p><ol><li>Klik menu <strong>Surat Keluar</strong> di sidebar</li><li>Klik tombol <strong>Buat Surat Baru</strong></li><li>Ikuti wizard 3 langkah: Informasi Surat, Penerima & Lampiran, Review & Kirim</li><li>Klik <strong>Kirim Surat</strong> untuk mengirim, atau <strong>Simpan Draft</strong> untuk menyimpan sementara</li></ol>'
+            },
+            {
+                q: 'Bagaimana cara verifikasi surat dengan QR Code?',
+                a: '<p>Untuk verifikasi surat:</p><ol><li>Buka halaman <strong>Verifikasi QR Code</strong> dari menu Surat Keluar</li><li>Scan QR Code pada surat menggunakan kamera, atau upload gambar QR Code</li><li>Sistem akan menampilkan informasi keaslian surat</li></ol><p>Anda juga dapat memverifikasi melalui URL yang tertera di bawah QR Code.</p>'
+            },
+            {
+                q: 'Bagaimana cara mereset password?',
+                a: '<p>Untuk mereset password:</p><ol><li>Buka halaman <strong>Profil</strong> dari menu user</li><li>Pilih tab <strong>Keamanan</strong></li><li>Masukkan password lama dan password baru</li><li>Klik <strong>Ubah Password</strong></li></ol><p>Jika Anda lupa password, hubungi administrator untuk bantuan reset.</p>'
+            },
+            {
+                q: 'Bagaimana format penomoran surat?',
+                a: '<p>Format penomoran surat standar:</p><pre style="background:#f8fafc;padding:8px;border-radius:4px;font-size:12px;">[KODE_UNIT]/[NOMOR]/[KODE_KLASIFIKASI]/[BULAN_ROMawi]/[TAHUN]</pre><p>Contoh: <strong>001/K.UM/FIKOM/VII/2024</strong></p><p>Konfigurasi penomoran dapat diubah di halaman <strong>Pengaturan</strong>.</p>'
+            },
+            {
+                q: 'Bagaimana cara melacak status surat?',
+                a: '<p>Untuk melacak status surat:</p><ol><li>Buka halaman <strong>Tracking Surat Masuk</strong></li><li>Masukkan nomor surat atau ID tracking</li><li>Klik <strong>Lacak</strong> untuk melihat status</li></ol><p>Anda juga dapat scan QR Code untuk auto-fill nomor surat.</p>'
+            },
+            {
+                q: 'Bagaimana cara backup data?',
+                a: '<p>Untuk melakukan backup:</p><ol><li>Buka <strong>Pengaturan > Backup & Restore</strong></li><li>Pilih tipe backup yang diinginkan</li><li>Klik <strong>Buat Backup</strong></li><li>Download file backup untuk disimpan secara lokal</li></ol>'
+            },
+            {
+                q: 'Apa yang harus dilakukan jika lupa password?',
+                a: '<p>Jika Anda lupa password:</p><ol><li>Hubungi <strong>Administrator</strong> atau <strong>Super Admin</strong> di institusi Anda</li><li>Administrator dapat mereset password melalui menu <strong>Manajemen User</strong></li><li>Gunakan password baru yang diberikan, lalu segera ganti di halaman <strong>Profil</strong></li></ol>'
+            },
+            {
+                q: 'Bagaimana cara upload dokumen/lampiran?',
+                a: '<p>Untuk upload dokumen:</p><ol><li>Klik area upload atau drag & drop file</li><li>Format yang didukung: PDF, DOC, DOCX, JPG, PNG</li><li>Maksimal ukuran file: 10MB untuk dokumen, 5MB untuk lampiran</li><li>Pastikan file tidak kosong dan bukan file executable (.exe, .bat, dll)</li></ol>'
+            }
+        ];
         
-        function toggleFaq(element) {
-            const faqItem = element.parentElement;
-            faqItem.classList.toggle('open');
+        // ============================================
+        // RENDER FAQ
+        // ============================================
+        function renderFAQ(filter) {
+            var container = document.getElementById('faq-list');
+            var noResults = document.getElementById('no-results');
+            var visibleCount = 0;
+            
+            var html = '';
+            faqData.forEach(function(item, index) {
+                var matches = true;
+                
+                if (filter) {
+                    var q = item.q.toLowerCase();
+                    var a = item.a.replace(/<[^>]*>/g, '').toLowerCase();
+                    matches = q.indexOf(filter) !== -1 || a.indexOf(filter) !== -1;
+                }
+                
+                if (matches) {
+                    visibleCount++;
+                    var answerHtml = item.a;
+                    if (filter) {
+                        // Highlight search term
+                        var regex = new RegExp('(' + filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                        answerHtml = answerHtml.replace(regex, '<span class="highlight">$1</span>');
+                    }
+                    
+                    html += '<div class="faq-item">' +
+                        '<div class="faq-question" onclick="toggleFaq(this)" role="button" tabindex="0" aria-expanded="false">' +
+                            '<span>' + escapeHTML(item.q) + '</span>' +
+                            '<i class="fas fa-chevron-down"></i>' +
+                        '</div>' +
+                        '<div class="faq-answer">' + answerHtml + '</div>' +
+                    '</div>';
+                }
+            });
+            
+            container.innerHTML = html || '';
+            noResults.classList.toggle('show', visibleCount === 0 && !!filter);
         }
         
-        function highlightFAQ(query) {
-            if (!query) {
-                // Reset all
-                document.querySelectorAll('.faq-item').forEach(item => {
-                    item.style.opacity = '1';
-                    item.querySelector('.faq-question').style.background = '';
-                });
-                return;
+        function escapeHTML(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        
+        // ============================================
+        // TOGGLE FAQ
+        // ============================================
+        function toggleFaq(element) {
+            var faqItem = element.parentElement;
+            var isOpen = faqItem.classList.contains('open');
+            
+            // Close all
+            document.querySelectorAll('.faq-item.open').forEach(function(item) {
+                if (item !== faqItem) {
+                    item.classList.remove('open');
+                    item.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // Toggle current
+            faqItem.classList.toggle('open');
+            faqItem.querySelector('.faq-question').setAttribute('aria-expanded', !isOpen);
+        }
+        
+        // ============================================
+        // SEARCH
+        // ============================================
+        function debounce(fn, ms) {
+            var timer;
+            return function() {
+                clearTimeout(timer);
+                timer = setTimeout(fn, ms);
+            };
+        }
+        
+        function handleSearch() {
+            var query = document.getElementById('help-search-input').value.trim().toLowerCase();
+            renderFAQ(query);
+            
+            // Scroll to FAQ if searching
+            if (query) {
+                document.getElementById('faq-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function navigateTo(page) {
+            var routes = {
+                'faq': function() {
+                    document.getElementById('faq-section').scrollIntoView({ behavior: 'smooth' });
+                },
+                'surat-keluar': function() {
+                    window.location.href = '../surat-keluar/form.html';
+                },
+                'surat-masuk': function() {
+                    window.location.href = '../surat-masuk/form.html';
+                },
+                'qrcode': function() {
+                    window.location.href = '../surat-keluar/qrcode.html';
+                },
+                'security': function() {
+                    showToast('Halaman keamanan akan segera tersedia');
+                },
+                'contact': function() {
+                    document.getElementById('contact-section').scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+            
+            if (routes[page]) {
+                routes[page]();
+            }
+        }
+        
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message) {
+            var container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-info';
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 3000);
+        }
+        
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function handleLogout() {
+            if (!confirm('Yakin logout?')) return;
+            try { if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout(); } catch(e) {}
+            localStorage.removeItem('auth_session'); localStorage.removeItem('auth_token');
+            window.location.href = '../login.html?message=logged_out';
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============================================
+        // INIT
+        // ============================================
+        function init() {
+            // Hide loading
+            setTimeout(function() {
+                document.getElementById('loading-screen').classList.add('hidden');
+            }, 200);
+            
+            // Register SW
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('../sw.js').catch(function() {});
             }
             
-            document.querySelectorAll('.faq-item').forEach(item => {
-                const question = item.querySelector('.faq-question span').textContent.toLowerCase();
-                const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
-                
-                if (question.includes(query) || answer.includes(query)) {
-                    item.style.opacity = '1';
-                    item.querySelector('.faq-question').style.background = '#eff6ff';
-                    item.classList.add('open');
-                } else {
-                    item.style.opacity = '0.5';
-                    item.querySelector('.faq-question').style.background = '';
-                }
+            // Mobile menu
+            document.getElementById('menu-btn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('mobile-open');
+                document.getElementById('sidebar-overlay').classList.toggle('active');
+            });
+            document.getElementById('sidebar-overlay').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+                this.classList.remove('active');
+            });
+            
+            // Render FAQ
+            renderFAQ();
+            
+            // Search
+            document.getElementById('help-search-input').addEventListener('input', debounce(handleSearch, 300));
+            
+            // Help card clicks
+            document.querySelectorAll('.help-card[data-nav]').forEach(function(card) {
+                card.addEventListener('click', function() {
+                    navigateTo(this.dataset.nav);
+                });
             });
         }
         
-        function scrollToSection(id) {
-            const section = document.getElementById(id);
-            if (section) {
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-        
-        // Global functions
+        // Expose
         window.toggleFaq = toggleFaq;
-        window.scrollToSection = scrollToSection;
+        window.showToast = showToast;
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
     </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

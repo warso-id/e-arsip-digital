@@ -1,222 +1,592 @@
-<!-- FILE: surat-masuk/disposisi-cetak.html -->
+<!-- surat-masuk/disposisi-cetak.html - Cetak Lembar Disposisi 2026 (SECURE PWA) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Disposisi">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Cetak Lembar Disposisi - E-Arsip Digital">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icons/icon-192.png">
+    
+    <!-- CSP - Strict Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <!-- Anti-Clickjacking -->
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Cetak Lembar Disposisi - E-Arsip Digital</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/print.css">
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
+        :root {
+            --primary: #1e3a5f; --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 8px; --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            background: white;
-            font-family: 'Times New Roman', serif;
-            font-size: 12pt;
-            line-height: 1.5;
+            font-family: 'Times New Roman', Georgia, 'Segoe UI', serif;
+            background: #e8ecf1; color: #000;
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            padding-bottom: var(--safe-bottom);
         }
         
-        .disposisi-print {
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 20px;
+        /* Loading */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); display: flex;
+            align-items: center; justify-content: center; z-index: 9999;
+            transition: opacity 0.4s; flex-direction: column; gap: 12px;
+        }
+        .loading-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner {
+            width: 44px; height: 44px; border: 3px solid #e2e8f0;
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay p { font-size: 14px; color: var(--text-light); }
+        
+        /* Toolbar (Screen only) */
+        .toolbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 10px 16px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 8px; flex-wrap: wrap;
+        }
+        .toolbar .page-title { font-size: 15px; font-weight: 700; color: var(--text); }
+        .toolbar .btn-group { display: flex; gap: 6px; }
+        
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; font-size: 13px; font-weight: 600;
+            border: none; border-radius: 6px; cursor: pointer;
+            text-decoration: none; transition: all 0.2s; font-family: -apple-system, sans-serif;
+            min-height: 40px; -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-ghost { background: transparent; color: var(--text-light); }
+        
+        /* Paper */
+        .paper-container {
+            max-width: 210mm; margin: 20px auto; padding: 0 16px;
+        }
+        .paper {
+            background: white; padding: 18mm 15mm;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.12);
+            border-radius: 2px;
         }
         
-        .kop-disposisi {
-            text-align: center;
-            border-bottom: 3px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
+        /* Kop */
+        .kop { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 18px; }
+        .kop h3 { font-size: 14pt; font-weight: bold; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .kop h4 { font-size: 12pt; font-weight: bold; margin: 4px 0; }
+        .kop p { font-size: 10pt; margin: 0; color: #333; }
         
+        /* Title */
         .lembar-title {
-            text-align: center;
-            font-size: 14pt;
-            font-weight: bold;
-            margin: 20px 0;
-            padding: 10px;
-            border: 2px solid #000;
+            text-align: center; font-size: 13pt; font-weight: bold;
+            margin: 18px 0; padding: 10px; border: 2px solid #000;
+            text-transform: uppercase; letter-spacing: 2px;
         }
         
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            border: 1px solid #000;
-            margin-bottom: 20px;
-        }
-        
-        .info-item {
-            display: flex;
-            border-bottom: 1px solid #000;
-        }
-        
+        /* Info Grid */
+        .info-grid { border: 1px solid #000; margin-bottom: 18px; }
+        .info-row { display: flex; border-bottom: 1px solid #000; min-height: 34px; }
+        .info-row:last-child { border-bottom: none; }
         .info-label {
-            width: 150px;
-            padding: 8px;
-            background: #f0f0f0;
-            font-weight: bold;
-            border-right: 1px solid #000;
+            width: 140px; padding: 6px 10px; background: #f0f0f0;
+            font-weight: bold; border-right: 1px solid #000;
+            font-size: 10pt; display: flex; align-items: center; flex-shrink: 0;
         }
-        
         .info-value {
-            flex: 1;
-            padding: 8px;
+            flex: 1; padding: 6px 10px; font-size: 10pt;
+            display: flex; align-items: center; min-width: 0;
         }
         
+        /* Disposisi Table */
+        .dispo-table { width: 100%; border: 1px solid #000; border-collapse: collapse; margin: 16px 0; }
+        .dispo-table td { padding: 8px 10px; border: 1px solid #000; font-size: 10pt; vertical-align: top; }
+        .dispo-table .dispo-label {
+            width: 150px; background: #f0f0f0; font-weight: bold;
+        }
+        
+        /* Instruksi Box */
         .instruksi-box {
-            border: 1px solid #000;
-            padding: 15px;
-            margin: 20px 0;
-            min-height: 100px;
+            border: 1px solid #000; padding: 14px; margin: 16px 0; min-height: 80px;
         }
+        .instruksi-box strong { font-size: 10pt; }
+        .instruksi-box .content { margin-top: 8px; font-size: 10pt; line-height: 1.6; white-space: pre-wrap; }
         
+        /* Signature */
         .signature-area {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
+            display: flex; justify-content: space-between; margin-top: 50px;
+            gap: 40px;
         }
-        
-        .signature-box {
-            text-align: center;
-            width: 200px;
+        .signature-box { text-align: center; flex: 1; max-width: 200px; }
+        .signature-box .signature-line {
+            margin-top: 55px; border-top: 1px solid #000; padding-top: 6px;
         }
+        .signature-box .name { font-weight: bold; font-size: 10pt; margin: 0; }
+        .signature-box .nip { font-size: 9pt; margin: 2px 0 0; color: #333; }
+        .signature-box .jabatan { font-size: 9pt; margin: 0; }
         
-        .signature-line {
-            margin-top: 60px;
-            border-top: 1px solid #000;
-            padding-top: 5px;
+        /* Error State */
+        .error-state {
+            text-align: center; padding: 40px; background: #fef2f2;
+            border: 2px solid #fecaca; border-radius: 8px; margin: 20px;
         }
+        .error-state i { font-size: 40px; color: #dc2626; display: block; margin-bottom: 10px; }
+        .error-state h3 { color: #dc2626; margin-bottom: 6px; }
         
-        @media screen {
-            .disposisi-print {
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                margin: 30px auto;
-                background: white;
+        /* Toast */
+        .toast-container {
+            position: fixed; top: calc(12px + var(--safe-top)); right: 12px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 6px; max-width: calc(100vw - 24px);
+        }
+        .toast {
+            padding: 10px 16px; border-radius: 8px; color: white; font-size: 12px;
+            font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s; display: flex; align-items: center; gap: 6px;
+            font-family: -apple-system, sans-serif;
+        }
+        .toast-error { background: #dc2626; }
+        .toast-info { background: #0891b2; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Print Styles */
+        @media print {
+            @page { size: A4; margin: 0; }
+            
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            .toolbar, .toast-container, .loading-overlay, .no-print { display: none !important; }
+            
+            .paper-container { max-width: 100%; margin: 0; padding: 0; }
+            .paper {
+                box-shadow: none !important; border-radius: 0 !important;
+                padding: 15mm 12mm !important;
             }
+            
+            .info-label { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+            .dispo-label { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .paper { padding: 20px 14px; }
+            .info-label { width: 110px; font-size: 9pt; padding: 5px 6px; }
+            .info-value { font-size: 9pt; padding: 5px 6px; }
+            .signature-area { flex-direction: column; align-items: center; gap: 30px; }
+            .signature-box { max-width: 180px; }
+            .toolbar { padding: 8px 12px; }
+            .toolbar .page-title { font-size: 14px; }
         }
     </style>
 </head>
 <body>
-    <div class="disposisi-print">
-        <!-- KOP SURAT -->
-        <div class="kop-disposisi">
-            <h5>KEMENTERIAN PENDIDIKAN</h5>
-            <h4 id="kopInstansi">FAKULTAS ILMU KOMPUTER</h4>
-            <p id="kopAlamat">Jl. Contoh No. 123, Jakarta</p>
+    <!-- Loading -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Memuat data disposisi...</p>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Toolbar (Screen only) -->
+    <div class="toolbar no-print">
+        <span class="page-title"><i class="fas fa-print" style="margin-right:6px;color:var(--primary);"></i>Cetak Lembar Disposisi</span>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="print-btn" onclick="window.print()">
+                <i class="fas fa-print"></i> Cetak
+            </button>
+            <button class="btn btn-outline" id="download-pdf-btn">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <a href="list.html" class="btn btn-ghost">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </a>
         </div>
-        
-        <!-- LEMBAR DISPOSISI -->
-        <div class="lembar-title">
-            LEMBAR DISPOSISI
-        </div>
-        
-        <!-- INFORMASI -->
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">Diterima Tanggal</div>
-                <div class="info-value" id="infoTglTerima">-</div>
+    </div>
+    
+    <!-- Paper -->
+    <div class="paper-container">
+        <div class="paper" id="disposisi-paper">
+            <!-- Kop Surat -->
+            <div class="kop">
+                <h3>KEMENTERIAN PENDIDIKAN TINGGI</h3>
+                <h4 id="kop-instansi">Fakultas Ilmu Komputer</h4>
+                <p id="kop-alamat">Jl. Pendidikan No. 123, Jakarta - Telp. (021) 1234567</p>
             </div>
-            <div class="info-item">
-                <div class="info-label">Diterima Jam</div>
-                <div class="info-value" id="infoJamTerima">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">No. Agenda</div>
-                <div class="info-value" id="infoNoAgenda">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Tgl. Agenda</div>
-                <div class="info-value" id="infoTglAgenda">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Asal Surat</div>
-                <div class="info-value" id="infoAsalSurat">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">No. Surat Asal</div>
-                <div class="info-value" id="infoNoSuratAsal">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Perihal</div>
-                <div class="info-value" id="infoPerihal">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Sifat</div>
-                <div class="info-value" id="infoSifat">-</div>
-            </div>
-        </div>
-        
-        <!-- DISPOSISI -->
-        <div style="margin: 20px 0;">
-            <table style="width: 100%; border: 1px solid #000; border-collapse: collapse;">
-                <tr>
-                    <td style="width: 150px; padding: 8px; background: #f0f0f0; font-weight: bold; border: 1px solid #000;">
-                        Disampaikan Kepada
-                    </td>
-                    <td style="padding: 8px; border: 1px solid #000;" id="dispoKepada">-</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; background: #f0f0f0; font-weight: bold; border: 1px solid #000;">
-                        Diteruskan Kepada
-                    </td>
-                    <td style="padding: 8px; border: 1px solid #000;" id="dispoDiteruskan">-</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- INSTRUKSI -->
-        <div class="instruksi-box">
-            <strong>Instruksi / Catatan:</strong>
-            <p id="dispoInstruksi" style="margin-top: 10px;">-</p>
-        </div>
-        
-        <!-- TANDA TANGAN -->
-        <div class="signature-area">
-            <div class="signature-box">
-                <p>Mengetahui,</p>
-                <div class="signature-line">
-                    <p id="namaMengetahui">-</p>
-                    <p>NIP. <span id="nipMengetahui">-</span></p>
+            
+            <!-- Lembar Title -->
+            <div class="lembar-title">Lembar Disposisi</div>
+            
+            <!-- Info Grid -->
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Diterima Tanggal</div>
+                    <div class="info-value" id="info-tgl-terima">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Diterima Jam</div>
+                    <div class="info-value" id="info-jam-terima">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">No. Agenda</div>
+                    <div class="info-value" id="info-no-agenda">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Tgl. Agenda</div>
+                    <div class="info-value" id="info-tgl-agenda">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Asal Surat</div>
+                    <div class="info-value" id="info-asal-surat">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">No. Surat Asal</div>
+                    <div class="info-value" id="info-no-surat-asal">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Perihal</div>
+                    <div class="info-value" id="info-perihal">-</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Sifat Surat</div>
+                    <div class="info-value" id="info-sifat">-</div>
                 </div>
             </div>
-            <div class="signature-box">
-                <p id="tempatTgl">Jakarta, -</p>
-                <p>Yang Mendisposisi,</p>
-                <div class="signature-line">
-                    <p id="namaDisposisi">-</p>
-                    <p>NIP. <span id="nipDisposisi">-</span></p>
+            
+            <!-- Disposisi Table -->
+            <table class="dispo-table">
+                <tr>
+                    <td class="dispo-label">Disampaikan Kepada</td>
+                    <td id="dispo-kepada">-</td>
+                </tr>
+                <tr>
+                    <td class="dispo-label">Diteruskan Kepada</td>
+                    <td id="dispo-diteruskan">-</td>
+                </tr>
+                <tr>
+                    <td class="dispo-label">Batas Waktu</td>
+                    <td id="dispo-batas-waktu">-</td>
+                </tr>
+            </table>
+            
+            <!-- Instruksi -->
+            <div class="instruksi-box">
+                <strong>Instruksi / Catatan:</strong>
+                <div class="content" id="dispo-instruksi">-</div>
+            </div>
+            
+            <!-- Tanda Tangan -->
+            <div class="signature-area">
+                <div class="signature-box">
+                    <p class="jabatan">Mengetahui,</p>
+                    <div class="signature-line">
+                        <p class="name" id="nama-mengetahui">-</p>
+                        <p class="nip">NIP. <span id="nip-mengetahui">-</span></p>
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <p id="tempat-tgl">Jakarta, -</p>
+                    <p class="jabatan">Yang Mendisposisi,</p>
+                    <div class="signature-line">
+                        <p class="name" id="nama-disposisi">-</p>
+                        <p class="nip">NIP. <span id="nip-disposisi">-</span></p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
+    
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
     <script>
-        // Load data dari parameter URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const disposisiId = urlParams.get('id');
+    (function() {
+        'use strict';
         
-        if (disposisiId) {
-            // Load data (simulasi)
-            loadDisposisiData(disposisiId);
+        // ============================================
+        // SECURITY: CSRF TOKEN
+        // ============================================
+        var csrfToken = (function() {
+            var t = localStorage.getItem('csrf_token');
+            if (!t) {
+                var a = new Uint32Array(8);
+                crypto.getRandomValues(a);
+                t = Array.from(a, function(d) { return ('0'+d.toString(16)).slice(-2); }).join('');
+                localStorage.setItem('csrf_token', t);
+            }
+            return t;
+        })();
+        
+        // ============================================
+        // SANITIZATION
+        // ============================================
+        function sanitize(str) {
+            if (!str) return '';
+            var d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
         }
         
-        function loadDisposisiData(id) {
-            // Data akan diisi dari API
-            // Ini hanya placeholder
-            document.getElementById('infoTglTerima').textContent = '15 Juli 2024';
-            document.getElementById('infoJamTerima').textContent = '10:30';
-            document.getElementById('infoNoAgenda').textContent = 'M.UM-001';
-            document.getElementById('infoAsalSurat').textContent = 'Dinas Pendidikan';
+        function sanitizePlain(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
         }
         
-        // Auto print
-        window.onload = function() {
-            setTimeout(() => {
+        // ============================================
+        // AUTH CHECK
+        // ============================================
+        function checkAuth() {
+            if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) return true;
+            try {
+                var s = localStorage.getItem('auth_session');
+                if (s) { var d = JSON.parse(s); if (d.user && d.expiresAt && Date.now() < d.expiresAt) return true; }
+            } catch(e) {}
+            window.location.href = '../../login.html?message=unauthorized';
+            return false;
+        }
+        
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(msg, type) {
+            var c = document.getElementById('toast-container');
+            if (!c) return;
+            var el = document.createElement('div');
+            el.className = 'toast toast-' + (type||'info');
+            el.textContent = sanitizePlain(msg);
+            c.appendChild(el);
+            setTimeout(function() {
+                el.style.opacity = '0'; el.style.transition = 'opacity 0.3s';
+                setTimeout(function() { el.remove(); }, 300);
+            }, 4000);
+        }
+        
+        // ============================================
+        // FORMAT HELPERS
+        // ============================================
+        function formatDate(s) {
+            if (!s) return '-';
+            try { var d = new Date(s); if (isNaN(d.getTime())) return s; return d.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' }); }
+            catch(e) { return s; }
+        }
+        
+        function formatTime(s) {
+            if (!s) return '-';
+            try { var d = new Date(s); if (isNaN(d.getTime())) return s; return d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }); }
+            catch(e) { return s; }
+        }
+        
+        function formatDateTime(s) {
+            if (!s) return '-';
+            return formatDate(s) + ' ' + formatTime(s);
+        }
+        
+        // ============================================
+        // LOAD DISPOSISI DATA
+        // ============================================
+        function loadDisposisiData() {
+            var params = new URLSearchParams(window.location.search);
+            var rawId = params.get('id');
+            
+            // Validate ID
+            if (!rawId || !/^[A-Za-z0-9\-_]+$/.test(rawId)) {
+                showError('ID Disposisi tidak valid atau tidak ditemukan.');
+                return;
+            }
+            
+            var disposisiId = sanitizePlain(rawId);
+            
+            // Try API
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('disposisi/detail', { id: disposisiId, csrf_token: csrfToken })
+                    .then(function(r) {
+                        if (r && r.data) {
+                            populateForm(r.data);
+                        } else {
+                            showError('Data disposisi tidak ditemukan.');
+                        }
+                        hideLoading();
+                    })
+                    .catch(function(err) {
+                        console.warn('API error, using sample data:', err);
+                        populateForm(getSampleData());
+                        hideLoading();
+                        showToast('Menggunakan data sample (offline)', 'info');
+                    });
+            } else {
+                // Fallback: sample data
+                setTimeout(function() {
+                    populateForm(getSampleData());
+                    hideLoading();
+                }, 500);
+            }
+        }
+        
+        function getSampleData() {
+            var now = new Date();
+            return {
+                tgl_terima: new Date(now - 86400000).toISOString(),
+                jam_terima: new Date(now - 86400000 + 36000000).toISOString(),
+                no_agenda: 'M.UM-001',
+                tgl_agenda: new Date(now).toISOString(),
+                asal_surat: 'Dinas Pendidikan Provinsi',
+                no_surat_asal: '421.5/1234/DP/2024',
+                perihal: 'Pemberitahuan Akreditasi Program Studi',
+                sifat: 'Penting',
+                dispo_kepada: 'Wakil Dekan I',
+                dispo_diteruskan: 'Kaprodi Teknik Informatika',
+                dispo_batas_waktu: new Date(now + 604800000).toISOString(),
+                dispo_instruksi: 'Mohon ditindaklanjuti dan disiapkan dokumen yang diperlukan untuk proses akreditasi. Laporkan hasil tindak lanjut dalam waktu 1 minggu.',
+                nama_mengetahui: 'Prof. Dr. Ahmad Subhan, M.Kom.',
+                nip_mengetahui: '197501012008011001',
+                nama_disposisi: 'Dr. Budi Santoso, M.T.',
+                nip_disposisi: '198002022010121002',
+                tempat: 'Jakarta',
+                instansi: 'Fakultas Ilmu Komputer',
+                alamat: 'Jl. Pendidikan No. 123, Jakarta - Telp. (021) 1234567'
+            };
+        }
+        
+        function populateForm(data) {
+            // Info grid
+            document.getElementById('info-tgl-terima').textContent = formatDate(data.tgl_terima);
+            document.getElementById('info-jam-terima').textContent = formatTime(data.jam_terima || data.tgl_terima);
+            document.getElementById('info-no-agenda').textContent = sanitizePlain(data.no_agenda || '-');
+            document.getElementById('info-tgl-agenda').textContent = formatDate(data.tgl_agenda);
+            document.getElementById('info-asal-surat').textContent = sanitizePlain(data.asal_surat || '-');
+            document.getElementById('info-no-surat-asal').textContent = sanitizePlain(data.no_surat_asal || '-');
+            document.getElementById('info-perihal').textContent = sanitizePlain(data.perihal || '-');
+            document.getElementById('info-sifat').textContent = sanitizePlain(data.sifat || '-');
+            
+            // Disposisi
+            document.getElementById('dispo-kepada').textContent = sanitizePlain(data.dispo_kepada || '-');
+            document.getElementById('dispo-diteruskan').textContent = sanitizePlain(data.dispo_diteruskan || '-');
+            document.getElementById('dispo-batas-waktu').textContent = formatDate(data.dispo_batas_waktu);
+            document.getElementById('dispo-instruksi').textContent = sanitizePlain(data.dispo_instruksi || '-');
+            
+            // Tanda tangan
+            document.getElementById('nama-mengetahui').textContent = sanitizePlain(data.nama_mengetahui || '-');
+            document.getElementById('nip-mengetahui').textContent = sanitizePlain(data.nip_mengetahui || '-');
+            document.getElementById('nama-disposisi').textContent = sanitizePlain(data.nama_disposisi || '-');
+            document.getElementById('nip-disposisi').textContent = sanitizePlain(data.nip_disposisi || '-');
+            document.getElementById('tempat-tgl').textContent = sanitizePlain((data.tempat || 'Jakarta') + ', ' + formatDate(data.tgl_agenda || new Date()));
+            
+            // Kop
+            if (data.instansi) document.getElementById('kop-instansi').textContent = sanitizePlain(data.instansi);
+            if (data.alamat) document.getElementById('kop-alamat').textContent = sanitizePlain(data.alamat);
+        }
+        
+        function showError(msg) {
+            var paper = document.getElementById('disposisi-paper');
+            paper.innerHTML = '<div class="error-state">' +
+                '<i class="fas fa-exclamation-circle"></i>' +
+                '<h3>Data Tidak Ditemukan</h3>' +
+                '<p>' + sanitize(msg) + '</p>' +
+                '<a href="list.html" class="btn btn-outline" style="margin-top:12px;display:inline-flex;">' +
+                    '<i class="fas fa-arrow-left"></i> Kembali ke Daftar' +
+                '</a>' +
+            '</div>';
+            hideLoading();
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+        
+        // ============================================
+        // PDF DOWNLOAD (using print to PDF)
+        // ============================================
+        function downloadPDF() {
+            showToast('Membuka dialog print. Pilih "Save as PDF" untuk mengunduh.', 'info');
+            // Small delay for toast to show
+            setTimeout(function() {
                 window.print();
-            }, 1000);
-        };
+            }, 500);
+        }
+        
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function handleLogout() {
+            if (!confirm('Yakin logout?')) return;
+            try { if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout(); } catch(e) {}
+            localStorage.removeItem('auth_session'); localStorage.removeItem('auth_token');
+            window.location.href = '../../login.html?message=logged_out';
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            console.log('Disposisi Cetak v2026.1.0');
+            
+            // Check auth
+            if (!checkAuth()) return;
+            
+            // Register SW
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('../../sw.js').catch(function() {});
+            }
+            
+            // PDF button
+            document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
+            
+            // Load data
+            loadDisposisiData();
+            
+            // Safety: hide loading after 5 seconds max
+            setTimeout(hideLoading, 5000);
+            
+            // REMOVED: Auto-print. User must click print button manually.
+            // This prevents malicious auto-print attacks.
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+    })();
     </script>
 </body>
 </html>

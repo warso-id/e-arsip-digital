@@ -1,293 +1,311 @@
-// js/dependency-checker.js - Dependency Checker 2026
+// js/dependency-checker.js - Dependency Checker 2026 (PRIVACY-AWARE)
 /**
  * E-Arsip Digital - Dependency Checker
  * Version: 2026.1.0
- * Features: Module dependency verification, version checking,
- *           feature detection, polyfill recommendations
+ * 
+ * Features:
+ * - Browser API detection
+ * - Feature detection
+ * - Storage availability test
+ * - NO fingerprinting
+ * - NO dynamic imports
  */
 
-import { Logger } from './logger.js';
-
-class DependencyChecker {
-    constructor() {
-        this.logger = new Logger('DepChecker');
-        
-        // Required browser APIs
-        this.requiredAPIs = [
-            { name: 'Fetch API', test: () => typeof fetch !== 'undefined' },
-            { name: 'Promise', test: () => typeof Promise !== 'undefined' },
-            { name: 'localStorage', test: () => this.testStorage('localStorage') },
-            { name: 'sessionStorage', test: () => this.testStorage('sessionStorage') },
-            { name: 'IndexedDB', test: () => !!window.indexedDB },
-            { name: 'Web Crypto API', test: () => !!window.crypto?.subtle },
-            { name: 'Service Worker', test: () => 'serviceWorker' in navigator },
-            { name: 'WebSocket', test: () => 'WebSocket' in window },
-            { name: 'BroadcastChannel', test: () => 'BroadcastChannel' in window },
-            { name: 'Performance API', test: () => !!window.performance },
-            { name: 'MutationObserver', test: () => 'MutationObserver' in window },
-            { name: 'IntersectionObserver', test: () => 'IntersectionObserver' in window },
-            { name: 'requestAnimationFrame', test: () => 'requestAnimationFrame' in window },
-            { name: 'Intl', test: () => 'Intl' in window },
-            { name: 'URL API', test: () => 'URL' in window },
-            { name: 'Blob', test: () => 'Blob' in window },
-            { name: 'FileReader', test: () => 'FileReader' in window },
-            { name: 'FormData', test: () => 'FormData' in window }
-        ];
-        
-        // Required modules (checked by import)
-        this.requiredModules = [
-            { name: 'Chart.js', path: 'chart.js/auto' },
-            { name: 'QRCode', path: 'qrcode' },
-            { name: 'XLSX', path: 'xlsx' }
-        ];
-        
-        // Optional modules
-        this.optionalModules = [
-            { name: 'DOMPurify', path: 'dompurify' }
-        ];
-        
-        // Check results
-        this.results = {
-            apis: [],
-            modules: [],
-            optional: []
-        };
-        
-        this.init();
+var DependencyChecker = (function() {
+    'use strict';
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _results = {
+        apis: [],
+        features: {},
+        storage: {}
+    };
+    
+    // ============================================
+    // API CHECKS (Non-fingerprinting)
+    // ============================================
+    
+    var API_CHECKS = [
+        { name: 'Fetch API', test: function() { return typeof fetch !== 'undefined'; } },
+        { name: 'Promise', test: function() { return typeof Promise !== 'undefined'; } },
+        { name: 'localStorage', test: function() { return testStorage('localStorage'); } },
+        { name: 'sessionStorage', test: function() { return testStorage('sessionStorage'); } },
+        { name: 'Service Worker', test: function() { return 'serviceWorker' in navigator; } },
+        { name: 'Web Crypto API', test: function() { return !!(window.crypto && window.crypto.subtle); } },
+        { name: 'Performance API', test: function() { return !!(window.performance && window.performance.now); } },
+        { name: 'MutationObserver', test: function() { return typeof MutationObserver !== 'undefined'; } },
+        { name: 'IntersectionObserver', test: function() { return typeof IntersectionObserver !== 'undefined'; } },
+        { name: 'requestAnimationFrame', test: function() { return typeof requestAnimationFrame !== 'undefined'; } },
+        { name: 'URL API', test: function() { return typeof URL !== 'undefined'; } },
+        { name: 'Blob', test: function() { return typeof Blob !== 'undefined'; } },
+        { name: 'FileReader', test: function() { return typeof FileReader !== 'undefined'; } },
+        { name: 'FormData', test: function() { return typeof FormData !== 'undefined'; } },
+        { name: 'BroadcastChannel', test: function() { return typeof BroadcastChannel !== 'undefined'; } },
+        { name: 'Geolocation', test: function() { return 'geolocation' in navigator; } },
+        { name: 'Notification', test: function() { return 'Notification' in window; } },
+        { name: 'Clipboard API', test: function() { return 'clipboard' in navigator; } },
+        { name: 'Web Share API', test: function() { return 'share' in navigator; } },
+        { name: 'Fullscreen API', test: function() { return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled); } },
+        { name: 'Touch Support', test: function() { return 'ontouchstart' in window || navigator.maxTouchPoints > 0; } },
+        { name: 'WebP Support', test: function() { return checkWebP(); } },
+        { name: 'WebGL Support', test: function() { return checkWebGL(); } },
+        { name: 'IndexedDB', test: function() { return !!window.indexedDB; } },
+        { name: 'AudioContext', test: function() { return !!(window.AudioContext || window.webkitAudioContext); } }
+    ];
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    
+    function testStorage(type) {
+        try {
+            var storage = window[type];
+            if (!storage) return false;
+            
+            var testKey = '__earsip_test__';
+            storage.setItem(testKey, '1');
+            var value = storage.getItem(testKey);
+            storage.removeItem(testKey);
+            return value === '1';
+        } catch(e) {
+            return false;
+        }
     }
     
-    async init() {
-        await this.checkAll();
-        
-        this.logger.info('Dependency checker initialized', {
-            passedAPIs: this.results.apis.filter(r => r.passed).length,
-            totalAPIs: this.results.apis.length
-        });
+    function checkWebP() {
+        try {
+            var canvas = document.createElement('canvas');
+            if (!canvas.toDataURL) return false;
+            
+            canvas.width = 1;
+            canvas.height = 1;
+            var dataUrl = canvas.toDataURL('image/webp');
+            return dataUrl.indexOf('data:image/webp') === 0;
+        } catch(e) {
+            return false;
+        }
     }
+    
+    function checkWebGL() {
+        try {
+            var canvas = document.createElement('canvas');
+            if (!canvas.getContext) return false;
+            
+            return !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // ============================================
+    // EXTERNAL DEPENDENCY CHECKS
+    // ============================================
+    
+    var EXTERNAL_CHECKS = [
+        { name: 'Chart.js', test: function() { return typeof Chart !== 'undefined'; } },
+        { name: 'Font Awesome', test: function() { return typeof FontAwesome !== 'undefined' || document.querySelector('link[href*="fontawesome"]') !== null; } },
+        { name: 'Bootstrap', test: function() { return typeof bootstrap !== 'undefined'; } },
+        { name: 'jQuery', test: function() { return typeof jQuery !== 'undefined'; } },
+        { name: 'DOMPurify', test: function() { return typeof DOMPurify !== 'undefined'; } },
+        { name: 'jsQR', test: function() { return typeof jsQR !== 'undefined'; } },
+        { name: 'XLSX', test: function() { return typeof XLSX !== 'undefined'; } },
+        { name: 'jsPDF', test: function() { return typeof jspdf !== 'undefined' || (window.jspdf && typeof window.jspdf.jsPDF !== 'undefined'); } },
+        { name: 'AOS (Animate)', test: function() { return typeof AOS !== 'undefined'; } }
+    ];
+    
+    // ============================================
+    // MODULE CHECKS (Internal)
+    // ============================================
+    
+    var INTERNAL_CHECKS = [
+        { name: 'API Service', test: function() { return !!(window.EArsip && window.EArsip.Api); } },
+        { name: 'Auth Service', test: function() { return !!(window.EArsip && window.EArsip.Auth); } },
+        { name: 'Config', test: function() { return !!(window.EArsip && window.EArsip.Config); } },
+        { name: 'CSRF Protection', test: function() { return typeof CSRFProtection !== 'undefined'; } },
+        { name: 'Firewall', test: function() { return typeof Firewall !== 'undefined'; } },
+        { name: 'Sanitizer', test: function() { return typeof Sanitizer !== 'undefined'; } },
+        { name: 'Audit Trail', test: function() { return typeof AuditTrail !== 'undefined'; } },
+        { name: 'Rate Limiter', test: function() { return typeof RateLimiter !== 'undefined'; } },
+        { name: 'Cache Manager', test: function() { return typeof CacheManager !== 'undefined'; } },
+        { name: 'Chart Manager', test: function() { return typeof ChartManager !== 'undefined'; } }
+    ];
     
     // ============================================
     // CHECKS
     // ============================================
     
-    async checkAll() {
-        this.checkAPIs();
-        await this.checkModules();
-        await this.checkOptionalModules();
-        this.checkFeatures();
+    function checkAPIs() {
+        _results.apis = [];
         
-        return this.results;
-    }
-    
-    checkAPIs() {
-        this.results.apis = this.requiredAPIs.map(api => {
-            let passed = false;
-            let error = null;
+        for (var i = 0; i < API_CHECKS.length; i++) {
+            var check = API_CHECKS[i];
+            var passed = false;
             
             try {
-                passed = api.test();
-            } catch (e) {
-                error = e.message;
+                passed = check.test();
+            } catch(e) {
+                passed = false;
             }
             
-            return {
-                name: api.name,
-                passed,
-                error,
+            _results.apis.push({
+                name: check.name,
+                passed: passed,
                 required: true
-            };
-        });
-    }
-    
-    async checkModules() {
-        this.results.modules = [];
-        
-        for (const mod of this.requiredModules) {
-            try {
-                await import(mod.path);
-                this.results.modules.push({
-                    name: mod.name,
-                    available: true
-                });
-            } catch {
-                this.results.modules.push({
-                    name: mod.name,
-                    available: false
-                });
-            }
+            });
         }
     }
     
-    async checkOptionalModules() {
-        this.results.optional = [];
+    function checkExternal() {
+        _results.external = [];
         
-        for (const mod of this.optionalModules) {
+        for (var i = 0; i < EXTERNAL_CHECKS.length; i++) {
+            var check = EXTERNAL_CHECKS[i];
+            var available = false;
+            
             try {
-                await import(mod.path);
-                this.results.optional.push({
-                    name: mod.name,
-                    available: true
-                });
-            } catch {
-                this.results.optional.push({
-                    name: mod.name,
-                    available: false
-                });
+                available = check.test();
+            } catch(e) {
+                available = false;
             }
+            
+            _results.external.push({
+                name: check.name,
+                available: available
+            });
         }
     }
     
-    checkFeatures() {
-        this.results.features = {
-            touch: 'ontouchstart' in window,
+    function checkInternal() {
+        _results.internal = [];
+        
+        for (var i = 0; i < INTERNAL_CHECKS.length; i++) {
+            var check = INTERNAL_CHECKS[i];
+            var available = false;
+            
+            try {
+                available = check.test();
+            } catch(e) {
+                available = false;
+            }
+            
+            _results.internal.push({
+                name: check.name,
+                available: available
+            });
+        }
+    }
+    
+    function checkFeatures() {
+        _results.features = {
+            touch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
             geolocation: 'geolocation' in navigator,
             notifications: 'Notification' in window,
             clipboard: 'clipboard' in navigator,
             share: 'share' in navigator,
-            vibration: 'vibrate' in navigator,
-            fullscreen: 'fullscreenEnabled' in document,
-            webp: this.checkWebPSupport(),
-            webgl: this.checkWebGLSupport(),
-            audioContext: 'AudioContext' in window || 'webkitAudioContext' in window,
+            fullscreen: !!(document.fullscreenEnabled || document.webkitFullscreenEnabled),
+            webp: checkWebP(),
+            webgl: checkWebGL(),
+            audioContext: !!(window.AudioContext || window.webkitAudioContext),
             speechSynthesis: 'speechSynthesis' in window,
-            paymentRequest: 'PaymentRequest' in window,
-            credentialManagement: 'PasswordCredential' in window || 'FederatedCredential' in window
+            serviceWorker: 'serviceWorker' in navigator,
+            indexedDB: !!window.indexedDB,
+            online: navigator.onLine
         };
     }
     
-    checkWebPSupport() {
-        const canvas = document.createElement('canvas');
-        if (canvas.toDataURL) {
-            return canvas.toDataURL('image/webp').startsWith('data:image/webp');
-        }
-        return false;
-    }
-    
-    checkWebGLSupport() {
-        try {
-            const canvas = document.createElement('canvas');
-            return !!(
-                window.WebGLRenderingContext &&
-                (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
-            );
-        } catch {
-            return false;
-        }
-    }
-    
-    testStorage(type) {
-        try {
-            const storage = window[type];
-            const testKey = '__storage_test__';
-            storage.setItem(testKey, '1');
-            storage.removeItem(testKey);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-    
-    // ============================================
-    // BROWSER INFO
-    // ============================================
-    
-    getBrowserInfo() {
-        const ua = navigator.userAgent;
-        let browser = 'Unknown';
-        let version = 'Unknown';
-        let engine = 'Unknown';
-        
-        // Browser detection
-        if (ua.includes('Firefox')) {
-            browser = 'Firefox';
-            version = ua.match(/Firefox\/(\d+)/)?.[1] || 'Unknown';
-            engine = 'Gecko';
-        } else if (ua.includes('Edg')) {
-            browser = 'Edge';
-            version = ua.match(/Edg\/(\d+)/)?.[1] || 'Unknown';
-            engine = 'Blink';
-        } else if (ua.includes('Chrome')) {
-            browser = 'Chrome';
-            version = ua.match(/Chrome\/(\d+)/)?.[1] || 'Unknown';
-            engine = 'Blink';
-        } else if (ua.includes('Safari')) {
-            browser = 'Safari';
-            version = ua.match(/Version\/(\d+)/)?.[1] || 'Unknown';
-            engine = 'WebKit';
-        } else if (ua.includes('Opera') || ua.includes('OPR')) {
-            browser = 'Opera';
-            version = ua.match(/(?:Opera|OPR)\/(\d+)/)?.[1] || 'Unknown';
-            engine = 'Blink';
-        }
-        
-        return {
-            browser,
-            version,
-            engine,
-            userAgent: ua,
-            platform: navigator.platform,
-            language: navigator.language,
-            cookiesEnabled: navigator.cookieEnabled,
-            online: navigator.onLine,
-            deviceMemory: navigator.deviceMemory || 'Unknown',
-            hardwareConcurrency: navigator.hardwareConcurrency || 'Unknown',
-            maxTouchPoints: navigator.maxTouchPoints || 0,
-            vendor: navigator.vendor || 'Unknown'
+    function checkStorage() {
+        _results.storage = {
+            localStorage: testStorage('localStorage'),
+            sessionStorage: testStorage('sessionStorage'),
+            indexedDB: !!window.indexedDB,
+            cookies: navigator.cookieEnabled
         };
     }
     
+    function runAllChecks() {
+        checkAPIs();
+        checkExternal();
+        checkInternal();
+        checkFeatures();
+        checkStorage();
+        
+        return _results;
+    }
+    
     // ============================================
-    // COMPATIBILITY REPORT
+    // REPORT
     // ============================================
     
-    generateReport() {
-        const apiPassed = this.results.apis.filter(r => r.passed).length;
-        const apiTotal = this.results.apis.length;
-        const modulesAvailable = this.results.modules.filter(r => r.available).length;
-        const modulesTotal = this.results.modules.length;
+    function generateReport() {
+        runAllChecks();
         
-        const failedAPIs = this.results.apis.filter(r => !r.passed);
-        const failedModules = this.results.modules.filter(r => !r.available);
+        var passedAPIs = 0;
+        var failedAPIs = [];
+        
+        for (var i = 0; i < _results.apis.length; i++) {
+            if (_results.apis[i].passed) {
+                passedAPIs++;
+            } else {
+                failedAPIs.push(_results.apis[i].name);
+            }
+        }
+        
+        var availableExternal = 0;
+        for (var j = 0; j < (_results.external || []).length; j++) {
+            if (_results.external[j].available) availableExternal++;
+        }
+        
+        var availableInternal = 0;
+        for (var k = 0; k < (_results.internal || []).length; k++) {
+            if (_results.internal[k].available) availableInternal++;
+        }
         
         return {
             timestamp: new Date().toISOString(),
-            browser: this.getBrowserInfo(),
             compatibility: {
-                score: Math.round((apiPassed / apiTotal) * 100),
-                apiPassed,
-                apiTotal,
-                modulesAvailable,
-                modulesTotal,
-                failedAPIs: failedAPIs.map(r => r.name),
-                failedModules: failedModules.map(r => r.name)
+                score: Math.round((passedAPIs / _results.apis.length) * 100),
+                passed: passedAPIs,
+                total: _results.apis.length,
+                failedAPIs: failedAPIs
             },
-            features: this.results.features,
-            recommendations: this.generateRecommendations(failedAPIs, failedModules)
+            externalModules: {
+                available: availableExternal,
+                total: (_results.external || []).length
+            },
+            internalModules: {
+                available: availableInternal,
+                total: (_results.internal || []).length
+            },
+            features: _results.features,
+            storage: _results.storage,
+            recommendations: generateRecommendations(failedAPIs)
         };
     }
     
-    generateRecommendations(failedAPIs, failedModules) {
-        const recommendations = [];
+    function generateRecommendations(failedAPIs) {
+        var recommendations = [];
         
         if (failedAPIs.length > 0) {
             recommendations.push({
-                type: 'browser_update',
-                message: 'Beberapa API browser tidak tersedia. Pertimbangkan untuk memperbarui browser Anda.',
-                missingAPIs: failedAPIs.map(r => r.name)
+                priority: 'high',
+                message: 'Beberapa API browser tidak tersedia: ' + failedAPIs.join(', '),
+                action: 'Perbarui browser atau gunakan polyfill'
             });
         }
         
-        if (failedModules.length > 0) {
+        if (!_results.features.webp) {
             recommendations.push({
-                type: 'install_modules',
-                message: 'Beberapa modul JavaScript tidak tersedia. Jalankan npm install.',
-                missingModules: failedModules.map(r => r.name)
+                priority: 'medium',
+                message: 'WebP tidak didukung. Gunakan PNG/JPEG sebagai fallback.'
             });
         }
         
-        if (!this.results.features.webp) {
+        if (!_results.storage.localStorage) {
             recommendations.push({
-                type: 'format_fallback',
-                message: 'WebP tidak didukung. Gunakan format gambar alternatif (PNG, JPEG).'
+                priority: 'high',
+                message: 'localStorage tidak tersedia. Aplikasi mungkin tidak berfungsi dengan baik.'
             });
         }
         
@@ -298,33 +316,90 @@ class DependencyChecker {
     // PUBLIC API
     // ============================================
     
-    getResults() {
-        return this.results;
-    }
-    
-    isCompatible() {
-        return this.results.apis.every(r => r.passed);
-    }
-    
-    getMissingAPIs() {
-        return this.results.apis.filter(r => !r.passed).map(r => r.name);
-    }
-    
-    refresh() {
-        return this.checkAll();
-    }
-    
-    destroy() {
-        this.results = { apis: [], modules: [], optional: [] };
-        this.logger.info('Dependency checker destroyed');
-    }
-}
+    return {
+        /**
+         * Run all checks
+         */
+        checkAll: runAllChecks,
+        
+        /**
+         * Generate full report
+         */
+        generateReport: generateReport,
+        
+        /**
+         * Quick compatibility check
+         */
+        isCompatible: function() {
+            checkAPIs();
+            for (var i = 0; i < _results.apis.length; i++) {
+                if (!_results.apis[i].passed) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        
+        /**
+         * Get missing APIs
+         */
+        getMissingAPIs: function() {
+            checkAPIs();
+            var missing = [];
+            for (var i = 0; i < _results.apis.length; i++) {
+                if (!_results.apis[i].passed) {
+                    missing.push(_results.apis[i].name);
+                }
+            }
+            return missing;
+        },
+        
+        /**
+         * Check specific API
+         */
+        checkAPI: function(name) {
+            for (var i = 0; i < API_CHECKS.length; i++) {
+                if (API_CHECKS[i].name.toLowerCase() === name.toLowerCase()) {
+                    try {
+                        return API_CHECKS[i].test();
+                    } catch(e) {
+                        return false;
+                    }
+                }
+            }
+            return null;
+        },
+        
+        /**
+         * Check if storage is available
+         */
+        isStorageAvailable: function(type) {
+            return testStorage(type || 'localStorage');
+        },
+        
+        /**
+         * Get results from last check
+         */
+        getResults: function() {
+            return _results;
+        }
+    };
+})();
 
-// Create singleton
-const dependencyChecker = new DependencyChecker();
-
-// Expose globally
-window.dependencyChecker = dependencyChecker;
-
-export default dependencyChecker;
-export { DependencyChecker };
+// ============================================
+// USAGE:
+// ============================================
+// // Quick check
+// if (!DependencyChecker.isCompatible()) {
+//     console.warn('Missing APIs:', DependencyChecker.getMissingAPIs());
+// }
+// 
+// // Full report
+// var report = DependencyChecker.generateReport();
+// console.log('Compatibility score:', report.compatibility.score + '%');
+// 
+// // Check specific
+// if (DependencyChecker.checkAPI('Service Worker')) {
+//     // Register service worker
+// }
+// ============================================

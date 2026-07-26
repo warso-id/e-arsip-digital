@@ -1,4 +1,286 @@
-/* css/themes/blue.css - Ocean Blue Theme 2026 */
+/* ============================================
+ * css/themes/themes.css - Complete Theme System 2026
+ * E-Arsip Digital - Theme Configuration
+ * Version: 2026.1.0
+ * 
+ * Tema yang tersedia:
+ * - default (light)
+ * - dark
+ * - blue (ocean)
+ * - green (forest)
+ * - purple (royal)
+ * - orange (sunset)
+ * - red (ruby)
+ * - high-contrast (accessibility)
+ * ============================================ */
+
+/* ============================================
+ * 1. DEFAULT THEME (LIGHT) - :root
+ * ============================================ */
+:root,
+[data-theme="default"],
+[data-theme="light"] {
+    /* Primary Colors */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    
+    /* Semantic Colors */
+    --color-success-50: #f0fdf4;
+    --color-success-100: #dcfce7;
+    --color-success-500: #22c55e;
+    --color-success-600: #16a34a;
+    --color-success-700: #15803d;
+    
+    --color-danger-50: #fef2f2;
+    --color-danger-100: #fee2e2;
+    --color-danger-500: #ef4444;
+    --color-danger-600: #dc2626;
+    --color-danger-700: #b91c1c;
+    
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    
+    --color-info-50: #f0f9ff;
+    --color-info-100: #e0f2fe;
+    --color-info-500: #0ea5e9;
+    --color-info-600: #0284c7;
+    --color-info-700: #0369a1;
+    
+    --color-gold: #ffd700;
+    
+    /* Background Colors */
+    --color-bg-primary: #f8fafc;
+    --color-bg-secondary: #f1f5f9;
+    --color-bg-tertiary: #e2e8f0;
+    --color-bg-white: #ffffff;
+    
+    /* Text Colors */
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #475569;
+    --color-text-muted: #64748b;
+    --color-text-white: #ffffff;
+    --color-text-link: #2563eb;
+    --color-text-link-hover: #1d4ed8;
+    
+    /* Border Colors */
+    --color-border: #e2e8f0;
+    --color-border-light: #f1f5f9;
+    --color-border-focus: #2563eb;
+    
+    /* Shadow */
+    --color-shadow-sm: rgba(0, 0, 0, 0.05);
+    --color-shadow-md: rgba(0, 0, 0, 0.08);
+    --color-shadow-lg: rgba(0, 0, 0, 0.12);
+    
+    /* Sidebar Colors */
+    --color-sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    --color-sidebar-bg-solid: #1e293b;
+    --color-sidebar-text: rgba(255, 255, 255, 0.75);
+    --color-sidebar-text-active: #ffffff;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+    --color-sidebar-active: #60a5fa;
+    --color-sidebar-active-bg: rgba(37, 99, 235, 0.2);
+    --color-sidebar-divider: rgba(255, 255, 255, 0.1);
+    
+    /* Card Colors */
+    --color-card-bg: #ffffff;
+    --color-card-border: #e2e8f0;
+    
+    /* Input Colors */
+    --color-input-bg: #f8fafc;
+    --color-input-bg-focus: #ffffff;
+    --color-input-border: #e2e8f0;
+    --color-input-focus: #2563eb;
+    --color-input-focus-ring: rgba(37, 99, 235, 0.1);
+    --color-input-disabled: #f1f5f9;
+    --color-input-placeholder: #94a3b8;
+    
+    /* Table Colors */
+    --color-table-header: #f8fafc;
+    --color-table-hover: #f1f5f9;
+    --color-table-stripe: #fafbfc;
+    --color-table-border: #e2e8f0;
+    
+    /* Button Colors */
+    --color-btn-primary-bg: #2563eb;
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-hover: #1d4ed8;
+    --color-btn-success-bg: #16a34a;
+    --color-btn-success-text: #ffffff;
+    --color-btn-danger-bg: #dc2626;
+    --color-btn-danger-text: #ffffff;
+    
+    /* Badge Colors */
+    --color-badge-success-bg: #dcfce7;
+    --color-badge-success-text: #15803d;
+    --color-badge-danger-bg: #fef2f2;
+    --color-badge-danger-text: #b91c1c;
+    --color-badge-warning-bg: #fef3c7;
+    --color-badge-warning-text: #b45309;
+    --color-badge-info-bg: #dbeafe;
+    --color-badge-info-text: #1d4ed8;
+    
+    /* Typography */
+    --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+    
+    /* Spacing */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-12: 3rem;
+    --spacing-16: 4rem;
+    
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+    
+    /* Sidebar Dimensions */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 64px;
+    
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+    
+    /* Z-Index Layers */
+    --z-sidebar: 100;
+    --z-overlay: 99;
+    --z-modal: 1000;
+    --z-toast: 9999;
+    --z-tooltip: 9998;
+    
+    /* PWA Safe Areas */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+    
+    /* Scrollbar */
+    --scrollbar-width: 6px;
+    --scrollbar-track: #f1f5f9;
+    --scrollbar-thumb: #c1c1c1;
+    --scrollbar-thumb-hover: #a1a1a1;
+}
+
+/* ============================================
+ * 2. DARK THEME
+ * ============================================ */
+[data-theme="dark"] {
+    /* Primary Colors (lebih cerah untuk dark mode) */
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    
+    /* Background Colors */
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-bg-white: #1e293b;
+    
+    /* Text Colors */
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #94a3b8;
+    --color-text-link: #60a5fa;
+    --color-text-link-hover: #93c5fd;
+    
+    /* Border Colors */
+    --color-border: #334155;
+    --color-border-light: #1e293b;
+    --color-border-focus: #3b82f6;
+    
+    /* Shadow */
+    --color-shadow-sm: rgba(0, 0, 0, 0.3);
+    --color-shadow-md: rgba(0, 0, 0, 0.4);
+    --color-shadow-lg: rgba(0, 0, 0, 0.5);
+    
+    /* Sidebar */
+    --color-sidebar-bg: linear-gradient(180deg, #0c1929 0%, #0f172a 100%);
+    --color-sidebar-bg-solid: #0c1929;
+    --color-sidebar-text: rgba(255, 255, 255, 0.65);
+    --color-sidebar-text-active: #ffffff;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+    --color-sidebar-active: #60a5fa;
+    --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+    --color-sidebar-divider: rgba(255, 255, 255, 0.06);
+    
+    /* Card */
+    --color-card-bg: #1e293b;
+    --color-card-border: #334155;
+    
+    /* Input */
+    --color-input-bg: #1e293b;
+    --color-input-bg-focus: #1e293b;
+    --color-input-border: #334155;
+    --color-input-focus: #3b82f6;
+    --color-input-focus-ring: rgba(59, 130, 246, 0.2);
+    --color-input-disabled: #0f172a;
+    --color-input-placeholder: #64748b;
+    
+    /* Table */
+    --color-table-header: #1e293b;
+    --color-table-hover: #334155;
+    --color-table-stripe: #1a2332;
+    --color-table-border: #334155;
+    
+    /* Button */
+    --color-btn-primary-bg: #3b82f6;
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-hover: #2563eb;
+    
+    /* Badge */
+    --color-badge-success-bg: rgba(22, 163, 74, 0.2);
+    --color-badge-success-text: #4ade80;
+    --color-badge-danger-bg: rgba(220, 38, 38, 0.2);
+    --color-badge-danger-text: #f87171;
+    --color-badge-warning-bg: rgba(217, 119, 6, 0.2);
+    --color-badge-warning-text: #fbbf24;
+    --color-badge-info-bg: rgba(37, 99, 235, 0.2);
+    --color-badge-info-text: #60a5fa;
+    
+    /* Scrollbar */
+    --scrollbar-track: #1e293b;
+    --scrollbar-thumb: #475569;
+    --scrollbar-thumb-hover: #64748b;
+}
+
+/* ============================================
+ * 3. BLUE THEME (OCEAN) - Override Primary
+ * ============================================ */
 [data-theme="blue"] {
     --color-primary-50: #eff6ff;
     --color-primary-100: #dbeafe;
@@ -16,14 +298,14 @@
     --color-bg-tertiary: #bae6fd;
     --color-text-primary: #0c4a6e;
     --color-text-secondary: #0369a1;
-    --color-text-muted: #64748b;
     --color-border: #bae6fd;
     --color-border-light: #e0f2fe;
-    --color-shadow: rgba(2, 132, 199, 0.1);
+    --color-shadow-sm: rgba(2, 132, 199, 0.08);
+    --color-shadow-md: rgba(2, 132, 199, 0.1);
     
-    --color-sidebar-bg: #0c4a6e;
+    --color-sidebar-bg: linear-gradient(180deg, #0c4a6e 0%, #075985 100%);
+    --color-sidebar-bg-solid: #0c4a6e;
     --color-sidebar-text: #bae6fd;
-    --color-sidebar-hover: rgba(255,255,255,0.08);
     --color-sidebar-active: #38bdf8;
     --color-sidebar-active-bg: rgba(56, 189, 248, 0.15);
     
@@ -32,11 +314,17 @@
     --color-input-bg: #ffffff;
     --color-input-border: #bae6fd;
     --color-input-focus: #0ea5e9;
+    --color-input-focus-ring: rgba(14, 165, 233, 0.1);
     --color-table-header: #f0f9ff;
     --color-table-hover: #e0f2fe;
+    
+    --color-btn-primary-bg: #0284c7;
+    --color-btn-primary-hover: #0369a1;
 }
 
-/* css/themes/green.css - Forest Green Theme 2026 */
+/* ============================================
+ * 4. GREEN THEME (FOREST)
+ * ============================================ */
 [data-theme="green"] {
     --color-primary-50: #f0fdf4;
     --color-primary-100: #dcfce7;
@@ -54,14 +342,14 @@
     --color-bg-tertiary: #bbf7d0;
     --color-text-primary: #14532d;
     --color-text-secondary: #15803d;
-    --color-text-muted: #64748b;
     --color-border: #bbf7d0;
     --color-border-light: #dcfce7;
-    --color-shadow: rgba(22, 163, 74, 0.1);
+    --color-shadow-sm: rgba(22, 163, 74, 0.08);
+    --color-shadow-md: rgba(22, 163, 74, 0.1);
     
-    --color-sidebar-bg: #14532d;
+    --color-sidebar-bg: linear-gradient(180deg, #14532d 0%, #166534 100%);
+    --color-sidebar-bg-solid: #14532d;
     --color-sidebar-text: #bbf7d0;
-    --color-sidebar-hover: rgba(255,255,255,0.08);
     --color-sidebar-active: #4ade80;
     --color-sidebar-active-bg: rgba(74, 222, 128, 0.15);
     
@@ -70,11 +358,17 @@
     --color-input-bg: #ffffff;
     --color-input-border: #bbf7d0;
     --color-input-focus: #22c55e;
+    --color-input-focus-ring: rgba(34, 197, 94, 0.1);
     --color-table-header: #f0fdf4;
     --color-table-hover: #dcfce7;
+    
+    --color-btn-primary-bg: #16a34a;
+    --color-btn-primary-hover: #15803d;
 }
 
-/* css/themes/purple.css - Royal Purple Theme 2026 */
+/* ============================================
+ * 5. PURPLE THEME (ROYAL)
+ * ============================================ */
 [data-theme="purple"] {
     --color-primary-50: #faf5ff;
     --color-primary-100: #f3e8ff;
@@ -90,16 +384,16 @@
     --color-bg-primary: #faf5ff;
     --color-bg-secondary: #f3e8ff;
     --color-bg-tertiary: #e9d5ff;
-    --color-text-primary: #3b0764;
+    --color-text-primary: #4c1d95;
     --color-text-secondary: #581c87;
-    --color-text-muted: #64748b;
     --color-border: #e9d5ff;
     --color-border-light: #f3e8ff;
-    --color-shadow: rgba(147, 51, 234, 0.1);
+    --color-shadow-sm: rgba(147, 51, 234, 0.08);
+    --color-shadow-md: rgba(147, 51, 234, 0.1);
     
-    --color-sidebar-bg: #3b0764;
+    --color-sidebar-bg: linear-gradient(180deg, #4c1d95 0%, #581c87 100%);
+    --color-sidebar-bg-solid: #4c1d95;
     --color-sidebar-text: #e9d5ff;
-    --color-sidebar-hover: rgba(255,255,255,0.08);
     --color-sidebar-active: #c084fc;
     --color-sidebar-active-bg: rgba(192, 132, 252, 0.15);
     
@@ -108,11 +402,17 @@
     --color-input-bg: #ffffff;
     --color-input-border: #e9d5ff;
     --color-input-focus: #a855f7;
+    --color-input-focus-ring: rgba(168, 85, 247, 0.1);
     --color-table-header: #faf5ff;
     --color-table-hover: #f3e8ff;
+    
+    --color-btn-primary-bg: #9333ea;
+    --color-btn-primary-hover: #7e22ce;
 }
 
-/* css/themes/orange.css - Sunset Orange Theme 2026 */
+/* ============================================
+ * 6. ORANGE THEME (SUNSET)
+ * ============================================ */
 [data-theme="orange"] {
     --color-primary-50: #fff7ed;
     --color-primary-100: #ffedd5;
@@ -130,14 +430,14 @@
     --color-bg-tertiary: #fed7aa;
     --color-text-primary: #431407;
     --color-text-secondary: #7c2d12;
-    --color-text-muted: #64748b;
     --color-border: #fed7aa;
     --color-border-light: #ffedd5;
-    --color-shadow: rgba(234, 88, 12, 0.1);
+    --color-shadow-sm: rgba(234, 88, 12, 0.08);
+    --color-shadow-md: rgba(234, 88, 12, 0.1);
     
-    --color-sidebar-bg: #431407;
+    --color-sidebar-bg: linear-gradient(180deg, #431407 0%, #7c2d12 100%);
+    --color-sidebar-bg-solid: #431407;
     --color-sidebar-text: #fed7aa;
-    --color-sidebar-hover: rgba(255,255,255,0.08);
     --color-sidebar-active: #fb923c;
     --color-sidebar-active-bg: rgba(251, 146, 60, 0.15);
     
@@ -146,11 +446,17 @@
     --color-input-bg: #ffffff;
     --color-input-border: #fed7aa;
     --color-input-focus: #f97316;
+    --color-input-focus-ring: rgba(249, 115, 22, 0.1);
     --color-table-header: #fff7ed;
     --color-table-hover: #ffedd5;
+    
+    --color-btn-primary-bg: #ea580c;
+    --color-btn-primary-hover: #c2410c;
 }
 
-/* css/themes/red.css - Ruby Red Theme 2026 */
+/* ============================================
+ * 7. RED THEME (RUBY)
+ * ============================================ */
 [data-theme="red"] {
     --color-primary-50: #fef2f2;
     --color-primary-100: #fee2e2;
@@ -168,14 +474,14 @@
     --color-bg-tertiary: #fecaca;
     --color-text-primary: #450a0a;
     --color-text-secondary: #7f1d1d;
-    --color-text-muted: #64748b;
     --color-border: #fecaca;
     --color-border-light: #fee2e2;
-    --color-shadow: rgba(220, 38, 38, 0.1);
+    --color-shadow-sm: rgba(220, 38, 38, 0.08);
+    --color-shadow-md: rgba(220, 38, 38, 0.1);
     
-    --color-sidebar-bg: #450a0a;
+    --color-sidebar-bg: linear-gradient(180deg, #450a0a 0%, #7f1d1d 100%);
+    --color-sidebar-bg-solid: #450a0a;
     --color-sidebar-text: #fecaca;
-    --color-sidebar-hover: rgba(255,255,255,0.08);
     --color-sidebar-active: #f87171;
     --color-sidebar-active-bg: rgba(248, 113, 113, 0.15);
     
@@ -184,10 +490,146 @@
     --color-input-bg: #ffffff;
     --color-input-border: #fecaca;
     --color-input-focus: #ef4444;
+    --color-input-focus-ring: rgba(239, 68, 68, 0.1);
     --color-table-header: #fef2f2;
     --color-table-hover: #fee2e2;
-<<<<<<< HEAD
+    
+    --color-btn-primary-bg: #dc2626;
+    --color-btn-primary-hover: #b91c1c;
 }
-=======
+
+/* ============================================
+ * 8. HIGH CONTRAST THEME (ACCESSIBILITY)
+ * ============================================ */
+[data-theme="high-contrast"] {
+    --color-primary-500: #0000ff;
+    --color-primary-600: #0000cc;
+    
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f0f0f0;
+    --color-bg-tertiary: #e0e0e0;
+    --color-bg-white: #ffffff;
+    
+    --color-text-primary: #000000;
+    --color-text-secondary: #000000;
+    --color-text-muted: #333333;
+    --color-text-link: #0000ff;
+    --color-text-link-hover: #0000cc;
+    
+    --color-border: #000000;
+    --color-border-light: #666666;
+    --color-border-focus: #0000ff;
+    
+    --color-sidebar-bg: #000000;
+    --color-sidebar-bg-solid: #000000;
+    --color-sidebar-text: #ffffff;
+    --color-sidebar-text-active: #ffff00;
+    --color-sidebar-hover: #333333;
+    --color-sidebar-active: #ffff00;
+    --color-sidebar-active-bg: #333333;
+    
+    --color-card-bg: #ffffff;
+    --color-card-border: #000000;
+    --color-input-bg: #ffffff;
+    --color-input-border: #000000;
+    --color-input-focus: #0000ff;
+    --color-input-focus-ring: rgba(0, 0, 255, 0.3);
+    
+    --color-table-header: #000000;
+    --color-table-hover: #ffff00;
+    --color-table-border: #000000;
+    
+    --color-btn-primary-bg: #000000;
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-hover: #333333;
+    
+    /* Larger text for readability */
+    --font-size-base: 1.125rem;
+    --font-size-sm: 1rem;
 }
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+
+/* ============================================
+ * 9. THEME TRANSITION
+ * ============================================ */
+body {
+    transition: background-color var(--transition-normal),
+                color var(--transition-normal);
+}
+
+/* Apply transitions to themed elements */
+.sidebar,
+.card,
+.stat-card,
+input,
+select,
+textarea,
+button,
+table {
+    transition: background-color var(--transition-normal),
+                border-color var(--transition-normal),
+                color var(--transition-normal),
+                box-shadow var(--transition-normal);
+}
+
+/* ============================================
+ * 10. SYSTEM THEME DETECTION (Auto Dark Mode)
+ * ============================================ */
+@media (prefers-color-scheme: dark) {
+    [data-theme="auto"] {
+        /* Inherit dark theme variables */
+        --color-bg-primary: #0f172a;
+        --color-bg-secondary: #1e293b;
+        --color-bg-tertiary: #334155;
+        --color-bg-white: #1e293b;
+        --color-text-primary: #f1f5f9;
+        --color-text-secondary: #cbd5e1;
+        --color-text-muted: #94a3b8;
+        --color-border: #334155;
+        --color-border-light: #1e293b;
+        --color-card-bg: #1e293b;
+        --color-card-border: #334155;
+        --color-input-bg: #1e293b;
+        --color-input-border: #334155;
+        --color-table-header: #1e293b;
+        --color-table-hover: #334155;
+        --color-table-border: #334155;
+        --color-sidebar-bg: linear-gradient(180deg, #0c1929 0%, #0f172a 100%);
+        --color-sidebar-bg-solid: #0c1929;
+    }
+}
+
+/* ============================================
+ * 11. REDUCED MOTION (Accessibility)
+ * ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    body,
+    .sidebar,
+    .card,
+    .stat-card,
+    input,
+    select,
+    textarea,
+    button,
+    table {
+        transition: none !important;
+    }
+}
+
+/* ============================================
+ * 12. PWA STANDALONE MODE
+ * ============================================ */
+@media (display-mode: standalone) {
+    :root {
+        --safe-area-top: env(safe-area-inset-top, 0px);
+        --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    
+    body {
+        padding-top: var(--safe-area-top);
+        padding-bottom: var(--safe-area-bottom);
+    }
+    
+    .sidebar {
+        padding-top: var(--safe-area-top);
+    }
+}

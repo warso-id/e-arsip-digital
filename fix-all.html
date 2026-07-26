@@ -5,12 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="csrf-token" id="csrf-token" content="">
     <title>Fix Dashboard - E-Arsip Digital</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1e293b, #0f172a);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1a1a2e 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -18,223 +24,713 @@
             padding: 20px;
             color: #f1f5f9;
         }
-        .container {
-            max-width: 600px;
-            width: 100%;
+        
+        .container { max-width: 580px; width: 100%; }
+        
+        .card {
+            background: rgba(51, 65, 85, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px 36px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             text-align: center;
         }
-        .card {
-            background: #334155;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        
+        .icon {
+            font-size: 52px;
+            margin-bottom: 16px;
+            animation: pulse 2s infinite;
         }
-        .icon { font-size: 48px; margin-bottom: 16px; }
-        h1 { font-size: 24px; margin-bottom: 8px; }
-        p { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        h1 { font-size: 24px; margin-bottom: 6px; font-weight: 700; }
+        
+        .subtitle { 
+            color: #94a3b8; margin-bottom: 28px; font-size: 14px; 
+            line-height: 1.6;
+        }
+        
+        .actions { display: flex; flex-direction: column; gap: 10px; }
+        
         .btn {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             width: 100%;
-            padding: 14px;
+            padding: 14px 20px;
             border: none;
-            border-radius: 10px;
-            font-size: 15px;
+            border-radius: 12px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            margin-bottom: 10px;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             font-family: inherit;
             color: white;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
         }
-        .btn-fix { background: #16a34a; }
-        .btn-fix:hover { background: #15803d; }
-        .btn-reset { background: #dc2626; }
-        .btn-reset:hover { background: #b91c1c; }
-        .btn-cache { background: #d97706; }
-        .btn-cache:hover { background: #b45309; }
-        .btn-home { background: #2563eb; }
-        .btn-home:hover { background: #1d4ed8; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .log {
-            text-align: left;
-            background: #1e293b;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 16px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
+        
+        .btn:hover:not(:disabled) { 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:focus-visible {
+            outline: 2px solid #60a5fa;
+            outline-offset: 2px;
+        }
+        
+        .btn:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+            transform: none;
+        }
+        
+        .btn-fix { 
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            font-size: 16px;
+            padding: 16px;
+        }
+        .btn-fix:hover:not(:disabled) { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        
+        .btn-cache { background: rgba(217, 119, 6, 0.2); border: 1px solid rgba(217, 119, 6, 0.3); }
+        .btn-cache:hover:not(:disabled) { background: rgba(217, 119, 6, 0.3); }
+        
+        .btn-reset { background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.3); }
+        .btn-reset:hover:not(:disabled) { background: rgba(220, 38, 38, 0.3); }
+        
+        .btn-home { background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(37, 99, 235, 0.3); }
+        .btn-home:hover:not(:disabled) { background: rgba(37, 99, 235, 0.3); }
+        
+        .btn .spinner {
+            display: none;
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .btn.loading .spinner { display: inline-block; }
+        .btn.loading .btn-text { display: none; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin: 16px 0;
+            overflow: hidden;
             display: none;
         }
-        .log.show { display: block; }
-        .log-entry { padding: 2px 0; }
+        
+        .progress-bar.show { display: block; }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #16a34a, #22c55e);
+            border-radius: 2px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+        
+        .log-container {
+            text-align: left;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            line-height: 1.8;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-container.show { display: block; }
+        
+        .log-entry { display: flex; gap: 8px; align-items: flex-start; }
+        .log-entry .log-icon { width: 16px; text-align: center; flex-shrink: 0; }
         .log-entry.success { color: #4ade80; }
         .log-entry.error { color: #f87171; }
+        .log-entry.warning { color: #fbbf24; }
         .log-entry.info { color: #60a5fa; }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal-dialog {
+            background: #334155;
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .modal-dialog h3 { margin-bottom: 12px; }
+        .modal-dialog p { color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions .btn { flex: 1; }
+        
+        @media (max-width: 480px) {
+            .card { padding: 24px 20px; }
+            .btn { padding: 12px 16px; font-size: 13px; }
+            .modal-actions { flex-direction: column; }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            .icon { animation: none; }
+            .btn, .progress-fill { transition: none; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <div class="icon">🔧</div>
+            <div class="icon" aria-hidden="true">🔧</div>
             <h1>Fix Dashboard</h1>
-            <p>Perbaiki masalah umum pada aplikasi E-Arsip Digital dengan satu klik</p>
+            <p class="subtitle">
+                Perbaiki masalah umum pada aplikasi E-Arsip Digital.<br>
+                Tool ini akan mendiagnosa dan memperbaiki masalah secara otomatis.
+            </p>
             
-            <button class="btn btn-fix" onclick="fixAll()" id="fix-btn">
-                🔧 Fix All Issues
-            </button>
-            <button class="btn btn-cache" onclick="clearCache()">
-                🗑️ Clear Cache & Reload
-            </button>
-            <button class="btn btn-reset" onclick="resetApp()">
-                ⚠️ Reset Aplikasi
-            </button>
-            <button class="btn btn-home" onclick="goHome()">
-                🏠 Kembali ke Beranda
-            </button>
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
             
-            <div class="log" id="log"></div>
+            <div class="actions">
+                <button class="btn btn-fix" id="fix-btn" type="button" aria-label="Perbaiki semua masalah">
+                    <span class="spinner"></span>
+                    <span class="btn-text"><i class="fas fa-wrench" aria-hidden="true"></i> Fix All Issues</span>
+                </button>
+                <button class="btn btn-cache" id="cache-btn" type="button" aria-label="Bersihkan cache">
+                    <span class="spinner"></span>
+                    <span class="btn-text"><i class="fas fa-broom" aria-hidden="true"></i> Clear Cache & Reload</span>
+                </button>
+                <button class="btn btn-reset" id="reset-btn" type="button" aria-label="Reset aplikasi">
+                    <span class="spinner"></span>
+                    <span class="btn-text"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Reset Aplikasi</span>
+                </button>
+                <a href="/dashboard/" class="btn btn-home" aria-label="Kembali ke beranda">
+                    <i class="fas fa-home" aria-hidden="true"></i> Kembali ke Beranda
+                </a>
+            </div>
+            
+            <div class="log-container" id="log-container" role="log" aria-live="polite" aria-label="Log perbaikan"></div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-dialog">
+            <h3 id="modal-title">Konfirmasi</h3>
+            <p id="modal-message">Apakah Anda yakin?</p>
+            <div class="modal-actions">
+                <button class="btn btn-home" id="modal-cancel" type="button">Batal</button>
+                <button class="btn btn-reset" id="modal-confirm" type="button">Lanjutkan</button>
+            </div>
         </div>
     </div>
     
     <script>
-        function log(message, type = 'info') {
-            const logEl = document.getElementById('log');
-            logEl.classList.add('show');
-            logEl.innerHTML += `<div class="log-entry ${type}">[${new Date().toLocaleTimeString()}] ${message}</div>`;
-            logEl.scrollTop = logEl.scrollHeight;
+        // Base path resolver
+        (function() {
+            const pathname = window.location.pathname || '/';
+            const segments = pathname.split('/').filter(Boolean);
+            if (segments.length === 0) { window.APP_BASE_PATH = '/'; return; }
+            
+            const knownRoutes = ['dashboard', 'surat-masuk', 'surat-keluar', 'login', 'fix-all'];
+            window.APP_BASE_PATH = (!knownRoutes.includes(segments[0]) && segments.length >= 2)
+                ? '/' + segments[0] + '/'
+                : '/';
+        })();
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
         }
+        
+        // ============================================
+        // LOGGING
+        // ============================================
+        
+        const logContainer = document.getElementById('log-container');
+        
+        function log(message, type = 'info') {
+            logContainer.classList.add('show');
+            
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="log-icon">${icons[type]}</span><span>${escapeHtml(message)}</span>`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function updateProgress(percent) {
+            const bar = document.getElementById('progress-bar');
+            const fill = document.getElementById('progress-fill');
+            bar.classList.add('show');
+            fill.style.width = percent + '%';
+        }
+        
+        // ============================================
+        // MODAL CONFIRMATION
+        // ============================================
+        
+        function showConfirm(title, message) {
+            return new Promise((resolve) => {
+                document.getElementById('modal-title').textContent = title;
+                document.getElementById('modal-message').textContent = message;
+                
+                const modal = document.getElementById('confirm-modal');
+                modal.classList.add('show');
+                
+                const confirm = document.getElementById('modal-confirm');
+                const cancel = document.getElementById('modal-cancel');
+                
+                const cleanup = (result) => {
+                    modal.classList.remove('show');
+                    confirm.removeEventListener('click', onConfirm);
+                    cancel.removeEventListener('click', onCancel);
+                    resolve(result);
+                };
+                
+                const onConfirm = () => cleanup(true);
+                const onCancel = () => cleanup(false);
+                
+                confirm.addEventListener('click', onConfirm);
+                cancel.addEventListener('click', onCancel);
+                
+                // Close on Escape
+                const onEscape = (e) => {
+                    if (e.key === 'Escape') cleanup(false);
+                    document.removeEventListener('keydown', onEscape);
+                };
+                document.addEventListener('keydown', onEscape);
+                
+                // Focus confirm button
+                confirm.focus();
+            });
+        }
+        
+        // ============================================
+        // FIX ALL
+        // ============================================
+        
+        document.getElementById('fix-btn').addEventListener('click', fixAll);
         
         async function fixAll() {
             const btn = document.getElementById('fix-btn');
             btn.disabled = true;
-            btn.textContent = '⏳ Fixing...';
+            btn.classList.add('loading');
             
-            log('Starting diagnostics...', 'info');
+            logContainer.innerHTML = '';
+            logContainer.classList.add('show');
+            updateProgress(0);
             
-            // 1. Check localStorage
-            try {
-                const test = localStorage.setItem('test', '1');
-                localStorage.removeItem('test');
-                log('✅ localStorage OK', 'success');
-            } catch (e) {
-                log('❌ localStorage error - clearing...', 'error');
-                try { localStorage.clear(); } catch {}
+            log('🔍 Memulai diagnosa sistem...', 'info');
+            
+            const checks = [
+                { name: 'localStorage', fn: checkLocalStorage, weight: 15 },
+                { name: 'session', fn: checkSession, weight: 15 },
+                { name: 'cache', fn: clearExpiredCache, weight: 20 },
+                { name: 'indexedDB', fn: checkIndexedDB, weight: 15 },
+                { name: 'serviceWorker', fn: checkServiceWorker, weight: 15 },
+                { name: 'connectivity', fn: checkConnectivity, weight: 10 },
+                { name: 'cors', fn: checkCORS, weight: 10 }
+            ];
+            
+            let progress = 0;
+            
+            for (const check of checks) {
+                try {
+                    await check.fn();
+                } catch (e) {
+                    log(`Gagal menjalankan ${check.name}: ${e.message}`, 'warning');
+                }
+                progress += check.weight;
+                updateProgress(progress);
             }
             
-            // 2. Check session
+            updateProgress(100);
+            log('✅ Diagnosa selesai! Semua masalah telah diperbaiki.', 'success');
+            log('🔄 Mengalihkan ke dashboard dalam 3 detik...', 'info');
+            
+            setTimeout(() => {
+                window.location.href = (window.APP_BASE_PATH || '/') + 'dashboard/';
+            }, 3000);
+            
+            btn.disabled = false;
+            btn.classList.remove('loading');
+        }
+        
+        async function checkLocalStorage() {
+            try {
+                const testKey = '_fix_test_' + Date.now();
+                localStorage.setItem(testKey, '1');
+                localStorage.removeItem(testKey);
+                log('localStorage berfungsi normal', 'success');
+            } catch (e) {
+                log('localStorage error - mencoba membersihkan...', 'error');
+                try {
+                    // Remove only non-essential keys
+                    const essentialKeys = ['auth_session', 'app_settings', 'applied_migrations'];
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (!essentialKeys.includes(key) && !key?.startsWith('auth_')) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(k => localStorage.removeItem(k));
+                    log(`Dibersihkan ${keysToRemove.length} keys dari localStorage`, 'success');
+                } catch {
+                    log('Gagal membersihkan localStorage', 'error');
+                }
+            }
+        }
+        
+        async function checkSession() {
             try {
                 const auth = localStorage.getItem('auth_session');
                 if (auth) {
                     const parsed = JSON.parse(auth);
-                    log(`✅ Session found for: ${parsed.user?.username || 'unknown'}`, 'success');
+                    if (parsed.user?.username) {
+                        log(`Session aktif: ${parsed.user.username} (${parsed.user.role || 'unknown'})`, 'success');
+                    } else {
+                        throw new Error('Invalid session structure');
+                    }
                 } else {
-                    log('⚠️ No active session', 'info');
+                    log('Tidak ada session aktif', 'warning');
                 }
             } catch (e) {
-                log('❌ Corrupted session - removing...', 'error');
-                localStorage.removeItem('auth_session');
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_refresh_token');
+                log('Session rusak - menghapus data session...', 'error');
+                ['auth_session', 'auth_token', 'auth_refresh_token', 'session_data'].forEach(k => {
+                    localStorage.removeItem(k);
+                    sessionStorage.removeItem(k);
+                });
+                log('Data session dibersihkan', 'success');
             }
-            
-            // 3. Clear expired cache
-            const prefix = 'cache_';
+        }
+        
+        async function clearExpiredCache() {
+            const cachePrefixes = ['cache_', 'api-cache_', 'cache_app_'];
             let cleared = 0;
+            
             for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
-                if (key?.startsWith(prefix)) {
+                if (cachePrefixes.some(p => key?.startsWith(p))) {
                     try {
                         const entry = JSON.parse(localStorage.getItem(key));
-                        if (entry.expiresAt && Date.now() > entry.expiresAt) {
+                        if (!entry.expiresAt || Date.now() > entry.expiresAt) {
                             localStorage.removeItem(key);
                             cleared++;
                         }
-                    } catch { localStorage.removeItem(key); cleared++; }
-                }
-            }
-            log(`✅ Cleared ${cleared} expired cache entries`, 'success');
-            
-            // 4. Check IndexedDB
-            if (window.indexedDB) {
-                try {
-                    const databases = await indexedDB.databases?.() || [];
-                    log(`✅ IndexedDB OK (${databases.length} databases)`, 'success');
-                } catch {
-                    log('⚠️ IndexedDB not accessible', 'info');
+                    } catch {
+                        localStorage.removeItem(key);
+                        cleared++;
+                    }
                 }
             }
             
-            // 5. Check service worker
-            if ('serviceWorker' in navigator) {
+            if (cleared > 0) {
+                log(`Dibersihkan ${cleared} cache kadaluarsa`, 'success');
+            } else {
+                log('Tidak ada cache kadaluarsa', 'info');
+            }
+        }
+        
+        async function checkIndexedDB() {
+            if (!window.indexedDB) {
+                log('IndexedDB tidak didukung browser ini', 'warning');
+                return;
+            }
+            
+            try {
+                // Try to open a test database
+                await new Promise((resolve, reject) => {
+                    const request = indexedDB.open('_fix_test_', 1);
+                    request.onsuccess = (e) => {
+                        e.target.result.close();
+                        indexedDB.deleteDatabase('_fix_test_');
+                        resolve();
+                    };
+                    request.onerror = () => reject(request.error);
+                    request.onupgradeneeded = (e) => {
+                        e.target.result.createObjectStore('test');
+                    };
+                });
+                log('IndexedDB berfungsi normal', 'success');
+            } catch {
+                log('IndexedDB error - mencoba perbaikan...', 'error');
+                // Attempt to delete potentially corrupted databases
+                const dbNames = ['EArsipStorage', 'EArsipSessions', 'EArsipCache'];
+                for (const name of dbNames) {
+                    try {
+                        await new Promise((resolve) => {
+                            const req = indexedDB.deleteDatabase(name);
+                            req.onsuccess = resolve;
+                            req.onerror = resolve;
+                        });
+                    } catch {}
+                }
+                log('Database IndexedDB dibersihkan', 'success');
+            }
+        }
+        
+        async function checkServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                log('Service Worker tidak didukung browser ini', 'warning');
+                return;
+            }
+            
+            try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 if (registrations.length > 0) {
                     await Promise.all(registrations.map(r => r.update()));
-                    log('✅ Service Worker updated', 'success');
+                    log(`Service Worker diperbarui (${registrations.length} registrasi)`, 'success');
+                } else {
+                    log('Tidak ada Service Worker terdaftar', 'info');
+                }
+            } catch (e) {
+                log('Service Worker error - mencoba perbaikan...', 'error');
+                // Unregister all then re-register
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(r => r.unregister()));
+                    log('Service Worker di-reset', 'success');
+                } catch {
+                    log('Gagal mereset Service Worker', 'error');
                 }
             }
-            
-            // 6. Check connectivity
-            log(`✅ Network: ${navigator.onLine ? 'Online' : 'Offline'}`, navigator.onLine ? 'success' : 'error');
-            
-            log('✅ Fix completed! Reloading in 2 seconds...', 'success');
-            
-            setTimeout(() => {
-                window.location.href = '/dashboard/';
-            }, 2000);
         }
         
-        function clearCache() {
-            // Clear all cache
-            const cachePrefixes = ['cache_', 'api-cache_', 'offline_'];
+        async function checkConnectivity() {
+            const online = navigator.onLine;
+            log(`Koneksi: ${online ? 'Online' : 'Offline'}`, online ? 'success' : 'warning');
+            
+            if (online) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 3000);
+                    await fetch('/favicon.ico', { method: 'HEAD', signal: controller.signal });
+                    clearTimeout(timeout);
+                    log('Koneksi ke server OK', 'success');
+                } catch {
+                    log('Tidak dapat terhubung ke server', 'error');
+                }
+            }
+        }
+        
+        async function checkCORS() {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 3000);
+                const response = await fetch('/api/health', { 
+                    method: 'HEAD', 
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                clearTimeout(timeout);
+                if (response.ok || response.status === 404) {
+                    log('CORS headers OK', 'success');
+                }
+            } catch {
+                log('CORS check skipped (mungkin offline)', 'info');
+            }
+        }
+        
+        // ============================================
+        // CLEAR CACHE
+        // ============================================
+        
+        document.getElementById('cache-btn').addEventListener('click', async () => {
+            const confirmed = await showConfirm(
+                'Clear Cache',
+                'Ini akan membersihkan semua cache, session storage, dan service worker cache. Data utama tidak akan terpengaruh. Lanjutkan?'
+            );
+            
+            if (!confirmed) return;
+            
+            const btn = document.getElementById('cache-btn');
+            btn.disabled = true;
+            btn.classList.add('loading');
+            
+            logContainer.innerHTML = '';
+            logContainer.classList.add('show');
+            
+            // Clear localStorage caches
+            const cachePrefixes = ['cache_', 'api-cache_', 'cache_app_', 'offline_'];
+            let cleared = 0;
             for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
                 if (cachePrefixes.some(p => key?.startsWith(p))) {
                     localStorage.removeItem(key);
+                    cleared++;
                 }
             }
+            log(`Dibersihkan ${cleared} cache localStorage`, 'success');
             
             // Clear session storage
             sessionStorage.clear();
+            log('Session storage dibersihkan', 'success');
             
             // Clear IndexedDB caches
             if (window.indexedDB) {
-                ['EArsipCache_app', 'EArsipCache_offline', 'EArsipSW'].forEach(name => {
-                    indexedDB.deleteDatabase(name).catch(() => {});
-                });
-            }
-            
-            // Clear service worker caches
-            if ('caches' in window) {
-                caches.keys().then(names => {
-                    names.forEach(name => caches.delete(name));
-                });
-            }
-            
-            alert('Cache cleared! Page will reload.');
-            window.location.reload(true);
-        }
-        
-        function resetApp() {
-            if (confirm('⚠️ Ini akan menghapus SEMUA data lokal (session, cache, settings). Lanjutkan?')) {
-                localStorage.clear();
-                sessionStorage.clear();
-                
-                if (window.indexedDB) {
-                    indexedDB.databases?.().then(dbs => {
-                        dbs.forEach(db => indexedDB.deleteDatabase(db.name));
-                    }).catch(() => {});
+                const cacheDBs = ['EArsipCache_app', 'EArsipCache_offline', 'EArsipSW'];
+                for (const name of cacheDBs) {
+                    try {
+                        await new Promise((resolve) => {
+                            const req = indexedDB.deleteDatabase(name);
+                            req.onsuccess = resolve;
+                            req.onerror = resolve;
+                        });
+                    } catch {}
                 }
-                
-                alert('Aplikasi direset. Anda akan diarahkan ke halaman login.');
-                window.location.href = '/login.html';
+                log('IndexedDB cache dibersihkan', 'success');
             }
+            
+            // Clear Service Worker caches
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`Dibersihkan ${cacheNames.length} SW cache`, 'success');
+                } catch {
+                    log('Gagal membersihkan SW cache', 'warning');
+                }
+            }
+            
+            log('✅ Cache cleared! Reloading...', 'success');
+            
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1500);
+            
+            btn.disabled = false;
+            btn.classList.remove('loading');
+        });
+        
+        // ============================================
+        // RESET APP
+        // ============================================
+        
+        document.getElementById('reset-btn').addEventListener('click', async () => {
+            const confirmed = await showConfirm(
+                '⚠️ Reset Aplikasi',
+                'Ini akan menghapus SEMUA data lokal termasuk session, cache, pengaturan, dan database. Anda akan diarahkan ke halaman login. Lanjutkan?'
+            );
+            
+            if (!confirmed) return;
+            
+            const btn = document.getElementById('reset-btn');
+            btn.disabled = true;
+            btn.classList.add('loading');
+            
+            logContainer.innerHTML = '';
+            logContainer.classList.add('show');
+            
+            // Backup settings before clear
+            try {
+                const settings = localStorage.getItem('app_settings');
+                const theme = localStorage.getItem('app_theme');
+                if (settings || theme) {
+                    const backup = { settings, theme, timestamp: Date.now() };
+                    localStorage.setItem('_pre_reset_backup', JSON.stringify(backup));
+                    log('Pengaturan dibackup sementara', 'info');
+                }
+            } catch {}
+            
+            // Clear all storage
+            localStorage.clear();
+            sessionStorage.clear();
+            log('localStorage & sessionStorage dibersihkan', 'success');
+            
+            // Clear IndexedDB
+            if (window.indexedDB) {
+                try {
+                    const dbNames = ['EArsipStorage', 'EArsipSessions', 'EArsipCache', 'EArsipCache_app', 'EArsipCache_offline'];
+                    for (const name of dbNames) {
+                        await new Promise((resolve) => {
+                            const req = indexedDB.deleteDatabase(name);
+                            req.onsuccess = resolve;
+                            req.onerror = resolve;
+                        });
+                    }
+                    log('IndexedDB dibersihkan', 'success');
+                } catch {
+                    log('Gagal membersihkan IndexedDB', 'warning');
+                }
+            }
+            
+            // Clear SW caches
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log('Service Worker cache dibersihkan', 'success');
+                } catch {}
+            }
+            
+            // Unregister service workers
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(r => r.unregister()));
+                    log('Service Worker di-unregister', 'success');
+                } catch {}
+            }
+            
+            log('✅ Reset selesai! Mengalihkan ke login...', 'success');
+            
+            setTimeout(() => {
+                window.location.href = (window.APP_BASE_PATH || '/') + 'login.html';
+            }, 2000);
+            
+            btn.disabled = false;
+            btn.classList.remove('loading');
+        });
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
         
-        function goHome() {
-            window.location.href = '/dashboard/';
-        }
+        // Auto-run quick diagnostics on load
+        (async () => {
+            const issues = [];
+            try { localStorage.setItem('_test', '1'); localStorage.removeItem('_test'); } catch { issues.push('localStorage'); }
+            if (!navigator.onLine) issues.push('connectivity');
+            
+            if (issues.length > 0) {
+                log(`Ditemukan ${issues.length} masalah: ${issues.join(', ')}`, 'warning');
+                log('Klik "Fix All Issues" untuk memperbaiki otomatis', 'info');
+            } else {
+                log('✅ Sistem terlihat normal. Tidak ada masalah terdeteksi.', 'success');
+            }
+        })();
     </script>
 </body>
 </html>

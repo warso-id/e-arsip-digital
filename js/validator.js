@@ -1,16 +1,15 @@
-// js/validator.js - Advanced Form Validator 2026
+// js/validator.js - Enterprise Secure Form Validator 2026
 /**
- * E-Arsip Digital - Form Validator
+ * E-Arsip Digital - Advanced Secure Form Validator
  * Version: 2026.1.0
- * Features: Real-time validation, custom rules, async validation, i18n support
+ * Features: Real-time validation, async rules, i18n support, custom rules,
+ *           accessibility (ARIA), mobile-friendly, secure error rendering
+ * Security: XSS prevention, input sanitization, secure error messages
  */
-
-import { Logger } from './logger.js';
-import utils from './utils.js';
 
 class FormValidator {
     constructor(form, options = {}) {
-        this.logger = new Logger('Validator');
+        // ✅ FIX: No external imports, self-contained
         this.form = typeof form === 'string' ? document.querySelector(form) : form;
         
         if (!this.form) {
@@ -24,9 +23,11 @@ class FormValidator {
             validateOnSubmit: true,
             showErrors: true,
             scrollToError: true,
-            errorClass: 'error',
-            successClass: 'success',
-            errorMessageClass: 'form-error',
+            scrollOffset: 80,
+            errorClass: 'is-invalid',
+            successClass: 'is-valid',
+            errorMessageClass: 'invalid-feedback',
+            debounceDelay: 300,
             ...options
         };
         
@@ -38,10 +39,23 @@ class FormValidator {
         this.isSubmitting = false;
         this.validatedFields = new Set();
         
-        // Async validation tracking
-        this.pendingAsyncValidations = new Map();
+        // ✅ FIX: Separate default and custom rules
+        this.defaultRules = new Map();
+        this.customRules = new Map();
         
-        // Initialize
+        // Debounce timers
+        this.debounceTimers = new Map();
+        
+        // Event handlers registry untuk cleanup
+        this.handlers = {};
+        
+        // Logger (minimal, no dependencies)
+        this.log = (level, message, data) => {
+            if (options.debug) {
+                console[level](`[Validator] ${message}`, data || '');
+            }
+        };
+        
         this.init();
     }
     
@@ -50,20 +64,26 @@ class FormValidator {
         this.scanFormFields();
         this.attachEventListeners();
         
-        this.logger.info('Form validator initialized', {
+        this.log('info', 'Form validator initialized', {
             formId: this.form.id || 'unnamed',
             fields: this.fields.size
         });
     }
     
     // ============================================
-    // FIELD REGISTRATION
+    // FIELD SCANNING
     // ============================================
     
     scanFormFields() {
-        const fields = this.form.querySelectorAll('[data-validate], [required], [data-rules]');
+        const fields = this.form.querySelectorAll(
+            'input, select, textarea, [data-validate], [data-rules]'
+        );
         
         fields.forEach(field => {
+            // Skip submit/button/checkbox/radio without rules
+            if (['submit', 'button', 'reset', 'image'].includes(field.type)) return;
+            if (field.type === 'hidden' && !field.dataset.rules) return;
+            
             const name = field.name || field.id;
             if (!name) return;
             
@@ -77,8 +97,8 @@ class FormValidator {
                 if (messages) {
                     try {
                         this.customMessages.set(name, JSON.parse(messages));
-                    } catch (e) {
-                        this.logger.warn('Invalid messages JSON for field:', name);
+                    } catch {
+                        this.log('warn', 'Invalid messages JSON', { field: name });
                     }
                 }
             }
@@ -92,15 +112,17 @@ class FormValidator {
         const rulesStr = field.dataset.rules || field.dataset.validate;
         if (rulesStr) {
             rulesStr.split('|').forEach(rule => {
-                const [ruleName, ...params] = rule.split(':');
-                rules.push({
-                    name: ruleName.trim(),
-                    params: params.join(':').split(',').map(p => p.trim())
-                });
+                const parts = rule.split(':');
+                const ruleName = parts[0].trim();
+                const params = parts.slice(1).join(':').split(',').map(p => p.trim()).filter(Boolean);
+                
+                if (ruleName) {
+                    rules.push({ name: ruleName, params });
+                }
             });
         }
         
-        // Add implicit rules from HTML5 attributes
+        // Add implicit rules from HTML5 attributes (only if not already defined)
         if (field.required && !rules.find(r => r.name === 'required')) {
             rules.unshift({ name: 'required', params: [] });
         }
@@ -109,12 +131,24 @@ class FormValidator {
             rules.push({ name: 'email', params: [] });
         }
         
-        if (field.minLength && !rules.find(r => r.name === 'minlength')) {
-            rules.push({ name: 'minlength', params: [field.minLength.toString()] });
+        if (field.type === 'url' && !rules.find(r => r.name === 'url')) {
+            rules.push({ name: 'url', params: [] });
         }
         
-        if (field.maxLength && !rules.find(r => r.name === 'maxlength')) {
-            rules.push({ name: 'maxlength', params: [field.maxLength.toString()] });
+        if (field.minLength > 0 && !rules.find(r => r.name === 'minlength')) {
+            rules.push({ name: 'minlength', params: [String(field.minLength)] });
+        }
+        
+        if (field.maxLength > 0 && !rules.find(r => r.name === 'maxlength')) {
+            rules.push({ name: 'maxlength', params: [String(field.maxLength)] });
+        }
+        
+        if (field.min && !rules.find(r => r.name === 'min')) {
+            rules.push({ name: 'min', params: [field.min] });
+        }
+        
+        if (field.max && !rules.find(r => r.name === 'max')) {
+            rules.push({ name: 'max', params: [field.max] });
         }
         
         if (field.pattern && !rules.find(r => r.name === 'pattern')) {
@@ -130,88 +164,100 @@ class FormValidator {
     
     registerDefaultRules() {
         // Required
-        this.addRule('required', {
+        this.defaultRules.set('required', {
             validate: (value) => {
-                if (value === null || value === undefined) return false;
+                if (value === null || value === undefined || value === false) return false;
                 if (typeof value === 'string') return value.trim().length > 0;
                 if (Array.isArray(value)) return value.length > 0;
-                if (value instanceof File) return true;
+                if (value instanceof File) return value.size > 0;
                 return true;
             },
             message: 'Field ini wajib diisi'
         });
         
         // Email
-        this.addRule('email', {
-            validate: (value) => utils.isValidEmail(value),
+        this.defaultRules.set('email', {
+            validate: (value) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value),
             message: 'Format email tidak valid'
         });
         
+        // URL
+        this.defaultRules.set('url', {
+            validate: (value) => {
+                try { new URL(value); return true; } catch { return false; }
+            },
+            message: 'Format URL tidak valid'
+        });
+        
         // Phone (Indonesia)
-        this.addRule('phone', {
-            validate: (value) => utils.isValidPhone(value),
+        this.defaultRules.set('phone', {
+            validate: (value) => /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(
+                String(value).replace(/[\s\-()]/g, '')
+            ),
             message: 'Format nomor telepon tidak valid'
         });
         
         // NIP
-        this.addRule('nip', {
-            validate: (value) => utils.isValidNIP(value),
+        this.defaultRules.set('nip', {
+            validate: (value) => {
+                const cleaned = String(value).replace(/\s/g, '');
+                if (!/^\d{18}$/.test(cleaned)) return false;
+                const year = parseInt(cleaned.substring(0, 4));
+                const month = parseInt(cleaned.substring(4, 6));
+                const day = parseInt(cleaned.substring(6, 8));
+                return year >= 1940 && year <= new Date().getFullYear() - 18 &&
+                       month >= 1 && month <= 12 && day >= 1 && day <= 31;
+            },
             message: 'Format NIP tidak valid'
         });
         
-        // URL
-        this.addRule('url', {
-            validate: (value) => utils.isValidUrl(value),
-            message: 'Format URL tidak valid'
-        });
-        
         // Min length
-        this.addRule('minlength', {
-            validate: (value, min) => value && value.length >= parseInt(min),
+        this.defaultRules.set('minlength', {
+            validate: (value, min) => String(value || '').length >= parseInt(min),
             message: (min) => `Minimal ${min} karakter`
         });
         
         // Max length
-        this.addRule('maxlength', {
-            validate: (value, max) => value && value.length <= parseInt(max),
+        this.defaultRules.set('maxlength', {
+            validate: (value, max) => String(value || '').length <= parseInt(max),
             message: (max) => `Maksimal ${max} karakter`
         });
         
         // Length between
-        this.addRule('length', {
+        this.defaultRules.set('length', {
             validate: (value, min, max) => {
-                const len = value ? value.length : 0;
+                const len = String(value || '').length;
                 return len >= parseInt(min) && len <= parseInt(max);
             },
             message: (min, max) => `Harus antara ${min}-${max} karakter`
         });
         
         // Numeric
-        this.addRule('numeric', {
-            validate: (value) => !isNaN(value) && isFinite(value),
+        this.defaultRules.set('numeric', {
+            validate: (value) => value !== '' && !isNaN(value) && isFinite(value),
             message: 'Harus berupa angka'
         });
         
         // Integer
-        this.addRule('integer', {
-            validate: (value) => Number.isInteger(Number(value)),
+        this.defaultRules.set('integer', {
+            validate: (value) => /^-?\d+$/.test(String(value)),
             message: 'Harus berupa bilangan bulat'
         });
         
         // Min value
-        this.addRule('min', {
+        this.defaultRules.set('min', {
             validate: (value, min) => Number(value) >= Number(min),
             message: (min) => `Minimal nilai ${min}`
         });
         
         // Max value
-        this.addRule('max', {
+        this.defaultRules.set('max', {
             validate: (value, max) => Number(value) <= Number(max),
             message: (max) => `Maksimal nilai ${max}`
         });
         
         // Range
-        this.addRule('range', {
+        this.defaultRules.set('range', {
             validate: (value, min, max) => {
                 const num = Number(value);
                 return num >= Number(min) && num <= Number(max);
@@ -220,61 +266,61 @@ class FormValidator {
         });
         
         // Alpha only
-        this.addRule('alpha', {
+        this.defaultRules.set('alpha', {
             validate: (value) => /^[a-zA-Z]+$/.test(value),
             message: 'Hanya boleh berisi huruf'
         });
         
         // Alphanumeric
-        this.addRule('alphanumeric', {
+        this.defaultRules.set('alphanumeric', {
             validate: (value) => /^[a-zA-Z0-9]+$/.test(value),
             message: 'Hanya boleh berisi huruf dan angka'
         });
         
-        // Match another field
-        this.addRule('match', {
+        // Match field
+        this.defaultRules.set('match', {
             validate: (value, fieldName) => {
-                const targetField = this.form.querySelector(`[name="${fieldName}"]`);
-                return targetField && value === targetField.value;
+                const target = this.form.querySelector(`[name="${fieldName}"]`);
+                return target ? value === target.value : false;
             },
-            message: (fieldName) => `Harus sama dengan field ${fieldName}`
+            message: (fieldName) => `Harus sama dengan field ${this.getFieldLabel(fieldName)}`
         });
         
-        // Different from another field
-        this.addRule('different', {
+        // Different from field
+        this.defaultRules.set('different', {
             validate: (value, fieldName) => {
-                const targetField = this.form.querySelector(`[name="${fieldName}"]`);
-                return targetField && value !== targetField.value;
+                const target = this.form.querySelector(`[name="${fieldName}"]`);
+                return target ? value !== target.value : true;
             },
-            message: (fieldName) => `Tidak boleh sama dengan field ${fieldName}`
+            message: (fieldName) => `Tidak boleh sama dengan field ${this.getFieldLabel(fieldName)}`
         });
         
         // In list
-        this.addRule('in', {
+        this.defaultRules.set('in', {
             validate: (value, ...list) => list.includes(value),
-            message: (list) => `Harus salah satu dari: ${list.join(', ')}`
+            message: (...list) => `Harus salah satu dari: ${list.join(', ')}`
         });
         
         // Not in list
-        this.addRule('notIn', {
+        this.defaultRules.set('notIn', {
             validate: (value, ...list) => !list.includes(value),
-            message: (list) => `Tidak boleh salah satu dari: ${list.join(', ')}`
+            message: (...list) => `Tidak boleh: ${list.join(', ')}`
         });
         
         // Regex pattern
-        this.addRule('pattern', {
+        this.defaultRules.set('pattern', {
             validate: (value, pattern) => new RegExp(pattern).test(value),
             message: 'Format tidak sesuai'
         });
         
-        // Date format
-        this.addRule('date', {
+        // Date
+        this.defaultRules.set('date', {
             validate: (value) => !isNaN(Date.parse(value)),
             message: 'Format tanggal tidak valid'
         });
         
         // Date before
-        this.addRule('before', {
+        this.defaultRules.set('before', {
             validate: (value, dateStr) => {
                 const date = new Date(value);
                 const maxDate = dateStr === 'today' ? new Date() : new Date(dateStr);
@@ -284,7 +330,7 @@ class FormValidator {
         });
         
         // Date after
-        this.addRule('after', {
+        this.defaultRules.set('after', {
             validate: (value, dateStr) => {
                 const date = new Date(value);
                 const minDate = dateStr === 'today' ? new Date() : new Date(dateStr);
@@ -293,27 +339,55 @@ class FormValidator {
             message: (dateStr) => `Tanggal harus setelah ${dateStr}`
         });
         
-        // File size
-        this.addRule('filesize', {
-            validate: (value, maxSize) => {
-                if (value instanceof File) {
-                    return value.size <= parseInt(maxSize) * 1024;
-                }
+        // File size (KB)
+        this.defaultRules.set('filesize', {
+            validate: (value, maxKB) => {
+                if (value instanceof File) return value.size <= parseInt(maxKB) * 1024;
+                if (value?.size) return value.size <= parseInt(maxKB) * 1024;
                 return true;
             },
-            message: (maxSize) => `Ukuran file maksimal ${maxSize}KB`
+            message: (maxKB) => `Ukuran file maksimal ${maxKB} KB`
         });
         
         // File type
-        this.addRule('filetype', {
+        this.defaultRules.set('filetype', {
             validate: (value, ...types) => {
                 if (value instanceof File) {
                     return types.includes(value.type) || 
-                           types.includes(value.name.split('.').pop());
+                           types.includes(value.name.split('.').pop()?.toLowerCase());
                 }
                 return true;
             },
-            message: (types) => `Tipe file harus: ${types.join(', ')}`
+            message: (...types) => `Tipe file harus: ${types.join(', ')}`
+        });
+        
+        // File extension
+        this.defaultRules.set('fileext', {
+            validate: (value, ...exts) => {
+                if (value instanceof File) {
+                    return exts.includes(value.name.split('.').pop()?.toLowerCase());
+                }
+                return true;
+            },
+            message: (...exts) => `Ekstensi file harus: ${exts.join(', ')}`
+        });
+        
+        // No HTML (XSS prevention)
+        this.defaultRules.set('nohtml', {
+            validate: (value) => !/<[^>]*>/.test(value),
+            message: 'Tidak boleh mengandung HTML'
+        });
+        
+        // Strong password
+        this.defaultRules.set('strongpassword', {
+            validate: (value) => {
+                return value.length >= 8 &&
+                       /[A-Z]/.test(value) &&
+                       /[a-z]/.test(value) &&
+                       /[0-9]/.test(value) &&
+                       /[^A-Za-z0-9]/.test(value);
+            },
+            message: 'Password harus 8+ karakter dengan huruf besar, kecil, angka, dan karakter khusus'
         });
     }
     
@@ -322,11 +396,10 @@ class FormValidator {
     // ============================================
     
     addRule(name, rule) {
-        if (!rule.validate || typeof rule.validate !== 'function') {
+        if (!rule || typeof rule.validate !== 'function') {
             throw new Error(`Rule "${name}" must have a validate function`);
         }
         
-        this.customRules = this.customRules || new Map();
         this.customRules.set(name, {
             validate: rule.validate,
             message: rule.message || 'Nilai tidak valid',
@@ -334,8 +407,12 @@ class FormValidator {
         });
     }
     
+    removeRule(name) {
+        this.customRules.delete(name);
+    }
+    
     getRule(name) {
-        return this.customRules?.get(name) || null;
+        return this.customRules.get(name) || this.defaultRules.get(name) || null;
     }
     
     // ============================================
@@ -346,19 +423,32 @@ class FormValidator {
         const field = this.fields.get(fieldName);
         const rules = this.rules.get(fieldName);
         
-        if (!field || !rules) return true;
+        if (!field || !rules || field.disabled) return true;
+        
+        // Don't validate hidden fields unless they have rules
+        if (field.type === 'hidden' && rules.length === 0) return true;
         
         const value = this.getFieldValue(field);
         const errors = [];
         
         for (const rule of rules) {
-            // Skip validation if field is empty and not required
-            if (!value && rule.name !== 'required') continue;
+            // Skip non-required rules if value is empty
+            const isEmpty = !value || (typeof value === 'string' && value.trim() === '');
+            if (isEmpty && rule.name !== 'required') continue;
             
-            const result = await this.executeRule(rule, value, field);
-            
-            if (result !== true) {
-                errors.push(typeof result === 'string' ? result : this.getRuleMessage(rule));
+            try {
+                const result = await this.executeRule(rule, value, field);
+                
+                if (result !== true) {
+                    errors.push(typeof result === 'string' ? result : this.getRuleMessage(rule, fieldName));
+                    
+                    // Stop on first error for better UX
+                    break;
+                }
+            } catch (error) {
+                this.log('error', `Rule execution failed: ${rule.name}`, { error: error.message });
+                errors.push('Validasi gagal');
+                break;
             }
         }
         
@@ -375,42 +465,29 @@ class FormValidator {
     }
     
     async executeRule(rule, value, field) {
-        // Check custom rules first
-        const customRule = this.getRule(rule.name);
-        if (customRule) {
-            try {
-                if (customRule.async) {
-                    return await customRule.validate(value, ...rule.params, field, this.form);
-                }
-                return customRule.validate(value, ...rule.params, field, this.form);
-            } catch (error) {
-                this.logger.error(`Custom rule "${rule.name}" failed`, error);
-                return 'Validasi gagal';
-            }
+        const ruleDef = this.getRule(rule.name);
+        
+        if (!ruleDef) {
+            this.log('warn', `Unknown rule: ${rule.name}`);
+            return true;
         }
         
-        // Default rules
-        const defaultRule = this.defaultRules?.get(rule.name);
-        if (defaultRule) {
-            try {
-                return defaultRule.validate(value, ...rule.params);
-            } catch (error) {
-                this.logger.error(`Rule "${rule.name}" execution failed`, error);
-                return 'Validasi gagal';
-            }
+        if (ruleDef.async) {
+            return await ruleDef.validate(value, ...rule.params, field, this.form);
         }
         
-        this.logger.warn(`Unknown validation rule: ${rule.name}`);
-        return true;
+        return ruleDef.validate(value, ...rule.params, field, this.form);
     }
     
     async validateForm() {
         this.errors.clear();
         this.clearAllErrors();
         
-        const validations = Array.from(this.fields.keys()).map(fieldName => 
-            this.validateField(fieldName)
-        );
+        const validations = [];
+        
+        for (const fieldName of this.fields.keys()) {
+            validations.push(this.validateField(fieldName));
+        }
         
         const results = await Promise.all(validations);
         const isValid = results.every(result => result === true);
@@ -426,7 +503,7 @@ class FormValidator {
         const section = this.form.querySelector(sectionSelector);
         if (!section) return true;
         
-        const fields = section.querySelectorAll('[name], [data-rules]');
+        const fields = section.querySelectorAll('[name]');
         const validations = [];
         
         fields.forEach(field => {
@@ -441,28 +518,41 @@ class FormValidator {
     }
     
     // ============================================
-    // ERROR MANAGEMENT
+    // ERROR DISPLAY (Accessible)
     // ============================================
     
     showFieldError(field, message) {
+        // Sanitize error message
+        const safeMessage = this.sanitizeMessage(message);
+        
+        // Update field classes
         field.classList.add(this.config.errorClass);
         field.classList.remove(this.config.successClass);
         
-        if (this.config.showErrors) {
-            let errorElement = this.getErrorElement(field);
-            
-            if (!errorElement) {
-                errorElement = this.createErrorElement(field);
-            }
-            
-            errorElement.textContent = message;
+        // Set ARIA attributes
+        field.setAttribute('aria-invalid', 'true');
+        
+        // Create or update error element
+        let errorElement = this.getErrorElement(field);
+        
+        if (!errorElement && this.config.showErrors) {
+            errorElement = this.createErrorElement(field);
+        }
+        
+        if (errorElement) {
+            errorElement.textContent = safeMessage;
             errorElement.classList.add('show');
             errorElement.setAttribute('role', 'alert');
+            
+            // Link error to field
+            const errorId = errorElement.id;
+            field.setAttribute('aria-describedby', errorId);
+            field.setAttribute('aria-errormessage', errorId);
         }
         
         // Dispatch event
         field.dispatchEvent(new CustomEvent('validation:error', {
-            detail: { field: field.name || field.id, message },
+            detail: { field: field.name || field.id, message: safeMessage },
             bubbles: true
         }));
     }
@@ -470,13 +560,15 @@ class FormValidator {
     showFieldSuccess(field) {
         field.classList.remove(this.config.errorClass);
         field.classList.add(this.config.successClass);
+        field.setAttribute('aria-invalid', 'false');
+        field.removeAttribute('aria-errormessage');
         
         const errorElement = this.getErrorElement(field);
         if (errorElement) {
             errorElement.classList.remove('show');
+            errorElement.textContent = '';
         }
         
-        // Dispatch event
         field.dispatchEvent(new CustomEvent('validation:success', {
             detail: { field: field.name || field.id },
             bubbles: true
@@ -488,6 +580,8 @@ class FormValidator {
         if (!field) return;
         
         field.classList.remove(this.config.errorClass, this.config.successClass);
+        field.removeAttribute('aria-invalid');
+        field.removeAttribute('aria-errormessage');
         
         const errorElement = this.getErrorElement(field);
         if (errorElement) {
@@ -499,38 +593,27 @@ class FormValidator {
     }
     
     clearAllErrors() {
-        this.fields.forEach((field, name) => {
-            this.clearFieldError(name);
-        });
+        this.fields.forEach((_, name) => this.clearFieldError(name));
         this.errors.clear();
     }
     
     getErrorElement(field) {
-        // Look for error element by ID convention
         const errorId = `${field.id || field.name}-error`;
-        let errorElement = document.getElementById(errorId);
-        
-        // Look for adjacent error element
-        if (!errorElement) {
-            errorElement = field.parentElement?.querySelector(`.${this.config.errorMessageClass}`);
-        }
-        
-        // Look for sibling error element
-        if (!errorElement) {
-            errorElement = field.nextElementSibling?.classList.contains(this.config.errorMessageClass) 
-                ? field.nextElementSibling : null;
-        }
-        
-        return errorElement;
+        return document.getElementById(errorId) ||
+               field.parentElement?.querySelector(`.${this.config.errorMessageClass}`) ||
+               field.closest('.form-group')?.querySelector(`.${this.config.errorMessageClass}`);
     }
     
     createErrorElement(field) {
         const errorElement = document.createElement('div');
         errorElement.className = this.config.errorMessageClass;
         errorElement.id = `${field.id || field.name}-error`;
+        errorElement.setAttribute('role', 'alert');
+        errorElement.setAttribute('aria-live', 'polite');
         
-        // Insert after field
-        field.parentNode?.insertBefore(errorElement, field.nextSibling);
+        // Insert after field or in parent
+        const parent = field.closest('.form-group, .input-group') || field.parentNode;
+        parent.appendChild(errorElement);
         
         return errorElement;
     }
@@ -538,13 +621,19 @@ class FormValidator {
     scrollToFirstError() {
         const firstError = this.form.querySelector(`.${this.config.errorClass}`);
         if (firstError) {
-            firstError.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
+            const rect = firstError.getBoundingClientRect();
+            const scrollTop = window.pageYOffset + rect.top - (this.config.scrollOffset || 80);
+            
+            window.scrollTo({
+                top: scrollTop,
+                behavior: 'smooth'
             });
             
-            // Focus the field
-            setTimeout(() => firstError.focus(), 300);
+            setTimeout(() => {
+                if (typeof firstError.focus === 'function') {
+                    firstError.focus();
+                }
+            }, 300);
         }
     }
     
@@ -553,47 +642,82 @@ class FormValidator {
     // ============================================
     
     getFieldValue(field) {
+        if (!field) return '';
+        
+        // Checkboxes
         if (field.type === 'checkbox') {
-            return field.checked;
+            if (!field.name) return field.checked;
+            
+            const checkboxes = this.form.querySelectorAll(`[name="${field.name}"]`);
+            if (checkboxes.length > 1) {
+                return Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+            }
+            return field.checked ? field.value || true : false;
         }
         
+        // Radio buttons
         if (field.type === 'radio') {
             const checked = this.form.querySelector(`[name="${field.name}"]:checked`);
-            return checked ? checked.value : null;
+            return checked ? checked.value : '';
         }
         
+        // File inputs
         if (field.type === 'file') {
-            return field.files[0] || null;
+            return field.multiple ? Array.from(field.files) : field.files[0] || null;
         }
         
-        if (field.type === 'select-multiple') {
+        // Select multiple
+        if (field.type === 'select-multiple' || (field.tagName === 'SELECT' && field.multiple)) {
             return Array.from(field.selectedOptions).map(opt => opt.value);
         }
         
         return field.value || '';
     }
     
-    getRuleMessage(rule) {
-        // Check custom messages first
-        const customMessages = this.customMessages.get(rule.name);
-        if (customMessages) {
-            if (typeof customMessages === 'string') return customMessages;
-            if (customMessages[rule.name]) return customMessages[rule.name];
+    getRuleMessage(rule, fieldName) {
+        // Check field-specific messages
+        const fieldMessages = this.customMessages.get(fieldName);
+        if (fieldMessages?.[rule.name]) {
+            const msg = fieldMessages[rule.name];
+            return typeof msg === 'function' ? msg(...rule.params) : msg;
         }
         
-        // Get default message
-        const defaultRule = this.defaultRules?.get(rule.name);
-        const customRule = this.getRule(rule.name);
-        const ruleDef = customRule || defaultRule;
-        
-        if (ruleDef) {
-            if (typeof ruleDef.message === 'function') {
-                return ruleDef.message(...rule.params);
-            }
-            return ruleDef.message;
+        // Get from rule definition
+        const ruleDef = this.getRule(rule.name);
+        if (ruleDef?.message) {
+            return typeof ruleDef.message === 'function' 
+                ? ruleDef.message(...rule.params) 
+                : ruleDef.message;
         }
         
         return 'Nilai tidak valid';
+    }
+    
+    getFieldLabel(fieldName) {
+        const field = this.fields.get(fieldName);
+        if (!field) return fieldName;
+        
+        // Try to find associated label
+        const label = document.querySelector(`label[for="${field.id}"]`);
+        if (label) return label.textContent.trim();
+        
+        // Try placeholder
+        if (field.placeholder) return field.placeholder;
+        
+        return fieldName;
+    }
+    
+    sanitizeMessage(message) {
+        if (!message) return '';
+        
+        // Remove HTML tags and limit length
+        return String(message)
+            .replace(/<[^>]*>/g, '')
+            .replace(/[<>"'`]/g, '')
+            .trim()
+            .substring(0, 200);
     }
     
     getFieldErrors(fieldName) {
@@ -614,109 +738,18 @@ class FormValidator {
     
     getFirstError() {
         for (const [fieldName, errors] of this.errors) {
-            return { field: fieldName, message: errors[0] };
+            if (errors.length > 0) {
+                return { field: fieldName, message: errors[0] };
+            }
         }
         return null;
     }
-    
-    // ============================================
-    // EVENT HANDLERS
-    // ============================================
-    
-    attachEventListeners() {
-        // Input event for real-time validation
-        if (this.config.validateOnInput) {
-            this.form.addEventListener('input', (e) => {
-                const field = e.target;
-                const name = field.name || field.id;
-                
-                if (this.fields.has(name) && this.validatedFields.has(name)) {
-                    this.debounceValidate(name);
-                }
-            });
-        }
-        
-        // Blur event
-        if (this.config.validateOnBlur) {
-            this.form.addEventListener('blur', (e) => {
-                const field = e.target;
-                const name = field.name || field.id;
-                
-                if (this.fields.has(name)) {
-                    this.validatedFields.add(name);
-                    this.validateField(name);
-                }
-            }, true);
-        }
-        
-        // Submit event
-        if (this.config.validateOnSubmit) {
-            this.form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                // Mark all fields as validated
-                this.fields.forEach((_, name) => this.validatedFields.add(name));
-                
-                const isValid = await this.validateForm();
-                
-                if (isValid) {
-                    this.isSubmitting = true;
-                    
-                    // Dispatch custom event for form processing
-                    const submitEvent = new CustomEvent('validated', {
-                        detail: { formData: this.getFormData() },
-                        cancelable: true
-                    });
-                    
-                    this.form.dispatchEvent(submitEvent);
-                    
-                    if (!submitEvent.defaultPrevented) {
-                        this.form.submit();
-                    }
-                    
-                    this.isSubmitting = false;
-                }
-            });
-        }
-        
-        // Change event for files and selects
-        this.form.addEventListener('change', (e) => {
-            const field = e.target;
-            const name = field.name || field.id;
-            
-            if (this.fields.has(name) && 
-                (field.type === 'file' || field.tagName === 'SELECT')) {
-                this.validatedFields.add(name);
-                this.validateField(name);
-            }
-        });
-    }
-    
-    debounceValidate(fieldName) {
-        if (this._debounceTimers?.has(fieldName)) {
-            clearTimeout(this._debounceTimers.get(fieldName));
-        }
-        
-        if (!this._debounceTimers) {
-            this._debounceTimers = new Map();
-        }
-        
-        this._debounceTimers.set(fieldName, setTimeout(() => {
-            this._debounceTimers.delete(fieldName);
-            this.validateField(fieldName);
-        }, 300));
-    }
-    
-    // ============================================
-    // FORM DATA
-    // ============================================
     
     getFormData() {
         const formData = new FormData(this.form);
         const data = {};
         
         formData.forEach((value, key) => {
-            // Handle multiple values for same key
             if (data[key] !== undefined) {
                 if (!Array.isArray(data[key])) {
                     data[key] = [data[key]];
@@ -730,8 +763,111 @@ class FormValidator {
         return data;
     }
     
-    getFormJSON() {
-        return JSON.stringify(this.getFormData());
+    // ============================================
+    // EVENT HANDLERS
+    // ============================================
+    
+    attachEventListeners() {
+        // Input event
+        if (this.config.validateOnInput) {
+            this.handlers.input = (e) => {
+                const field = e.target;
+                const name = field.name || field.id;
+                
+                if (this.fields.has(name) && this.validatedFields.has(name)) {
+                    this.debounceValidate(name);
+                }
+            };
+            this.form.addEventListener('input', this.handlers.input);
+        }
+        
+        // Blur event
+        if (this.config.validateOnBlur) {
+            this.handlers.blur = (e) => {
+                const field = e.target;
+                const name = field.name || field.id;
+                
+                if (this.fields.has(name) && !field.disabled) {
+                    this.validatedFields.add(name);
+                    this.validateField(name);
+                }
+            };
+            this.form.addEventListener('blur', this.handlers.blur, true);
+        }
+        
+        // Change event (for selects, files, radios)
+        this.handlers.change = (e) => {
+            const field = e.target;
+            const name = field.name || field.id;
+            
+            if (this.fields.has(name) && !field.disabled) {
+                if (['select-one', 'select-multiple', 'file', 'radio', 'checkbox'].includes(field.type) ||
+                    field.tagName === 'SELECT') {
+                    this.validatedFields.add(name);
+                    this.validateField(name);
+                }
+            }
+        };
+        this.form.addEventListener('change', this.handlers.change);
+        
+        // Submit event
+        if (this.config.validateOnSubmit) {
+            this.handlers.submit = async (e) => {
+                e.preventDefault();
+                
+                if (this.isSubmitting) return;
+                
+                // Mark all as validated
+                this.fields.forEach((_, name) => this.validatedFields.add(name));
+                
+                const isValid = await this.validateForm();
+                
+                if (isValid) {
+                    this.isSubmitting = true;
+                    
+                    const submitEvent = new CustomEvent('validated', {
+                        detail: { formData: this.getFormData() },
+                        cancelable: true
+                    });
+                    
+                    this.form.dispatchEvent(submitEvent);
+                    
+                    if (!submitEvent.defaultPrevented) {
+                        // Use requestSubmit for native validation
+                        if (typeof this.form.requestSubmit === 'function') {
+                            this.form.requestSubmit();
+                        } else {
+                            HTMLFormElement.prototype.submit.call(this.form);
+                        }
+                    }
+                    
+                    this.isSubmitting = false;
+                }
+            };
+            this.form.addEventListener('submit', this.handlers.submit);
+        }
+        
+        // Prevent Enter key submitting on invalid form
+        this.handlers.keydown = (e) => {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                const name = e.target.name || e.target.id;
+                if (this.fields.has(name) && this.errors.has(name)) {
+                    e.preventDefault();
+                }
+            }
+        };
+        this.form.addEventListener('keydown', this.handlers.keydown);
+    }
+    
+    debounceValidate(fieldName) {
+        if (this.debounceTimers.has(fieldName)) {
+            clearTimeout(this.debounceTimers.get(fieldName));
+        }
+        
+        this.debounceTimers.set(fieldName, setTimeout(() => {
+            this.debounceTimers.delete(fieldName);
+            this.validateField(fieldName);
+        }, this.config.debounceDelay));
     }
     
     // ============================================
@@ -739,6 +875,7 @@ class FormValidator {
     // ============================================
     
     async validate() {
+        this.fields.forEach((_, name) => this.validatedFields.add(name));
         return this.validateForm();
     }
     
@@ -753,20 +890,26 @@ class FormValidator {
         this.clearAllErrors();
     }
     
+    resetForm() {
+        this.resetValidation();
+        this.form.reset();
+    }
+    
     setFieldValue(fieldName, value) {
         const field = this.fields.get(fieldName);
         if (!field) return;
         
         if (field.type === 'checkbox') {
-            field.checked = value;
+            field.checked = Boolean(value);
         } else if (field.type === 'radio') {
             const radio = this.form.querySelector(`[name="${fieldName}"][value="${value}"]`);
             if (radio) radio.checked = true;
+        } else if (field.type === 'file') {
+            // Can't set file value programmatically
         } else {
-            field.value = value;
+            field.value = value || '';
         }
         
-        // Re-validate if already validated
         if (this.validatedFields.has(fieldName)) {
             this.validateField(fieldName);
         }
@@ -788,12 +931,27 @@ class FormValidator {
     }
     
     destroy() {
+        // Remove event listeners
+        if (this.handlers.input) this.form.removeEventListener('input', this.handlers.input);
+        if (this.handlers.blur) this.form.removeEventListener('blur', this.handlers.blur, true);
+        if (this.handlers.change) this.form.removeEventListener('change', this.handlers.change);
+        if (this.handlers.submit) this.form.removeEventListener('submit', this.handlers.submit);
+        if (this.handlers.keydown) this.form.removeEventListener('keydown', this.handlers.keydown);
+        
+        // Clear timers
+        this.debounceTimers.forEach(timer => clearTimeout(timer));
+        this.debounceTimers.clear();
+        
+        // Clear state
         this.fields.clear();
         this.rules.clear();
         this.errors.clear();
         this.validatedFields.clear();
-        this._debounceTimers?.clear();
-        this.logger.info('Form validator destroyed');
+        this.customMessages.clear();
+        this.defaultRules.clear();
+        this.customRules.clear();
+        
+        this.log('info', 'Form validator destroyed');
     }
 }
 

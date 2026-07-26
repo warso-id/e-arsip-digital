@@ -1,63 +1,21 @@
 {
   "name": "E-Arsip Digital",
   "short_name": "E-Arsip",
-  "description": "Sistem Manajemen Arsip Digital Modern",
-<<<<<<< HEAD
+  "description": "Sistem Manajemen Arsip Digital Modern - Fakultas Ilmu Komputer",
+  "id": "e-arsip-digital-2026",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
-=======
-  "start_url": "/arsip-surat-digital-enterprise/",
-  "scope": "/arsip-surat-digital-enterprise/",
-  "display": "standalone",
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
-  "categories": ["productivity", "business", "education"],
+  "categories": ["productivity", "business", "education", "utilities"],
   "lang": "id-ID",
   "dir": "ltr",
-<<<<<<< HEAD
-  "id": "e-arsip-digital-2026",
-  "protocol_handlers": [
-    {
-      "protocol": "web+arsip",
-      "url": "/view?doc=%s"
-    }
-  ],
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "name",
-      "text": "description",
-      "url": "link",
-      "files": [
-        {
-          "name": "documents",
-          "accept": ["application/pdf", "image/*"]
-        }
-      ]
-    }
-  },
-  "screenshots": [
-    {
-      "src": "/screenshots/desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard Desktop"
-    },
-    {
-      "src": "/screenshots/mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Dashboard Mobile"
-    }
-  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -111,75 +69,114 @@
       "src": "/icons/maskable-icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-=======
-  "icons": [
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232563eb'/><text x='256' y='340' text-anchor='middle' fill='white' font-size='280' font-weight='bold' font-family='Arial'>A</text></svg>",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%232563eb'/><text x='96' y='128' text-anchor='middle' fill='white' font-size='110' font-weight='bold' font-family='Arial'>A</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232563eb'/><text x='256' y='340' text-anchor='middle' fill='white' font-size='280' font-weight='bold' font-family='Arial'>A</text></svg>",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
       "purpose": "maskable"
     }
   ],
+  
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard Desktop"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Dashboard Mobile"
+    }
+  ],
+  
   "shortcuts": [
     {
-<<<<<<< HEAD
       "name": "Surat Baru",
       "short_name": "Buat Surat",
       "description": "Buat surat keluar baru",
       "url": "/surat-keluar/form.html",
-      "icons": [{ "src": "/icons/add.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-add.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Cari Surat",
       "short_name": "Cari",
       "description": "Cari surat masuk atau keluar",
       "url": "/search",
-      "icons": [{ "src": "/icons/search.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-search.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Notifikasi",
       "short_name": "Notif",
-      "description": "Lihat notifikasi",
+      "description": "Lihat notifikasi terbaru",
       "url": "/notifikasi/index.html",
-      "icons": [{ "src": "/icons/bell.png", "sizes": "96x96" }]
-    }
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false,
-  "iarc_rating_id": "e-arsip-digital-rating",
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "handle_links": "preferred",
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  }
-}
-=======
-      "name": "Buat Surat",
-      "short_name": "Surat",
-      "description": "Buat surat keluar baru",
-      "url": "/arsip-surat-digital-enterprise/surat-keluar/form.html",
       "icons": [
         {
-          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='18' fill='%2316a34a'/><text x='48' y='62' text-anchor='middle' fill='white' font-size='50'>+</text></svg>",
-          "sizes": "96x96"
+          "src": "/icons/shortcut-bell.png",
+          "sizes": "96x96",
+          "type": "image/png"
         }
       ]
     }
-  ]
+  ],
+  
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "name",
+      "text": "description",
+      "url": "link",
+      "files": [
+        {
+          "name": "documents",
+          "accept": ["application/pdf", "image/*"]
+        }
+      ]
+    }
+  },
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+arsip",
+      "url": "/view?doc=%s"
+    }
+  ],
+  
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  
+  "handle_links": "preferred",
+  
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  
+  "file_handlers": [
+    {
+      "action": "/view",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"]
+      }
+    }
+  ],
+  
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "iarc_rating_id": "e-arsip-digital-rating"
 }
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

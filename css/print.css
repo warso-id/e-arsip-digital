@@ -1,24 +1,22 @@
-/* css/print.css - Print Stylesheet 2026 */
-/**
+/* ============================================
+ * css/print.css - Print Stylesheet 2026 (OPTIMIZED)
  * E-Arsip Digital - Print Styles
  * Version: 2026.1.0
- * Optimized for printing documents and reports
- */
+ * 
+ * Optimized for:
+ * - Surat resmi (kop surat, tanda tangan)
+ * - Buku agenda
+ * - Lembar disposisi
+ * - Laporan & dokumen
+ * - PWA dark mode compatibility
+ * ============================================ */
 
 @media print {
-    /* ============================================ */
-    /* RESET & BASE                                */
-    /* ============================================ */
-    *,
-    *::before,
-    *::after {
-        background: transparent !important;
-        color: #000 !important;
-        box-shadow: none !important;
-        text-shadow: none !important;
-        transition: none !important;
-    }
+    /* ============================================
+     * 1. RESET & BASE (SELECTIVE - NOT AGGRESSIVE)
+     * ============================================ */
     
+    /* Reset hanya untuk container utama */
     body {
         font-size: 12pt;
         line-height: 1.5;
@@ -26,65 +24,110 @@
         padding: 15mm;
     }
     
-    /* ============================================ */
-    /* HIDE ELEMENTS                               */
-    /* ============================================ */
+    /* Pastikan teks terbaca di dark mode */
+    [data-theme="dark"] body,
+    [data-theme="green-dark"] body,
+    [data-theme="orange-dark"] body,
+    [data-theme="purple-dark"] body,
+    [data-theme="red-dark"] body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    
+    /* Reset background untuk elemen utama */
+    .main-content,
+    .content-area,
+    .paper-container,
+    .disposisi-print {
+        background: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+    }
+    
+    /* Pastikan print-color-adjust */
+    .agenda-table th,
+    .buku-table th,
+    .badge,
+    .stat-icon,
+    .avatar-circle {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
+    /* ============================================
+     * 2. HIDE NON-ESSENTIAL ELEMENTS
+     * ============================================ */
+    
+    /* Navigation & UI */
     .sidebar,
-    .sidebar *,
-    .loading-screen,
-    .loading-screen *,
-    .no-print,
-    .no-print *,
-    .toast-container,
-    .notification-center,
-    .theme-toggle-container,
-    .a11y-tools,
-    .modal-overlay,
-    .password-toggle,
+    .sidebar-overlay,
+    .mobile-header,
+    .top-bar,
+    .top-navbar,
+    .hamburger,
+    nav.sidebar-nav,
+    
+    /* Actions & Buttons */
+    .btn:not(.print-keep),
+    button:not(.print-keep),
     .btn-action,
     .action-buttons,
-    .bulk-actions-bar,
-    .filter-bar,
-    .table-toolbar,
-    .pagination-top,
-    .export-dropdown,
-    .draw-tools,
-    .profile-tabs,
-    .upload-progress,
-    .progress-bar-container,
-    .quick-view-panel,
-    .quick-view-overlay,
-    .search-clear,
-    .backup-actions,
-    .notif-actions,
-    .signature-actions,
-    .wizard-line,
-    nav,
-    footer,
-    button:not(.keep-print),
-    input[type="file"],
-    input[type="checkbox"],
-    input[type="radio"],
-    select,
-    .btn:not(.keep-print),
-    .form-help,
-    .form-error,
-    .breadcrumb,
-    .page-header .btn,
     .dashboard-actions,
     .hero-buttons,
-    .watermark {
+    .preview-actions,
+    .form-actions,
+    .filter-bar,
+    .table-toolbar,
+    .toolbar,
+    .bulk-actions,
+    .quick-actions,
+    .btn-group,
+    .dropdown-menu,
+    .dropdown-toggle,
+    .pagination,
+    .btn-page,
+    
+    /* Overlays & Modals */
+    .loading-screen,
+    .loading-overlay,
+    .modal-overlay,
+    .toast-container,
+    .notification-center,
+    .confirm-overlay,
+    .network-bar,
+    .generating-overlay,
+    
+    /* Forms */
+    input[type="file"],
+    input[type="checkbox"]:not(.print-keep),
+    input[type="radio"]:not(.print-keep),
+    .password-toggle,
+    .upload-zone,
+    .scan-area,
+    .qr-scan-btn,
+    .search-clear,
+    .form-help,
+    .form-error,
+    
+    /* Decorative */
+    .watermark,
+    .breadcrumb,
+    .version,
+    .theme-toggle,
+    .no-print {
         display: none !important;
     }
     
-    /* ============================================ */
-    /* LAYOUT                                      */
-    /* ============================================ */
+    /* ============================================
+     * 3. LAYOUT ADJUSTMENTS
+     * ============================================ */
+    
     .main-content {
         margin-left: 0 !important;
         padding: 0 !important;
         width: 100% !important;
-        max-width: none !important;
+        max-width: 100% !important;
     }
     
     .container,
@@ -92,210 +135,312 @@
     .preview-container,
     .disposisi-container,
     .agenda-container,
-    .profile-container,
-    .settings-container {
+    .generate-container,
+    .buku-container {
         max-width: 100% !important;
         width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
     }
     
-    .card {
-        border: 1px solid #ccc !important;
-        page-break-inside: avoid;
-        margin-bottom: 10mm !important;
-    }
+    /* ============================================
+     * 4. TYPOGRAPHY
+     * ============================================ */
     
-    .card-header {
-        border-bottom: 1px solid #ccc !important;
-        padding: 5mm 0 !important;
-    }
+    h1 { font-size: 18pt; margin-bottom: 5mm; page-break-after: avoid; }
+    h2 { font-size: 16pt; margin-bottom: 4mm; page-break-after: avoid; }
+    h3 { font-size: 14pt; margin-bottom: 3mm; page-break-after: avoid; }
+    h4, h5, h6 { font-size: 12pt; margin-bottom: 2mm; page-break-after: avoid; }
     
-    .card-body {
-        padding: 5mm 0 !important;
-    }
+    p { orphans: 3; widows: 3; }
     
-    /* ============================================ */
-    /* TYPOGRAPHY                                  */
-    /* ============================================ */
-    h1 { font-size: 18pt; margin-bottom: 5mm; }
-    h2 { font-size: 16pt; margin-bottom: 4mm; }
-    h3 { font-size: 14pt; margin-bottom: 3mm; }
-    h4 { font-size: 12pt; margin-bottom: 2mm; }
-    
-    p {
-        orphans: 3;
-        widows: 3;
-    }
+    /* ============================================
+     * 5. LINKS (Sanitized - No sensitive URL exposure)
+     * ============================================ */
     
     a {
         text-decoration: underline;
+        color: #000000 !important;
     }
     
-    a[href]:after {
+    /* Only show external URLs */
+    a[href^="http"]:not([href*="localhost"]):not([href*="127.0.0.1"]):after {
         content: " (" attr(href) ")";
-        font-size: 9pt;
-        color: #666 !important;
+        font-size: 8pt;
+        color: #666666 !important;
+        word-break: break-all;
     }
     
+    /* Hide URL for internal links & javascript */
     a[href^="#"]:after,
-    a[href^="javascript:"]:after {
-        content: "";
+    a[href^="javascript"]:after,
+    a[href^="./"]:after,
+    a[href^="../"]:after,
+    a[href*="dashboard"]:after,
+    a[href*="login"]:after,
+    a[href*="error"]:after,
+    a[href*="surat-keluar"]:after,
+    a[href*="surat-masuk"]:after,
+    a[href*="profile"]:after,
+    a[href*="pengaturan"]:after,
+    a[href*="laporan"]:after,
+    a[href*="manajemen"]:after {
+        content: "" !important;
     }
     
-    /* ============================================ */
-    /* TABLES                                      */
-    /* ============================================ */
+    /* ============================================
+     * 6. CARDS
+     * ============================================ */
+    
+    .card {
+        border: 1px solid #cccccc !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        margin-bottom: 8mm !important;
+        background: #ffffff !important;
+    }
+    
+    .card-header {
+        border-bottom: 1px solid #cccccc !important;
+        padding: 4mm 0 !important;
+        background: #f5f5f5 !important;
+    }
+    
+    .card-body {
+        padding: 4mm 0 !important;
+    }
+    
+    /* ============================================
+     * 7. TABLES (Optimized for multi-page)
+     * ============================================ */
+    
     .data-table,
-    .agenda-table {
+    .agenda-table,
+    .buku-table {
         width: 100% !important;
         border-collapse: collapse !important;
-        page-break-inside: auto;
+        font-size: 9pt !important;
     }
     
+    /* Repeat header on each page */
     .data-table thead,
-    .agenda-table thead {
+    .agenda-table thead,
+    .buku-table thead {
         display: table-header-group;
     }
     
     .data-table th,
-    .agenda-table th {
-        background: #f0f0f0 !important;
-        color: #000 !important;
+    .agenda-table th,
+    .buku-table th {
+        background: #e0e0e0 !important;
+        color: #000000 !important;
         font-weight: bold !important;
-        border: 1px solid #ccc !important;
-        padding: 3mm 4mm !important;
+        border: 1px solid #999999 !important;
+        padding: 2mm 3mm !important;
         text-align: left !important;
-        font-size: 10pt !important;
+        font-size: 9pt !important;
     }
     
     .data-table td,
-    .agenda-table td {
-        border: 1px solid #ccc !important;
-        padding: 2mm 4mm !important;
-        font-size: 10pt !important;
+    .agenda-table td,
+    .buku-table td {
+        border: 1px solid #cccccc !important;
+        padding: 1.5mm 3mm !important;
+        font-size: 9pt !important;
     }
     
     .data-table tr,
-    .agenda-table tr {
+    .agenda-table tr,
+    .buku-table tr {
         page-break-inside: avoid;
-        page-break-after: auto;
     }
     
     .table-scroll {
         overflow-x: visible !important;
     }
     
-    /* ============================================ */
-    /* SURAT PREVIEW                               */
-    /* ============================================ */
+    /* Agenda table - dark header */
+    .agenda-table th,
+    .buku-table th {
+        background: #1e293b !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* ============================================
+     * 8. SURAT PREVIEW (Formal Letter)
+     * ============================================ */
+    
     .preview-paper {
         padding: 0 !important;
         box-shadow: none !important;
         border-radius: 0 !important;
         border: none !important;
+        background: #ffffff !important;
     }
     
-    .preview-header {
-        border-bottom: 2px solid #000 !important;
+    .preview-kop {
+        border-bottom: 3px double #000000 !important;
         text-align: center !important;
-        padding-bottom: 10mm !important;
-        margin-bottom: 10mm !important;
+        padding-bottom: 8mm !important;
+        margin-bottom: 8mm !important;
     }
     
-    .preview-header h2 {
+    .preview-kop .kop-instansi {
         font-size: 14pt !important;
+        font-weight: bold !important;
         letter-spacing: 1px !important;
+    }
+    
+    .preview-kop .kop-alamat {
+        font-size: 9pt !important;
     }
     
     .preview-meta table {
         width: 100% !important;
     }
     
-    .preview-meta .label {
+    .preview-meta .meta-label {
         width: 100px !important;
+        font-weight: bold !important;
     }
     
-    .preview-signature {
-        margin-top: 30mm !important;
+    .preview-isi {
+        text-align: justify !important;
+        line-height: 1.8 !important;
+    }
+    
+    .preview-ttd {
+        margin-top: 25mm !important;
         text-align: right !important;
     }
     
-    .preview-signature .name {
+    .preview-ttd .ttd-nama {
         text-decoration: underline !important;
         margin-top: 20mm !important;
+        font-weight: bold !important;
     }
     
-    .preview-qr canvas {
-        width: 20mm !important;
-        height: 20mm !important;
+    .preview-tembusan {
+        border-top: 1px solid #cccccc !important;
+        margin-top: 10mm !important;
+        padding-top: 4mm !important;
     }
     
-    /* ============================================ */
-    /* DISPOSISI                                   */
-    /* ============================================ */
-    .disposisi-item {
-        border: 1px solid #ccc !important;
+    .preview-qr {
+        text-align: center !important;
+        margin-top: 8mm !important;
+        border-top: 1px solid #cccccc !important;
+        padding-top: 4mm !important;
+    }
+    
+    .preview-qr canvas,
+    .preview-qr img {
+        max-width: 20mm !important;
+        max-height: 20mm !important;
+    }
+    
+    /* ============================================
+     * 9. DISPOSISI LEMBAR
+     * ============================================ */
+    
+    .disposisi-print {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    .kop-disposisi {
+        border-bottom: 3px solid #000000 !important;
+        text-align: center !important;
+        padding-bottom: 6mm !important;
+        margin-bottom: 6mm !important;
+    }
+    
+    .lembar-title {
+        border: 2px solid #000000 !important;
+        text-align: center !important;
+        font-size: 12pt !important;
+        font-weight: bold !important;
         padding: 3mm !important;
-        margin-bottom: 3mm !important;
+        margin: 6mm 0 !important;
+    }
+    
+    .info-grid {
+        border: 1px solid #000000 !important;
+    }
+    
+    .info-label {
+        background: #f0f0f0 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .instruksi-box {
+        border: 1px solid #000000 !important;
+        min-height: 30mm !important;
+        padding: 4mm !important;
+    }
+    
+    .signature-area {
+        margin-top: 25mm !important;
+        display: flex !important;
+        justify-content: space-between !important;
+    }
+    
+    .signature-line {
+        border-top: 1px solid #000000 !important;
+        margin-top: 20mm !important;
+        padding-top: 2mm !important;
+    }
+    
+    /* ============================================
+     * 10. BUKU AGENDA
+     * ============================================ */
+    
+    .buku-cover {
+        border: 3px double #000000 !important;
+        text-align: center !important;
+        padding: 8mm !important;
+        margin-bottom: 8mm !important;
+        background: #ffffff !important;
+    }
+    
+    .buku-cover h2 {
+        font-size: 16pt !important;
+    }
+    
+    .buku-table {
+        font-size: 8pt !important;
+    }
+    
+    .buku-table th {
+        font-size: 7pt !important;
+        padding: 1mm 2mm !important;
+    }
+    
+    .buku-table td {
+        padding: 1mm 2mm !important;
+    }
+    
+    /* ============================================
+     * 11. STATS & CHARTS
+     * ============================================ */
+    
+    .stat-card {
+        border: 1px solid #cccccc !important;
+        box-shadow: none !important;
         page-break-inside: avoid;
     }
     
-    .disposisi-item::before {
-        display: none !important;
+    .stat-icon {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
-    /* ============================================ */
-    /* AGENDA                                      */
-    /* ============================================ */
-    .agenda-table {
-        font-size: 9pt !important;
-    }
-    
-    .agenda-table th {
-        background: #000 !important;
-        color: #fff !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    /* ============================================ */
-    /* PROFILE                                     */
-    /* ============================================ */
-    .profile-header {
-        background: #f0f0f0 !important;
-        color: #000 !important;
-        padding: 10mm !important;
-        border: 1px solid #ccc !important;
-    }
-    
-    .profile-header h2,
-    .profile-header p {
-        color: #000 !important;
-    }
-    
-    .profile-avatar {
-        border: 2px solid #ccc !important;
-    }
-    
-    /* ============================================ */
-    /* LOGS                                        */
-    /* ============================================ */
-    .timeline::before {
-        background: #ccc !important;
-    }
-    
-    .timeline-item::before {
-        background: #000 !important;
-        box-shadow: 0 0 0 2px #000 !important;
-        border: 1px solid #fff !important;
-    }
-    
-    /* ============================================ */
-    /* CHARTS                                      */
-    /* ============================================ */
     .chart-container {
-        max-height: 400px;
+        max-height: 350px;
         page-break-inside: avoid;
     }
     
@@ -304,96 +449,197 @@
         height: auto !important;
     }
     
-    /* ============================================ */
-    /* PAGE BREAKS                                 */
-    /* ============================================ */
-    .page-break-before {
-        page-break-before: always;
+    /* ============================================
+     * 12. BADGES & STATUS
+     * ============================================ */
+    
+    .badge {
+        border: 1px solid #000000 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        padding: 1px 6px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
-    .page-break-after {
-        page-break-after: always;
+    .status-badge {
+        border: 1px solid #000000 !important;
+        padding: 1px 6px !important;
     }
     
-    .avoid-break {
+    /* ============================================
+     * 13. IMAGES
+     * ============================================ */
+    
+    img {
+        max-width: 100% !important;
         page-break-inside: avoid;
     }
     
-    h2, h3 {
-        page-break-after: avoid;
+    img[src*="signature"],
+    img[src*="ttd"] {
+        max-height: 30mm !important;
     }
     
-    /* ============================================ */
-    /* MARGINS & PAGE                              */
-    /* ============================================ */
-    @page {
-        margin: 15mm;
-        size: A4;
-    }
-    
-    @page :first {
-        margin-top: 20mm;
-    }
-    
-    @page :left {
-        margin-left: 20mm;
-        margin-right: 15mm;
-    }
-    
-    @page :right {
-        margin-left: 15mm;
-        margin-right: 20mm;
-    }
-    
-    /* ============================================ */
-    /* WATERMARK (HIDDEN IN PRINT)                 */
-    /* ============================================ */
-    .watermark {
-        display: none !important;
-    }
-    
-    /* ============================================ */
-    /* QR CODE                                     */
-    /* ============================================ */
-    .preview-qr img,
-    .preview-qr canvas {
+    img[src*="qr"] {
         max-width: 25mm !important;
         max-height: 25mm !important;
     }
     
-    /* ============================================ */
-    /* BADGES & STATUS                             */
-    /* ============================================ */
-    .badge {
-        border: 1px solid #000 !important;
-        color: #000 !important;
-        background: #fff !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    .kop-logo,
+    .logo {
+        max-width: 20mm !important;
+        max-height: 20mm !important;
     }
     
-    /* ============================================ */
-    /* FORMS                                       */
-    /* ============================================ */
-    input:not([type="checkbox"]):not([type="radio"]),
+    /* ============================================
+     * 14. CODE BLOCKS
+     * ============================================ */
+    
+    code, pre {
+        background: #f5f5f5 !important;
+        border: 1px solid #cccccc !important;
+        color: #000000 !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        page-break-inside: avoid;
+    }
+    
+    /* ============================================
+     * 15. ALERTS
+     * ============================================ */
+    
+    .alert {
+        border: 1px solid #000000 !important;
+        padding: 3mm !important;
+        margin-bottom: 3mm !important;
+        background: #ffffff !important;
+    }
+    
+    .alert-success { border-left: 4px solid #000000 !important; }
+    .alert-error { border-left: 4px solid #000000 !important; }
+    .alert-warning { border-left: 4px solid #000000 !important; }
+    .alert-info { border-left: 4px solid #000000 !important; }
+    
+    /* ============================================
+     * 16. FORMS (Print-friendly)
+     * ============================================ */
+    
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
     textarea,
     select {
-        border: 1px solid #ccc !important;
-        background: #fff !important;
-        color: #000 !important;
+        border: 1px solid #cccccc !important;
+        background: #ffffff !important;
+        color: #000000 !important;
         padding: 2mm !important;
     }
     
-    /* ============================================ */
-    /* ALERTS                                      */
-    /* ============================================ */
-    .alert {
-        border: 1px solid #000 !important;
-        padding: 3mm !important;
-        margin-bottom: 3mm !important;
+    /* ============================================
+     * 17. PROFILE
+     * ============================================ */
+    
+    .profile-header {
+        background: #f5f5f5 !important;
+        color: #000000 !important;
+        padding: 8mm !important;
+        border: 1px solid #cccccc !important;
     }
-<<<<<<< HEAD
+    
+    .profile-header h2,
+    .profile-header p {
+        color: #000000 !important;
+    }
+    
+    .avatar-circle {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* ============================================
+     * 18. TIMELINE & LOGS
+     * ============================================ */
+    
+    .timeline::before {
+        background: #cccccc !important;
+    }
+    
+    .timeline-item::before,
+    .timeline-node::before {
+        background: #000000 !important;
+        box-shadow: 0 0 0 2px #000000 !important;
+        border: 1px solid #ffffff !important;
+    }
+    
+    /* ============================================
+     * 19. PAGE BREAKS
+     * ============================================ */
+    
+    .page-break-before { page-break-before: always; }
+    .page-break-after { page-break-after: always; }
+    .avoid-break { page-break-inside: avoid; }
+    
+    h2, h3, h4 { page-break-after: avoid; }
+    
+    /* ============================================
+     * 20. PAGE SETUP
+     * ============================================ */
+    
+    @page {
+        margin: 15mm;
+        size: A4;
+        
+        /* Page header */
+        @top-center {
+            content: "";
+            font-size: 9pt;
+            color: #999999;
+        }
+        
+        /* Page footer */
+        @bottom-center {
+            content: "Halaman " counter(page) " dari " counter(pages);
+            font-size: 8pt;
+            color: #999999;
+        }
+    }
+    
+    @page :first {
+        margin-top: 18mm;
+    }
+    
+    /* Landscape untuk agenda */
+    .print-landscape {
+        size: A4 landscape;
+    }
+    
+    /* ============================================
+     * 21. UTILITY CLASSES
+     * ============================================ */
+    
+    .print-only {
+        display: block !important;
+    }
+    
+    .print-inline {
+        display: inline !important;
+    }
+    
+    .print-flex {
+        display: flex !important;
+    }
+    
+    .print-hidden {
+        display: none !important;
+    }
+    
+    /* ============================================
+     * 22. ACCESSIBILITY
+     * ============================================ */
+    
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            transition: none !important;
+            animation: none !important;
+        }
+    }
 }
-=======
-}
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

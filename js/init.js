@@ -1,326 +1,150 @@
-// js/init.js - Global Initialization 2026
+// js/init.js - Application Initialization 2026 (SAFE)
 /**
  * E-Arsip Digital - Global Initialization
  * Version: 2026.1.0
- * Initializes all core modules and sets up the application
+ * 
+ * Fitur:
+ * - Safe module initialization
+ * - Service Worker registration
+ * - Offline detection
+ * - Keyboard shortcuts
+ * - PWA install prompt
+ * - Graceful error handling
  */
 
-import APP_CONFIG from '../config/config.js';
-import { Logger } from './logger.js';
-import authService from './auth.js';
-import apiService from './api.js';
-import sessionManager from './session.js';
-import themeManager from './theme.js';
-import notifications from './notifications.js';
-import csrfProtection from './security/csrf.js';
-import xssPrevention from './security/xss.js';
-import firewall from './security/firewall.js';
-import securityOrchestrator from './security/security-orchestrator.js';
-import performanceMonitor from './performance.js';
-
-class AppInitializer {
-    constructor() {
-        this.logger = new Logger('Init');
-        this.modules = new Map();
-        this.initialized = false;
-        this.initStartTime = performance.now();
+(function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var APP_VERSION = '2026.1.0';
+    var APP_ENV = 'production';
+    
+    // Override dari config jika tersedia
+    if (window.EArsip && window.EArsip.Config && window.EArsip.Config.app) {
+        APP_VERSION = window.EArsip.Config.app.version || APP_VERSION;
+        APP_ENV = window.EArsip.Config.app.environment || APP_ENV;
     }
     
-    async init() {
-        try {
-            this.logger.info('Starting application initialization...');
-            this.logger.info(`Environment: ${APP_CONFIG.app.environment}`);
-            this.logger.info(`Version: ${APP_CONFIG.app.version}`);
-            
-            // Show loading screen
-            this.showLoading();
-            
-            // Initialize core modules in order
-            await this.initSecurityModules();
-            await this.initCoreModules();
-            await this.initUIModules();
-            await this.initFeatures();
-            
-            // Setup global error handling
-            this.setupGlobalErrorHandling();
-            
-            // Setup service worker
-            await this.setupServiceWorker();
-            
-            // Setup PWA
-            this.setupPWA();
-            
-            // Mark as initialized
-            this.initialized = true;
-            
-            // Hide loading screen
-            this.hideLoading();
-            
-            const initTime = performance.now() - this.initStartTime;
-            this.logger.info(`Application initialized in ${initTime.toFixed(0)}ms`);
-            
-            // Dispatch ready event
-            window.dispatchEvent(new CustomEvent('app:ready', {
-                detail: { initTime }
-            }));
-            
-        } catch (error) {
-            this.logger.error('Application initialization failed', error);
-            this.showInitError(error);
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _initialized = false;
+    var _initStartTime = Date.now();
+    var _loadedModules = [];
+    
+    // ============================================
+    // SAFE MODULE CHECK
+    // ============================================
+    
+    function isModuleAvailable(name) {
+        switch (name) {
+            case 'auth':
+                return !!(window.EArsip && window.EArsip.Auth);
+            case 'api':
+                return !!(window.EArsip && window.EArsip.Api);
+            case 'csrf':
+                return typeof CSRFProtection !== 'undefined';
+            case 'firewall':
+                return typeof Firewall !== 'undefined';
+            case 'rateLimiter':
+                return typeof RateLimiter !== 'undefined';
+            case 'sanitizer':
+                return typeof Sanitizer !== 'undefined';
+            case 'audit':
+                return typeof AuditTrail !== 'undefined';
+            case 'notifications':
+                return typeof NotificationSystem !== 'undefined';
+            case 'cache':
+                return typeof CacheManager !== 'undefined';
+            case 'i18n':
+                return typeof I18n !== 'undefined';
+            case 'errorHandler':
+                return typeof ErrorHandler !== 'undefined';
+            default:
+                return false;
         }
     }
     
-    async initSecurityModules() {
-        this.logger.info('Initializing security modules...');
-        
-        try {
-            // CSRF Protection (must be first)
-            if (csrfProtection.isEnabled()) {
-                this.modules.set('csrf', csrfProtection);
-            }
-            
-            // XSS Prevention
-            if (xssPrevention.getStats().initialized) {
-                this.modules.set('xss', xssPrevention);
-            }
-            
-            // Firewall
-            if (firewall.isEnabled()) {
-                this.modules.set('firewall', firewall);
-            }
-            
-            // Security Orchestrator
-            this.modules.set('securityOrchestrator', securityOrchestrator);
-            
-            this.logger.info('Security modules initialized');
-        } catch (error) {
-            this.logger.error('Security initialization failed', error);
+    function tryInitModule(name) {
+        if (isModuleAvailable(name)) {
+            _loadedModules.push(name);
+            console.log('[Init] Module loaded: ' + name);
+            return true;
         }
+        return false;
     }
     
-    async initCoreModules() {
-        this.logger.info('Initializing core modules...');
-        
-        // Session Manager
-        if (sessionManager.initialized) {
-            this.modules.set('session', sessionManager);
-        }
-        
-        // Auth Service
-        if (authService.initialized) {
-            this.modules.set('auth', authService);
-        }
-        
-        // API Service
-        this.modules.set('api', apiService);
-        
-        // Performance Monitor
-        this.modules.set('performance', performanceMonitor);
-        
-        this.logger.info('Core modules initialized');
-    }
+    // ============================================
+    // CORE INITIALIZATION
+    // ============================================
     
-    async initUIModules() {
-        this.logger.info('Initializing UI modules...');
+    function initCore() {
+        console.log('[Init] Starting... v' + APP_VERSION + ' (' + APP_ENV + ')');
         
-        // Theme Manager
-        if (themeManager.initialized) {
-            this.modules.set('theme', themeManager);
-        }
+        // Check available modules (non-blocking)
+        tryInitModule('auth');
+        tryInitModule('api');
+        tryInitModule('csrf');
+        tryInitModule('firewall');
+        tryInitModule('rateLimiter');
+        tryInitModule('sanitizer');
+        tryInitModule('audit');
+        tryInitModule('notifications');
+        tryInitModule('cache');
+        tryInitModule('i18n');
+        tryInitModule('errorHandler');
         
-        // Notifications
-        this.modules.set('notifications', notifications);
-        
-        // Setup offline detection
-        this.setupOfflineDetection();
-        
-        // Setup keyboard shortcuts
-        this.setupKeyboardShortcuts();
-        
-        this.logger.info('UI modules initialized');
-    }
-    
-    async initFeatures() {
-        this.logger.info('Initializing features...');
-        
-        // Check if user is authenticated
-        if (authService.isAuthenticated) {
-            await this.initAuthenticatedFeatures();
-        }
-        
-        // Setup visibility change handler
-        this.setupVisibilityHandler();
-        
-        // Setup before unload handler
-        this.setupUnloadHandler();
-        
-        this.logger.info('Features initialized');
-    }
-    
-    async initAuthenticatedFeatures() {
-        // Check session validity
-        const isValid = await sessionManager.checkSession();
-        if (!isValid) {
-            this.logger.warn('Session expired during initialization');
-            return;
-        }
-        
-        // Preload common data
-        this.preloadData();
-        
-        // Setup auto-refresh
-        this.setupAutoRefresh();
-    }
-    
-    preloadData() {
-        // Preload user preferences
-        this.loadUserPreferences();
-        
-        // Preload notifications count
-        this.loadNotificationCount();
-    }
-    
-    async loadUserPreferences() {
-        try {
-            const response = await apiService.get('/api/user/preferences');
-            // Apply preferences silently
-            if (response.data) {
-                localStorage.setItem('user_preferences', JSON.stringify(response.data));
-            }
-        } catch {
-            // Silently fail
-        }
-    }
-    
-    async loadNotificationCount() {
-        try {
-            const response = await apiService.get('/api/notifications/count');
-            if (response.data?.count > 0) {
-                // Update notification badge
-                const badge = document.getElementById('notification-badge');
-                if (badge) {
-                    badge.textContent = response.data.count;
-                    badge.style.display = 'flex';
-                }
-            }
-        } catch {
-            // Silently fail
-        }
+        console.log('[Init] Available modules: ' + _loadedModules.length);
     }
     
     // ============================================
     // SERVICE WORKER
     // ============================================
     
-    async setupServiceWorker() {
+    function setupServiceWorker() {
         if (!('serviceWorker' in navigator)) return;
         
         try {
-            const registration = await navigator.serviceWorker.register('/sw.js', {
-                scope: '/'
-            });
+            // Path relatif ke root
+            var swPath = '../sw.js';
             
-            this.logger.info('Service Worker registered', {
-                scope: registration.scope
-            });
-            
-            // Handle updates
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        this.showUpdateNotification();
-                    }
-                });
-            });
-            
-        } catch (error) {
-            this.logger.warn('Service Worker registration failed', error);
-        }
-    }
-    
-    showUpdateNotification() {
-        notifications.info('Pembaruan tersedia!', {
-            duration: 0,
-            action: {
-                label: 'Refresh',
-                onClick: () => window.location.reload()
+            // Jika di subfolder GitHub Pages, sesuaikan
+            var pathParts = window.location.pathname.split('/');
+            if (pathParts.length > 2 && pathParts[1]) {
+                swPath = '/' + pathParts[1] + '/sw.js';
             }
-        });
-    }
-    
-    // ============================================
-    // PWA SETUP
-    // ============================================
-    
-    setupPWA() {
-        // Handle PWA install prompt
-        let deferredPrompt;
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
             
-            // Show install button after a delay
-            setTimeout(() => {
-                this.showInstallPrompt(deferredPrompt);
-            }, 5000);
-        });
-        
-        // Track PWA installation
-        window.addEventListener('appinstalled', () => {
-            this.logger.info('PWA installed');
-            deferredPrompt = null;
-        });
-    }
-    
-    showInstallPrompt(prompt) {
-        const installBanner = document.createElement('div');
-        installBanner.className = 'pwa-install-banner';
-        installBanner.innerHTML = `
-            <div class="pwa-install-content">
-                <div>
-                    <strong>Install Aplikasi</strong>
-                    <p style="font-size:12px;color:#64748b;">Akses cepat dari homescreen</p>
-                </div>
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-sm btn-primary" id="install-btn">Install</button>
-                    <button class="btn btn-sm btn-ghost" id="dismiss-btn">Nanti</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(installBanner);
-        
-        document.getElementById('install-btn')?.addEventListener('click', async () => {
-            await prompt.prompt();
-            installBanner.remove();
-        });
-        
-        document.getElementById('dismiss-btn')?.addEventListener('click', () => {
-            installBanner.remove();
-        });
+            navigator.serviceWorker.register(swPath)
+                .then(function(registration) {
+                    console.log('[Init] SW registered: ' + registration.scope);
+                })
+                .catch(function(error) {
+                    console.warn('[Init] SW failed: ' + error.message);
+                });
+        } catch(e) {
+            console.warn('[Init] SW error: ' + e.message);
+        }
     }
     
     // ============================================
     // OFFLINE DETECTION
     // ============================================
     
-    setupOfflineDetection() {
-        window.addEventListener('online', () => {
-            this.logger.info('Connection restored');
-            notifications.success('Koneksi internet kembali');
+    function setupOfflineDetection() {
+        window.addEventListener('online', function() {
             document.body.classList.remove('offline');
+            if (typeof NotificationSystem !== 'undefined') {
+                NotificationSystem.success('Koneksi internet kembali');
+            }
         });
         
-        window.addEventListener('offline', () => {
-            this.logger.warn('Connection lost');
-            notifications.warning('Koneksi internet terputus', {
-                duration: 0,
-                title: 'Offline'
-            });
+        window.addEventListener('offline', function() {
             document.body.classList.add('offline');
+            if (typeof NotificationSystem !== 'undefined') {
+                NotificationSystem.warning('Koneksi internet terputus', { duration: 0 });
+            }
         });
         
         // Initial check
@@ -333,223 +157,188 @@ class AppInitializer {
     // KEYBOARD SHORTCUTS
     // ============================================
     
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + K: Focus search
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+K: Focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
-                const searchInput = document.querySelector('[data-search-input], #search-input, .search-input');
-                searchInput?.focus();
+                var searchInput = document.querySelector('[data-search-input], #search-input, .search-input, input[type="search"]');
+                if (searchInput) searchInput.focus();
             }
             
-            // Ctrl/Cmd + /: Show shortcuts
-            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                e.preventDefault();
-                this.showShortcutsDialog();
-            }
-            
-            // Escape: Close modals/dropdowns
+            // Escape: Close modals
             if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay.visible').forEach(modal => {
-                    modal.classList.remove('visible');
-                });
+                var modals = document.querySelectorAll('.modal-overlay.visible, .modal-overlay.active');
+                for (var i = 0; i < modals.length; i++) {
+                    modals[i].classList.remove('visible', 'active');
+                }
             }
         });
     }
     
-    showShortcutsDialog() {
-        const dialog = document.createElement('div');
-        dialog.className = 'modal-overlay visible';
-        dialog.innerHTML = `
-            <div class="modal-dialog modal-sm">
-                <div class="modal-header">
-                    <h3>Keyboard Shortcuts</h3>
-                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <table style="width:100%;font-size:14px;">
-                        <tr><td style="padding:4px 0;"><kbd>Ctrl+K</kbd></td><td>Search</td></tr>
-                        <tr><td style="padding:4px 0;"><kbd>Ctrl+S</kbd></td><td>Save</td></tr>
-                        <tr><td style="padding:4px 0;"><kbd>Ctrl+N</kbd></td><td>New document</td></tr>
-                        <tr><td style="padding:4px 0;"><kbd>Ctrl+Shift+T</kbd></td><td>Change theme</td></tr>
-                        <tr><td style="padding:4px 0;"><kbd>Esc</kbd></td><td>Close modal</td></tr>
-                        <tr><td style="padding:4px 0;"><kbd>Ctrl+/</kbd></td><td>Show shortcuts</td></tr>
-                    </table>
-                </div>
-            </div>
-        `;
+    // ============================================
+    // PWA INSTALL PROMPT
+    // ============================================
+    
+    function setupPWAInstall() {
+        var deferredPrompt = null;
         
-        document.body.appendChild(dialog);
-        
-        dialog.addEventListener('click', (e) => {
-            if (e.target === dialog) dialog.remove();
-        });
-    }
-    
-    // ============================================
-    // VISIBILITY HANDLER
-    // ============================================
-    
-    setupVisibilityHandler() {
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                // Page became visible again
-                this.onPageVisible();
-            }
-        });
-    }
-    
-    onPageVisible() {
-        // Refresh session if needed
-        if (authService.isAuthenticated) {
-            sessionManager.updateActivity();
-        }
-        
-        // Refresh notification count
-        this.loadNotificationCount();
-    }
-    
-    // ============================================
-    // UNLOAD HANDLER
-    // ============================================
-    
-    setupUnloadHandler() {
-        window.addEventListener('beforeunload', () => {
-            // Save any pending data
-            this.savePendingData();
-        });
-    }
-    
-    savePendingData() {
-        // Save form drafts
-        const draftForms = document.querySelectorAll('[data-autosave]');
-        draftForms.forEach(form => {
-            const formData = new FormData(form);
-            const data = {};
-            formData.forEach((value, key) => data[key] = value);
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
             
-            try {
-                sessionStorage.setItem(`draft_${form.id || 'form'}`, JSON.stringify(data));
-            } catch (e) {
-                // Silently fail
-            }
+            // Tampilkan tombol install setelah 30 detik
+            setTimeout(function() {
+                if (deferredPrompt && confirm('Install aplikasi ini untuk akses cepat?')) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function(result) {
+                        console.log('[Init] PWA install: ' + result.outcome);
+                    });
+                }
+                deferredPrompt = null;
+            }, 30000);
         });
-    }
-    
-    // ============================================
-    // AUTO REFRESH
-    // ============================================
-    
-    setupAutoRefresh() {
-        // Refresh session token periodically
-        setInterval(async () => {
-            if (authService.isAuthenticated) {
-                await sessionManager.checkSession();
-            }
-        }, 300000); // Every 5 minutes
     }
     
     // ============================================
     // GLOBAL ERROR HANDLING
     // ============================================
     
-    setupGlobalErrorHandling() {
+    function setupGlobalErrorHandling() {
         // Uncaught errors
-        window.addEventListener('error', (event) => {
-            this.logger.error('Uncaught error', {
-                message: event.message,
-                filename: event.filename,
-                lineno: event.lineno,
-                colno: event.colno,
-                stack: event.error?.stack
-            });
+        window.addEventListener('error', function(event) {
+            var msg = event.message || 'Unknown error';
+            var file = event.filename || '';
+            var line = event.lineno || 0;
             
-            // Prevent showing error to user in production
-            if (APP_CONFIG.app.environment === 'production') {
-                event.preventDefault();
+            console.error('[Init] Uncaught error: ' + msg + ' at ' + file + ':' + line);
+            
+            // Prevent white screen di production
+            if (APP_ENV === 'production') {
+                // Jangan prevent default - biarkan error handler lain bekerja
             }
         });
         
         // Unhandled promise rejections
-        window.addEventListener('unhandledrejection', (event) => {
-            this.logger.error('Unhandled rejection', {
-                reason: event.reason?.message || event.reason,
-                stack: event.reason?.stack
-            });
+        window.addEventListener('unhandledrejection', function(event) {
+            var reason = event.reason;
+            var msg = 'Unknown rejection';
             
-            if (APP_CONFIG.app.environment === 'production') {
-                event.preventDefault();
+            if (reason && reason.message) {
+                msg = reason.message;
+            } else if (typeof reason === 'string') {
+                msg = reason;
             }
+            
+            console.error('[Init] Unhandled rejection: ' + msg);
         });
     }
     
     // ============================================
-    // UI HELPERS
+    // LOADING SCREEN
     // ============================================
     
-    showLoading() {
-        const loader = document.getElementById('loading-screen');
-        if (loader) {
-            loader.style.display = 'flex';
-        }
-    }
-    
-    hideLoading() {
-        const loader = document.getElementById('loading-screen');
+    function hideLoadingScreen() {
+        var loader = document.getElementById('loading-screen');
         if (loader) {
             loader.classList.add('hidden');
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 300);
+            setTimeout(function() {
+                if (loader.parentNode) {
+                    loader.style.display = 'none';
+                }
+            }, 400);
         }
     }
     
-    showInitError(error) {
-        const errorHtml = `
-            <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-                <div style="text-align:center;max-width:500px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size:48px;color:#dc2626;margin-bottom:16px;"></i>
-                    <h2>Gagal Memuat Aplikasi</h2>
-                    <p style="color:#64748b;">${error.message}</p>
-                    <button onclick="location.reload()" class="btn btn-primary" style="margin-top:16px;">
-                        Muat Ulang
-                    </button>
-                </div>
-            </div>
-        `;
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    function init() {
+        if (_initialized) return;
         
-        document.body.innerHTML = errorHtml;
+        try {
+            // Core modules
+            initCore();
+            
+            // Service Worker
+            setupServiceWorker();
+            
+            // Offline detection
+            setupOfflineDetection();
+            
+            // Keyboard shortcuts
+            setupKeyboardShortcuts();
+            
+            // PWA install
+            setupPWAInstall();
+            
+            // Global error handling
+            setupGlobalErrorHandling();
+            
+            // Hide loading screen
+            hideLoadingScreen();
+            
+            _initialized = true;
+            
+            var initTime = Date.now() - _initStartTime;
+            console.log('[Init] Complete in ' + initTime + 'ms (' + _loadedModules.length + ' modules)');
+            
+            // Dispatch ready event
+            try {
+                window.dispatchEvent(new CustomEvent('app:ready', {
+                    detail: { initTime: initTime, modules: _loadedModules }
+                }));
+            } catch(e) {}
+            
+        } catch(error) {
+            console.error('[Init] Failed: ' + (error.message || 'Unknown error'));
+            
+            // Tampilkan error page minimal
+            var body = document.body;
+            if (body) {
+                body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;text-align:center;padding:20px;">' +
+                    '<div><h2 style="color:#dc2626;">Gagal Memuat Aplikasi</h2>' +
+                    '<p style="color:#666;">Silakan muat ulang halaman</p>' +
+                    '<button onclick="location.reload()" style="margin-top:12px;padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Muat Ulang</button></div></div>';
+            }
+        }
+    }
+    
+    // ============================================
+    // START
+    // ============================================
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        // DOM already ready, delay sedikit untuk biarkan modul lain init
+        setTimeout(init, 100);
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    isInitialized() {
-        return this.initialized;
-    }
+    window.AppInit = {
+        isInitialized: function() { return _initialized; },
+        getLoadedModules: function() { return _loadedModules.slice(); },
+        getInitTime: function() { return Date.now() - _initStartTime; },
+        getVersion: function() { return APP_VERSION; },
+        getEnvironment: function() { return APP_ENV; }
+    };
     
-    getModule(name) {
-        return this.modules.get(name);
-    }
-    
-    getInitTime() {
-        return performance.now() - this.initStartTime;
-    }
-}
+})();
 
-// Create and run initializer
-const app = new AppInitializer();
-
-// Start initialization when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => app.init());
-} else {
-    app.init();
-}
-
-// Export for external use
-export default app;
-export { AppInitializer };
+// ============================================
+// USAGE:
+// ============================================
+// // Check if initialized
+// AppInit.isInitialized();
+// 
+// // Get loaded modules
+// AppInit.getLoadedModules();
+// 
+// // Get init time
+// AppInit.getInitTime();
+// ============================================

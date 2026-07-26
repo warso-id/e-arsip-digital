@@ -1,426 +1,440 @@
-// js/security/token-manager.js - JWT & Token Manager 2026
+// js/security/token-manager.js - Token Manager 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Token Manager
  * Version: 2026.1.0
- * Features: JWT decode/verify, token refresh, secure storage,
- *           automatic renewal, token rotation
+ * 
+ * Features:
+ * - JWT decode (tanpa verify - verify di server)
+ * - Token expiry check
+ * - Auto-refresh scheduling
+ * - Refresh queue
+ * - No encryption dependency (httpOnly cookies recommended)
  */
 
-import { Logger } from '../logger.js';
-import { EncryptionService } from './encryption.js';
-
-class TokenManager {
-    constructor() {
-        this.logger = new Logger('TokenManager');
-        this.encryption = new EncryptionService();
-        
-        // Token storage keys
-        this.ACCESS_TOKEN_KEY = 'auth_token';
-        this.REFRESH_TOKEN_KEY = 'auth_refresh_token';
-        this.ID_TOKEN_KEY = 'auth_id_token';
-        
-        // Token state
-        this.accessToken = null;
-        this.refreshToken = null;
-        this.idToken = null;
-        this.tokenExpiry = null;
-        this.decodedToken = null;
-        
-        // Refresh handling
-        this.refreshTimeout = null;
-        this.refreshBuffer = 300000; // 5 minutes before expiry
-        this.isRefreshing = false;
-        this.refreshQueue = [];
-        
-        // Bind methods
-        this.handleTokenRefresh = this.handleTokenRefresh.bind(this);
-        
-        this.init();
-    }
-    
-    async init() {
-        await this.loadTokens();
-        
-        if (this.accessToken) {
-            this.decodeToken(this.accessToken);
-            this.scheduleRefresh();
-        }
-        
-        this.logger.info('Token manager initialized', {
-            hasAccessToken: !!this.accessToken,
-            hasRefreshToken: !!this.refreshToken
-        });
-    }
+var TokenManager = (function() {
+    'use strict';
     
     // ============================================
-    // TOKEN STORAGE
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        accessTokenKey: 'auth_token',
+        refreshTokenKey: 'auth_refresh_token',
+        refreshBuffer: 300000,       // 5 menit sebelum expiry
+        autoRefresh: true,
+        storage: 'localStorage'      // 'localStorage' atau 'sessionStorage'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _accessToken = null;
+    var _refreshToken = null;
+    var _decodedToken = null;
+    var _tokenExpiry = null;         // Timestamp in ms
+    var _refreshTimer = null;
+    var _isRefreshing = false;
+    var _refreshQueue = [];
+    var _refreshCallback = null;     // Custom refresh function
+    
+    // ============================================
+    // STORAGE HELPERS
     // ============================================
     
-    async setTokens(accessToken, refreshToken = null, idToken = null) {
-        this.accessToken = accessToken;
-        if (refreshToken) this.refreshToken = refreshToken;
-        if (idToken) this.idToken = idToken;
-        
-        // Decode access token
-        this.decodeToken(accessToken);
-        
-        // Store securely
-        await this.saveTokens();
-        
-        // Schedule refresh
-        this.scheduleRefresh();
-        
-        this.logger.info('Tokens set', {
-            expiresAt: this.tokenExpiry ? new Date(this.tokenExpiry).toISOString() : 'unknown'
-        });
+    function getStorage() {
+        return config.storage === 'sessionStorage' ? sessionStorage : localStorage;
     }
     
-    async saveTokens() {
+    function saveToStorage(key, value) {
         try {
-            if (this.accessToken) {
-                const encrypted = await this.encryption.encrypt(this.accessToken);
-                localStorage.setItem(this.ACCESS_TOKEN_KEY, encrypted);
+            if (value) {
+                getStorage().setItem(key, value);
+            } else {
+                getStorage().removeItem(key);
             }
-            
-            if (this.refreshToken) {
-                const encrypted = await this.encryption.encrypt(this.refreshToken);
-                localStorage.setItem(this.REFRESH_TOKEN_KEY, encrypted);
-            }
-            
-            if (this.idToken) {
-                localStorage.setItem(this.ID_TOKEN_KEY, this.idToken);
-            }
-        } catch (error) {
-            this.logger.error('Failed to save tokens', error);
+        } catch(e) {
+            console.warn('[TokenManager] Storage error:', e.message);
         }
     }
     
-    async loadTokens() {
+    function getFromStorage(key) {
         try {
-            const encryptedAccess = localStorage.getItem(this.ACCESS_TOKEN_KEY);
-            if (encryptedAccess) {
-                this.accessToken = await this.encryption.decrypt(encryptedAccess);
-            }
-            
-            const encryptedRefresh = localStorage.getItem(this.REFRESH_TOKEN_KEY);
-            if (encryptedRefresh) {
-                this.refreshToken = await this.encryption.decrypt(encryptedRefresh);
-            }
-            
-            this.idToken = localStorage.getItem(this.ID_TOKEN_KEY);
-        } catch (error) {
-            this.logger.warn('Failed to load tokens', error);
-            this.clearTokens();
-        }
-    }
-    
-    clearTokens() {
-        this.accessToken = null;
-        this.refreshToken = null;
-        this.idToken = null;
-        this.tokenExpiry = null;
-        this.decodedToken = null;
-        
-        localStorage.removeItem(this.ACCESS_TOKEN_KEY);
-        localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-        localStorage.removeItem(this.ID_TOKEN_KEY);
-        
-        if (this.refreshTimeout) {
-            clearTimeout(this.refreshTimeout);
-            this.refreshTimeout = null;
-        }
-        
-        this.logger.info('Tokens cleared');
-    }
-    
-    // ============================================
-    // TOKEN DECODING & VALIDATION
-    // ============================================
-    
-    decodeToken(token) {
-        if (!token) {
-            this.decodedToken = null;
-            this.tokenExpiry = null;
+            return getStorage().getItem(key);
+        } catch(e) {
             return null;
         }
+    }
+    
+    // ============================================
+    // BASE64 URL DECODE (FIXED)
+    // ============================================
+    
+    /**
+     * Decode base64url string
+     * Fixed: handle unicode correctly
+     */
+    function base64UrlDecode(str) {
+        if (!str) return '';
         
         try {
-            // JWT structure: header.payload.signature
-            const parts = token.split('.');
+            // Convert base64url to base64
+            var base64 = str.replace(/-/g, '+').replace(/_/g, '/');
             
+            // Add padding
+            var pad = base64.length % 4;
+            if (pad === 2) base64 += '==';
+            else if (pad === 3) base64 += '=';
+            
+            // Decode base64
+            var raw = atob(base64);
+            
+            // Convert binary string ke UTF-8
+            var bytes = new Uint8Array(raw.length);
+            for (var i = 0; i < raw.length; i++) {
+                bytes[i] = raw.charCodeAt(i);
+            }
+            
+            return new TextDecoder().decode(bytes);
+        } catch(e) {
+            console.warn('[TokenManager] Base64 decode error:', e.message);
+            return '';
+        }
+    }
+    
+    // ============================================
+    // JWT DECODE
+    // ============================================
+    
+    /**
+     * Decode JWT (hanya payload, tidak verify signature)
+     */
+    function decodeToken(token) {
+        if (!token) return null;
+        
+        try {
+            var parts = token.split('.');
             if (parts.length !== 3) {
-                throw new Error('Invalid token format');
+                return null;
             }
             
-            // Decode payload (base64url)
-            const payload = parts[1];
-            const decoded = this.base64UrlDecode(payload);
-            const parsed = JSON.parse(decoded);
-            
-            this.decodedToken = parsed;
-            
-            // Set expiry
-            if (parsed.exp) {
-                this.tokenExpiry = parsed.exp * 1000; // Convert to milliseconds
-            }
-            
-            return parsed;
-        } catch (error) {
-            this.logger.warn('Failed to decode token', error);
-            this.decodedToken = null;
-            this.tokenExpiry = null;
+            var payload = base64UrlDecode(parts[1]);
+            return JSON.parse(payload);
+        } catch(e) {
+            console.warn('[TokenManager] Decode error:', e.message);
             return null;
         }
     }
     
-    isTokenExpired() {
-        if (!this.tokenExpiry) return true;
+    // ============================================
+    // TOKEN MANAGEMENT
+    // ============================================
+    
+    /**
+     * Set access token + optional refresh token
+     */
+    function setTokens(accessToken, refreshToken) {
+        _accessToken = accessToken || null;
         
-        // Add buffer (30 seconds)
-        return Date.now() >= (this.tokenExpiry - 30000);
+        if (refreshToken !== undefined) {
+            _refreshToken = refreshToken || null;
+        }
+        
+        // Save ke storage
+        saveToStorage(config.accessTokenKey, _accessToken);
+        saveToStorage(config.refreshTokenKey, _refreshToken);
+        
+        // Decode token untuk dapatkan expiry
+        if (_accessToken) {
+            _decodedToken = decodeToken(_accessToken);
+            
+            if (_decodedToken && _decodedToken.exp) {
+                _tokenExpiry = _decodedToken.exp * 1000; // Convert ke ms
+            } else {
+                _tokenExpiry = null;
+            }
+        } else {
+            _decodedToken = null;
+            _tokenExpiry = null;
+        }
+        
+        // Schedule auto-refresh
+        if (config.autoRefresh && _tokenExpiry && _refreshToken) {
+            scheduleRefresh();
+        }
     }
     
-    isTokenValid() {
-        if (!this.accessToken) return false;
-        if (this.isTokenExpired()) return false;
-        if (!this.decodedToken) return false;
+    /**
+     * Load tokens from storage
+     */
+    function loadTokens() {
+        var accessToken = getFromStorage(config.accessTokenKey);
+        var refreshToken = getFromStorage(config.refreshTokenKey);
         
-        // Check if token has required claims
-        if (!this.decodedToken.sub && !this.decodedToken.userId) return false;
+        if (accessToken) {
+            setTokens(accessToken, refreshToken);
+        }
         
-        return true;
+        return {
+            hasAccessToken: !!_accessToken,
+            hasRefreshToken: !!_refreshToken
+        };
     }
     
-    getTokenRemainingTime() {
-        if (!this.tokenExpiry) return 0;
-        return Math.max(0, this.tokenExpiry - Date.now());
+    /**
+     * Clear all tokens
+     */
+    function clearTokens() {
+        _accessToken = null;
+        _refreshToken = null;
+        _decodedToken = null;
+        _tokenExpiry = null;
+        
+        saveToStorage(config.accessTokenKey, null);
+        saveToStorage(config.refreshTokenKey, null);
+        
+        if (_refreshTimer) {
+            clearTimeout(_refreshTimer);
+            _refreshTimer = null;
+        }
+        
+        _refreshQueue = [];
+        _isRefreshing = false;
+    }
+    
+    // ============================================
+    // TOKEN VALIDATION
+    // ============================================
+    
+    function isTokenExpired() {
+        if (!_tokenExpiry) return !_accessToken;
+        
+        // Tambah buffer 30 detik
+        return Date.now() >= (_tokenExpiry - 30000);
+    }
+    
+    function isValid() {
+        return !!_accessToken && !isTokenExpired() && !!_decodedToken;
+    }
+    
+    function getRemainingTime() {
+        if (!_tokenExpiry) return 0;
+        return Math.max(0, _tokenExpiry - Date.now());
     }
     
     // ============================================
     // TOKEN REFRESH
     // ============================================
     
-    scheduleRefresh() {
-        if (this.refreshTimeout) {
-            clearTimeout(this.refreshTimeout);
-        }
-        
-        if (!this.tokenExpiry || !this.refreshToken) return;
-        
-        const delay = Math.max(0, this.tokenExpiry - Date.now() - this.refreshBuffer);
-        
-        if (delay <= 0) {
-            // Token already expired or about to expire
-            this.handleTokenRefresh();
-        } else {
-            this.refreshTimeout = setTimeout(() => {
-                this.handleTokenRefresh();
-            }, delay);
-            
-            this.logger.debug('Token refresh scheduled', {
-                delay: `${Math.round(delay / 1000)}s`
-            });
-        }
+    /**
+     * Set custom refresh function
+     * @param {Function} fn - Async function that returns { accessToken, refreshToken }
+     */
+    function setRefreshFunction(fn) {
+        _refreshCallback = fn;
     }
     
-    async handleTokenRefresh() {
-        if (this.isRefreshing) {
-            // Queue refresh requests
-            return new Promise((resolve) => {
-                this.refreshQueue.push(resolve);
-            });
+    /**
+     * Schedule automatic token refresh
+     */
+    function scheduleRefresh() {
+        if (_refreshTimer) {
+            clearTimeout(_refreshTimer);
+            _refreshTimer = null;
         }
         
-        if (!this.refreshToken) {
-            this.logger.warn('No refresh token available');
-            this.clearTokens();
-            this.dispatchTokenExpired();
-            return null;
-        }
+        if (!_tokenExpiry || !_refreshToken) return;
         
-        this.isRefreshing = true;
+        var delay = Math.max(0, _tokenExpiry - Date.now() - config.refreshBuffer);
         
-        try {
-            const { apiService } = await import('../api.js');
-            
-            const response = await apiService.post('/api/auth/refresh', {
-                refreshToken: this.refreshToken
-            });
-            
-            if (response.data?.token) {
-                await this.setTokens(
-                    response.data.token,
-                    response.data.refreshToken || this.refreshToken
-                );
-                
-                this.logger.info('Token refreshed successfully');
-                
-                // Resolve queued requests
-                this.refreshQueue.forEach(resolve => resolve(response.data.token));
-                this.refreshQueue = [];
-                
-                return response.data.token;
-            }
-            
-            throw new Error('No token in refresh response');
-        } catch (error) {
-            this.logger.error('Token refresh failed', error);
-            this.clearTokens();
-            this.dispatchTokenExpired();
-            
-            // Reject queued requests
-            this.refreshQueue.forEach(resolve => resolve(null));
-            this.refreshQueue = [];
-            
-            return null;
-        } finally {
-            this.isRefreshing = false;
-        }
+        console.debug('[TokenManager] Refresh scheduled in ' + Math.round(delay / 1000) + 's');
+        
+        _refreshTimer = setTimeout(function() {
+            refreshToken();
+        }, delay);
     }
     
-    async getValidToken() {
-        if (this.isTokenValid()) {
-            return this.accessToken;
+    /**
+     * Refresh token sekarang juga
+     */
+    function refreshToken() {
+        // Jika sedang refresh, tambahkan ke queue
+        if (_isRefreshing) {
+            return new Promise(function(resolve) {
+                _refreshQueue.push(resolve);
+            });
         }
         
-        if (this.refreshToken) {
-            return this.handleTokenRefresh();
+        if (!_refreshCallback) {
+            console.warn('[TokenManager] No refresh callback set');
+            return Promise.resolve(null);
         }
         
-        return null;
+        _isRefreshing = true;
+        
+        return Promise.resolve(_refreshCallback(_refreshToken))
+            .then(function(result) {
+                _isRefreshing = false;
+                
+                if (result && result.accessToken) {
+                    setTokens(result.accessToken, result.refreshToken || _refreshToken);
+                    
+                    // Resolve queue
+                    var queue = _refreshQueue;
+                    _refreshQueue = [];
+                    for (var i = 0; i < queue.length; i++) {
+                        queue[i](result.accessToken);
+                    }
+                    
+                    return result.accessToken;
+                }
+                
+                // Refresh gagal
+                var queue2 = _refreshQueue;
+                _refreshQueue = [];
+                for (var j = 0; j < queue2.length; j++) {
+                    queue2[j](null);
+                }
+                
+                return null;
+            })
+            .catch(function(error) {
+                _isRefreshing = false;
+                
+                console.error('[TokenManager] Refresh failed:', error.message);
+                
+                // Reject queue
+                var queue3 = _refreshQueue;
+                _refreshQueue = [];
+                for (var k = 0; k < queue3.length; k++) {
+                    queue3[k](null);
+                }
+                
+                return null;
+            });
+    }
+    
+    /**
+     * Get valid access token (refresh if needed)
+     */
+    function getValidToken() {
+        if (isValid()) {
+            return Promise.resolve(_accessToken);
+        }
+        
+        if (_refreshToken && _refreshCallback) {
+            return refreshToken();
+        }
+        
+        return Promise.resolve(null);
     }
     
     // ============================================
     // TOKEN CLAIMS
     // ============================================
     
-    getClaim(claim) {
-        return this.decodedToken?.[claim] || null;
+    function getClaim(claim) {
+        return (_decodedToken && _decodedToken[claim]) || null;
     }
     
-    getUserId() {
-        return this.decodedToken?.sub || this.decodedToken?.userId || null;
+    function getUserId() {
+        return getClaim('sub') || getClaim('userId') || getClaim('id') || null;
     }
     
-    getUserRole() {
-        return this.decodedToken?.role || null;
+    function getUserRole() {
+        return getClaim('role') || null;
     }
     
-    getPermissions() {
-        return this.decodedToken?.permissions || [];
+    function getPermissions() {
+        return getClaim('permissions') || [];
     }
     
-    hasPermission(permission) {
-        const permissions = this.getPermissions();
-        return permissions.includes(permission) || permissions.includes('*');
+    function hasPermission(permission) {
+        var perms = getPermissions();
+        if (perms.indexOf('*') !== -1) return true;
+        return perms.indexOf(permission) !== -1;
     }
     
-    getTokenHeader() {
-        if (!this.accessToken) return {};
+    function getAuthHeader() {
+        if (!_accessToken) return {};
         
-        return {
-            'Authorization': `Bearer ${this.accessToken}`
-        };
-    }
-    
-    // ============================================
-    // TOKEN ROTATION
-    // ============================================
-    
-    async rotateTokens() {
-        if (!this.refreshToken) return false;
-        
-        try {
-            const { apiService } = await import('../api.js');
-            
-            const response = await apiService.post('/api/auth/rotate', {
-                refreshToken: this.refreshToken
-            });
-            
-            if (response.data?.token && response.data?.refreshToken) {
-                await this.setTokens(
-                    response.data.token,
-                    response.data.refreshToken
-                );
-                
-                this.logger.info('Tokens rotated successfully');
-                return true;
-            }
-            
-            return false;
-        } catch (error) {
-            this.logger.error('Token rotation failed', error);
-            return false;
-        }
-    }
-    
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    base64UrlDecode(str) {
-        // Add padding
-        str = str.replace(/-/g, '+').replace(/_/g, '/');
-        
-        switch (str.length % 4) {
-            case 0: break;
-            case 2: str += '=='; break;
-            case 3: str += '='; break;
-        }
-        
-        // Decode
-        return decodeURIComponent(
-            atob(str).split('').map(c => {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join('')
-        );
-    }
-    
-    base64UrlEncode(str) {
-        return btoa(str)
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=/g, '');
-    }
-    
-    dispatchTokenExpired() {
-        window.dispatchEvent(new CustomEvent('token:expired', {
-            detail: { timestamp: Date.now() }
-        }));
+        var header = {};
+        header['Authorization'] = 'Bearer ' + _accessToken;
+        return header;
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    getAccessToken() {
-        return this.accessToken;
-    }
+    // Load tokens saat inisialisasi
+    loadTokens();
     
-    getRefreshToken() {
-        return this.refreshToken;
-    }
-    
-    getDecodedToken() {
-        return this.decodedToken ? { ...this.decodedToken } : null;
-    }
-    
-    getTokenExpiry() {
-        return this.tokenExpiry;
-    }
-    
-    async forceRefresh() {
-        return this.handleTokenRefresh();
-    }
-    
-    destroy() {
-        this.clearTokens();
-        this.logger.info('Token manager destroyed');
-    }
-}
+    return {
+        // Token management
+        setTokens: setTokens,
+        getAccessToken: function() { return _accessToken; },
+        getRefreshToken: function() { return _refreshToken; },
+        clearTokens: clearTokens,
+        loadTokens: loadTokens,
+        
+        // Validation
+        isValid: isValid,
+        isExpired: isTokenExpired,
+        getRemainingTime: getRemainingTime,
+        getExpiry: function() { return _tokenExpiry; },
+        
+        // Decode
+        getDecodedToken: function() { return _decodedToken; },
+        getClaim: getClaim,
+        getUserId: getUserId,
+        getUserRole: getUserRole,
+        getPermissions: getPermissions,
+        hasPermission: hasPermission,
+        getAuthHeader: getAuthHeader,
+        
+        // Refresh
+        setRefreshFunction: setRefreshFunction,
+        refreshToken: refreshToken,
+        getValidToken: getValidToken,
+        
+        // Config
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+            }
+        },
+        
+        // Destroy
+        destroy: function() {
+            clearTokens();
+            _refreshCallback = null;
+        }
+    };
+})();
 
-// Create singleton
-const tokenManager = new TokenManager();
-
-export default tokenManager;
-export { TokenManager };
+// ============================================
+// USAGE:
+// ============================================
+// // Set refresh callback
+// TokenManager.setRefreshFunction(function(refreshToken) {
+//     return fetch('/api/refresh', {
+//         method: 'POST',
+//         body: JSON.stringify({ refreshToken: refreshToken })
+//     }).then(function(r) { return r.json(); });
+// });
+// 
+// // Set tokens
+// TokenManager.setTokens('access.jwt.token', 'refresh.token');
+// 
+// // Get valid token (auto-refresh if needed)
+// TokenManager.getValidToken().then(function(token) {
+//     console.log('Valid token:', token);
+// });
+// 
+// // Check permission
+// if (TokenManager.hasPermission('manage_surat')) { ... }
+// ============================================

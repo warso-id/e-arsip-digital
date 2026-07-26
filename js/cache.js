@@ -1,466 +1,144 @@
-// js/cache.js - Advanced Cache Management 2026
+// js/cache.js - Cache Management 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Cache Manager
  * Version: 2026.1.0
- * Features: Multi-layer caching (Memory, IndexedDB, localStorage),
- *           TTL support, LRU eviction, cache warming, prefetching
+ * 
+ * Features:
+ * - Memory cache (fast)
+ * - localStorage fallback (persistent)
+ * - TTL support
+ * - LRU eviction
+ * - Size limits
+ * - No external dependencies
  */
 
-import { Logger } from './logger.js';
-
-class CacheManager {
-    constructor(namespace = 'app', options = {}) {
-        this.logger = new Logger('Cache');
-        this.namespace = namespace;
-        
-        this.config = {
-            defaultTTL: 300000, // 5 minutes
-            maxMemoryItems: 200,
-            maxStorageItems: 500,
-            cleanupInterval: 60000, // 1 minute
-            enableIndexedDB: true,
-            enableWarming: false,
-            ...options
-        };
-        
-        // Memory cache (fastest)
-        this.memoryCache = new Map();
-        
-        // IndexedDB reference
-        this.db = null;
-        this.dbReady = false;
-        
-        // Statistics
-        this.stats = {
-            hits: 0,
-            misses: 0,
-            sets: 0,
-            evictions: 0,
-            memoryItems: 0,
-            storageItems: 0
-        };
-        
-        // Pending operations queue
-        this.pendingOps = [];
-        
-        this.init();
+var CacheManager = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        defaultTTL: 300000,          // 5 menit
+        maxMemoryItems: 100,         // Max items di memory
+        maxStorageItems: 200,        // Max items di localStorage
+        cleanupInterval: 120000,     // Cleanup setiap 2 menit
+        storagePrefix: 'earsip_cache_'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _memoryCache = {};           // { key: { value, timestamp, expiresAt, hits } }
+    var _stats = {
+        hits: 0,
+        misses: 0,
+        sets: 0,
+        evictions: 0
+    };
+    var _cleanupTimer = null;
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    
+    function now() {
+        return Date.now();
     }
     
-    async init() {
-        if (this.config.enableIndexedDB) {
-            await this.initIndexedDB();
-        }
-        
-        // Start cleanup interval
-        this.cleanupTimer = setInterval(() => this.cleanup(), this.config.cleanupInterval);
-        
-        // Process pending operations
-        this.processPendingOps();
-        
-        this.logger.info('Cache manager initialized', {
-            namespace: this.namespace,
-            indexedDB: this.dbReady
-        });
+    function isExpired(entry) {
+        return entry && entry.expiresAt && now() > entry.expiresAt;
     }
     
-    // ============================================
-    // INDEXEDDB INITIALIZATION
-    // ============================================
-    
-    async initIndexedDB() {
-        if (!window.indexedDB) {
-            this.logger.warn('IndexedDB not supported');
-            return;
-        }
-        
-        return new Promise((resolve) => {
-            const request = indexedDB.open(`EArsipCache_${this.namespace}`, 1);
-            
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                
-                if (!db.objectStoreNames.contains('cache')) {
-                    const store = db.createObjectStore('cache', { keyPath: 'key' });
-                    store.createIndex('timestamp', 'timestamp', { unique: false });
-                    store.createIndex('ttl', 'expiresAt', { unique: false });
-                }
-                
-                if (!db.objectStoreNames.contains('meta')) {
-                    db.createObjectStore('meta', { keyPath: 'key' });
-                }
-            };
-            
-            request.onsuccess = (event) => {
-                this.db = event.target.result;
-                this.dbReady = true;
-                resolve();
-            };
-            
-            request.onerror = () => {
-                this.logger.warn('Failed to open IndexedDB');
-                resolve();
-            };
-        });
+    function getStorageKey(key) {
+        return config.storagePrefix + key;
     }
     
-    // ============================================
-    // CORE CACHE METHODS
-    // ============================================
-    
-    async get(key, options = {}) {
-        const startTime = performance.now();
-        
-        // 1. Check memory cache first (fastest)
-        if (this.memoryCache.has(key)) {
-            const entry = this.memoryCache.get(key);
-            
-            if (!this.isExpired(entry)) {
-                this.stats.hits++;
-                this.updateAccessTime(key, entry);
-                this.logger.debug('Cache hit (memory)', { key, time: performance.now() - startTime });
-                return entry.value;
-            } else {
-                this.memoryCache.delete(key);
-                this.stats.memoryItems--;
+    function getMemoryKeys() {
+        var keys = [];
+        for (var k in _memoryCache) {
+            if (_memoryCache.hasOwnProperty(k)) {
+                keys.push(k);
             }
         }
-        
-        // 2. Check IndexedDB
-        if (this.dbReady) {
-            const entry = await this.getFromIndexedDB(key);
-            
-            if (entry && !this.isExpired(entry)) {
-                this.stats.hits++;
-                
-                // Promote to memory cache
-                this.setMemoryCache(key, entry);
-                
-                this.logger.debug('Cache hit (indexedDB)', { key, time: performance.now() - startTime });
-                return entry.value;
-            }
-        }
-        
-        // 3. Check localStorage fallback
-        const localEntry = this.getFromLocalStorage(key);
-        if (localEntry && !this.isExpired(localEntry)) {
-            this.stats.hits++;
-            this.setMemoryCache(key, localEntry);
-            
-            this.logger.debug('Cache hit (localStorage)', { key, time: performance.now() - startTime });
-            return localEntry.value;
-        }
-        
-        this.stats.misses++;
-        this.logger.debug('Cache miss', { key, time: performance.now() - startTime });
-        
-        return null;
+        return keys;
     }
     
-    async set(key, value, options = {}) {
-        const ttl = options.ttl || this.config.defaultTTL;
-        const entry = {
-            key,
-            value,
-            timestamp: Date.now(),
-            expiresAt: Date.now() + ttl,
-            accessCount: 0,
-            lastAccessed: Date.now(),
-            size: this.estimateSize(value),
-            tags: options.tags || []
-        };
-        
-        this.stats.sets++;
-        
-        // Set in memory cache
-        this.setMemoryCache(key, entry);
-        
-        // Set in IndexedDB (async, non-blocking)
-        if (this.dbReady) {
-            this.queueOperation(() => this.setInIndexedDB(key, entry));
-        }
-        
-        // Set in localStorage fallback
-        this.setInLocalStorage(key, entry);
-        
-        return true;
-    }
-    
-    async remove(key) {
-        this.memoryCache.delete(key);
-        this.stats.memoryItems = this.memoryCache.size;
-        
-        if (this.dbReady) {
-            await this.removeFromIndexedDB(key);
-        }
-        
-        this.removeFromLocalStorage(key);
-        
-        return true;
-    }
-    
-    async clear() {
-        this.memoryCache.clear();
-        this.stats.memoryItems = 0;
-        
-        if (this.dbReady) {
-            await this.clearIndexedDB();
-        }
-        
-        this.clearLocalStorage();
-        
-        this.stats = { hits: 0, misses: 0, sets: 0, evictions: 0, memoryItems: 0, storageItems: 0 };
-        
-        this.logger.info('Cache cleared');
-    }
-    
-    async has(key) {
-        if (this.memoryCache.has(key)) return true;
-        
-        const localEntry = this.getFromLocalStorage(key);
-        if (localEntry && !this.isExpired(localEntry)) return true;
-        
-        if (this.dbReady) {
-            const entry = await this.getFromIndexedDB(key);
-            return entry && !this.isExpired(entry);
-        }
-        
-        return false;
+    function getMemoryCount() {
+        return getMemoryKeys().length;
     }
     
     // ============================================
-    // BULK OPERATIONS
+    // LOCAL STORAGE HELPERS
     // ============================================
     
-    async getMany(keys) {
-        const results = {};
-        const promises = keys.map(key => this.get(key).then(value => { results[key] = value; }));
-        await Promise.all(promises);
-        return results;
-    }
-    
-    async setMany(entries, options = {}) {
-        const promises = Object.entries(entries).map(([key, value]) => this.set(key, value, options));
-        await Promise.all(promises);
-    }
-    
-    async getByTag(tag) {
-        const results = {};
-        
-        // Search memory cache
-        this.memoryCache.forEach((entry, key) => {
-            if (entry.tags?.includes(tag)) {
-                results[key] = entry.value;
-            }
-        });
-        
-        return results;
-    }
-    
-    async removeByTag(tag) {
-        const keysToRemove = [];
-        
-        this.memoryCache.forEach((entry, key) => {
-            if (entry.tags?.includes(tag)) keysToRemove.push(key);
-        });
-        
-        await Promise.all(keysToRemove.map(key => this.remove(key)));
-        
-        return keysToRemove.length;
-    }
-    
-    async warm(keys, dataFetcher) {
-        if (!this.config.enableWarming) return;
-        
-        this.logger.info('Warming cache', { keyCount: keys.length });
-        
-        for (const key of keys) {
-            const cached = await this.get(key);
-            if (!cached && dataFetcher) {
-                try {
-                    const data = await dataFetcher(key);
-                    await this.set(key, data);
-                } catch (error) {
-                    this.logger.warn('Cache warming failed for key', { key, error: error.message });
-                }
-            }
-        }
-    }
-    
-    // ============================================
-    // MEMORY CACHE
-    // ============================================
-    
-    setMemoryCache(key, entry) {
-        // Evict if full
-        if (this.memoryCache.size >= this.config.maxMemoryItems) {
-            this.evictLRU();
-        }
-        
-        this.memoryCache.set(key, entry);
-        this.stats.memoryItems = this.memoryCache.size;
-    }
-    
-    evictLRU() {
-        let oldestKey = null;
-        let oldestTime = Infinity;
-        
-        this.memoryCache.forEach((entry, key) => {
-            if (entry.lastAccessed < oldestTime) {
-                oldestTime = entry.lastAccessed;
-                oldestKey = key;
-            }
-        });
-        
-        if (oldestKey) {
-            this.memoryCache.delete(oldestKey);
-            this.stats.evictions++;
-            this.stats.memoryItems = this.memoryCache.size;
-        }
-    }
-    
-    updateAccessTime(key, entry) {
-        entry.accessCount++;
-        entry.lastAccessed = Date.now();
-        this.memoryCache.set(key, entry);
-    }
-    
-    // ============================================
-    // INDEXEDDB OPERATIONS
-    // ============================================
-    
-    async getFromIndexedDB(key) {
-        if (!this.db) return null;
-        
-        return new Promise((resolve) => {
-            const transaction = this.db.transaction('cache', 'readonly');
-            const store = transaction.objectStore('cache');
-            const request = store.get(key);
-            
-            request.onsuccess = () => resolve(request.result || null);
-            request.onerror = () => resolve(null);
-        });
-    }
-    
-    async setInIndexedDB(key, entry) {
-        if (!this.db) return;
-        
-        return new Promise((resolve) => {
-            const transaction = this.db.transaction('cache', 'readwrite');
-            const store = transaction.objectStore('cache');
-            store.put(entry);
-            
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => resolve();
-        });
-    }
-    
-    async removeFromIndexedDB(key) {
-        if (!this.db) return;
-        
-        return new Promise((resolve) => {
-            const transaction = this.db.transaction('cache', 'readwrite');
-            const store = transaction.objectStore('cache');
-            store.delete(key);
-            
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => resolve();
-        });
-    }
-    
-    async clearIndexedDB() {
-        if (!this.db) return;
-        
-        return new Promise((resolve) => {
-            const transaction = this.db.transaction('cache', 'readwrite');
-            const store = transaction.objectStore('cache');
-            store.clear();
-            
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => resolve();
-        });
-    }
-    
-    // ============================================
-    // LOCALSTORAGE FALLBACK
-    // ============================================
-    
-    getFromLocalStorage(key) {
+    function getFromStorage(key) {
         try {
-            const raw = localStorage.getItem(`cache_${this.namespace}_${key}`);
+            var raw = localStorage.getItem(getStorageKey(key));
             if (!raw) return null;
             
-            const entry = JSON.parse(raw);
+            var entry = JSON.parse(raw);
             return entry;
-        } catch {
+        } catch(e) {
             return null;
         }
     }
     
-    setInLocalStorage(key, entry) {
+    function setToStorage(key, entry) {
         try {
-            // Check storage quota
-            if (this.getLocalStorageItemCount() >= this.config.maxStorageItems) {
-                this.evictOldestLocalStorage();
+            // Cek jumlah items di storage
+            if (getStorageCount() >= config.maxStorageItems) {
+                evictOldestFromStorage();
             }
             
-            localStorage.setItem(
-                `cache_${this.namespace}_${key}`,
-                JSON.stringify(entry)
-            );
-            
-            this.stats.storageItems = this.getLocalStorageItemCount();
-        } catch (error) {
-            if (error.name === 'QuotaExceededError') {
-                this.clearLocalStorage();
+            localStorage.setItem(getStorageKey(key), JSON.stringify(entry));
+        } catch(e) {
+            // Storage full - hapus yang lama
+            if (e.name === 'QuotaExceededError') {
+                clearStorage();
+                try {
+                    localStorage.setItem(getStorageKey(key), JSON.stringify(entry));
+                } catch(e2) {}
             }
         }
     }
     
-    removeFromLocalStorage(key) {
+    function removeFromStorage(key) {
         try {
-            localStorage.removeItem(`cache_${this.namespace}_${key}`);
-        } catch {
-            // Ignore
-        }
+            localStorage.removeItem(getStorageKey(key));
+        } catch(e) {}
     }
     
-    clearLocalStorage() {
-        const prefix = `cache_${this.namespace}_`;
+    function getStorageCount() {
+        var count = 0;
+        var prefix = config.storagePrefix;
         
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(prefix)) {
-                localStorage.removeItem(key);
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf(prefix) === 0) {
+                count++;
             }
-        }
-    }
-    
-    getLocalStorageItemCount() {
-        let count = 0;
-        const prefix = `cache_${this.namespace}_`;
-        
-        for (let i = 0; i < localStorage.length; i++) {
-            if (localStorage.key(i)?.startsWith(prefix)) count++;
         }
         
         return count;
     }
     
-    evictOldestLocalStorage() {
-        const prefix = `cache_${this.namespace}_`;
-        let oldestKey = null;
-        let oldestTime = Infinity;
+    function evictOldestFromStorage() {
+        var prefix = config.storagePrefix;
+        var oldestKey = null;
+        var oldestTime = Infinity;
         
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(prefix)) {
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf(prefix) === 0) {
                 try {
-                    const entry = JSON.parse(localStorage.getItem(key));
-                    if (entry.timestamp < oldestTime) {
+                    var entry = JSON.parse(localStorage.getItem(key));
+                    if (entry && entry.timestamp < oldestTime) {
                         oldestTime = entry.timestamp;
                         oldestKey = key;
                     }
-                } catch {
+                } catch(e) {
+                    // Corrupted - hapus
                     localStorage.removeItem(key);
                 }
             }
@@ -468,144 +146,326 @@ class CacheManager {
         
         if (oldestKey) {
             localStorage.removeItem(oldestKey);
-            this.stats.evictions++;
+            _stats.evictions++;
         }
     }
     
-    // ============================================
-    // QUEUE & CLEANUP
-    // ============================================
-    
-    queueOperation(operation) {
-        if (this.dbReady) {
-            operation();
-        } else {
-            this.pendingOps.push(operation);
-        }
-    }
-    
-    processPendingOps() {
-        if (!this.dbReady) return;
+    function clearStorage() {
+        var prefix = config.storagePrefix;
+        var keysToRemove = [];
         
-        while (this.pendingOps.length > 0) {
-            const op = this.pendingOps.shift();
-            op();
-        }
-    }
-    
-    async cleanup() {
-        const now = Date.now();
-        let cleaned = 0;
-        
-        // Clean memory cache
-        this.memoryCache.forEach((entry, key) => {
-            if (this.isExpired(entry)) {
-                this.memoryCache.delete(key);
-                cleaned++;
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf(prefix) === 0) {
+                keysToRemove.push(key);
             }
-        });
+        }
         
-        this.stats.memoryItems = this.memoryCache.size;
-        
-        // Clean IndexedDB
-        if (this.dbReady) {
-            const transaction = this.db.transaction('cache', 'readwrite');
-            const store = transaction.objectStore('cache');
-            const index = store.index('ttl');
-            const range = IDBKeyRange.upperBound(now);
+        for (var j = 0; j < keysToRemove.length; j++) {
+            localStorage.removeItem(keysToRemove[j]);
+        }
+    }
+    
+    // ============================================
+    // CORE CACHE METHODS
+    // ============================================
+    
+    /**
+     * Get value from cache
+     */
+    function get(key) {
+        // 1. Check memory cache
+        if (_memoryCache[key]) {
+            var memEntry = _memoryCache[key];
             
-            const request = index.openCursor(range);
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    cursor.delete();
-                    cleaned++;
-                    cursor.continue();
-                }
-            };
-        }
-        
-        // Clean localStorage
-        const prefix = `cache_${this.namespace}_`;
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(prefix)) {
-                try {
-                    const entry = JSON.parse(localStorage.getItem(key));
-                    if (this.isExpired(entry)) {
-                        localStorage.removeItem(key);
-                        cleaned++;
-                    }
-                } catch {
-                    localStorage.removeItem(key);
-                }
+            if (!isExpired(memEntry)) {
+                _stats.hits++;
+                memEntry.hits = (memEntry.hits || 0) + 1;
+                return memEntry.value;
             }
+            
+            // Expired - hapus
+            delete _memoryCache[key];
         }
         
-        this.stats.storageItems = this.getLocalStorageItemCount();
+        // 2. Check localStorage
+        var storageEntry = getFromStorage(key);
+        if (storageEntry && !isExpired(storageEntry)) {
+            _stats.hits++;
+            
+            // Promote ke memory
+            _memoryCache[key] = storageEntry;
+            
+            return storageEntry.value;
+        }
         
-        if (cleaned > 0) {
-            this.logger.debug('Cache cleanup', { cleaned });
-        }
+        // 3. Miss
+        _stats.misses++;
+        return null;
     }
     
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    isExpired(entry) {
-        return entry.expiresAt && Date.now() > entry.expiresAt;
-    }
-    
-    estimateSize(value) {
-        try {
-            return JSON.stringify(value).length * 2;
-        } catch {
-            return 0;
-        }
-    }
-    
-    getStats() {
-        return {
-            ...this.stats,
-            hitRate: this.stats.hits / (this.stats.hits + this.stats.misses) || 0,
-            memorySize: this.memoryCache.size,
-            storageSize: this.getLocalStorageItemCount(),
-            indexedDBAvailable: this.dbReady
+    /**
+     * Set value to cache
+     */
+    function set(key, value, ttl) {
+        if (!key) return false;
+        
+        var entry = {
+            value: value,
+            timestamp: now(),
+            expiresAt: now() + (ttl || config.defaultTTL),
+            hits: 0
         };
+        
+        // Evict jika memory penuh
+        if (getMemoryCount() >= config.maxMemoryItems) {
+            evictLRU();
+        }
+        
+        // Set di memory
+        _memoryCache[key] = entry;
+        _stats.sets++;
+        
+        // Set di localStorage (async via setTimeout)
+        setTimeout(function() {
+            setToStorage(key, entry);
+        }, 0);
+        
+        return true;
     }
     
-    getKeys() {
-        const keys = new Set();
+    /**
+     * Remove key from cache
+     */
+    function remove(key) {
+        delete _memoryCache[key];
+        removeFromStorage(key);
+        return true;
+    }
+    
+    /**
+     * Check if key exists and is valid
+     */
+    function has(key) {
+        if (_memoryCache[key] && !isExpired(_memoryCache[key])) {
+            return true;
+        }
         
-        this.memoryCache.forEach((_, key) => keys.add(key));
+        var entry = getFromStorage(key);
+        return entry && !isExpired(entry);
+    }
+    
+    /**
+     * Get or set (fetch if not cached)
+     */
+    function getOrSet(key, fetcher, ttl) {
+        var cached = get(key);
+        if (cached !== null) {
+            return Promise.resolve(cached);
+        }
         
-        const prefix = `cache_${this.namespace}_`;
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(prefix)) {
-                keys.add(key.replace(prefix, ''));
+        return Promise.resolve(fetcher()).then(function(value) {
+            set(key, value, ttl);
+            return value;
+        });
+    }
+    
+    // ============================================
+    // EVICTION
+    // ============================================
+    
+    function evictLRU() {
+        var oldestKey = null;
+        var oldestTime = Infinity;
+        
+        for (var key in _memoryCache) {
+            if (_memoryCache.hasOwnProperty(key)) {
+                var entry = _memoryCache[key];
+                if (entry.timestamp < oldestTime) {
+                    oldestTime = entry.timestamp;
+                    oldestKey = key;
+                }
             }
         }
         
-        return Array.from(keys);
+        if (oldestKey) {
+            delete _memoryCache[oldestKey];
+            _stats.evictions++;
+        }
+    }
+    
+    // ============================================
+    // BULK OPERATIONS
+    // ============================================
+    
+    function getMany(keys) {
+        var results = {};
+        for (var i = 0; i < keys.length; i++) {
+            results[keys[i]] = get(keys[i]);
+        }
+        return results;
+    }
+    
+    function setMany(entries, ttl) {
+        var count = 0;
+        for (var key in entries) {
+            if (entries.hasOwnProperty(key)) {
+                if (set(key, entries[key], ttl)) count++;
+            }
+        }
+        return count;
     }
     
     // ============================================
     // CLEANUP
     // ============================================
     
-    destroy() {
-        if (this.cleanupTimer) clearInterval(this.cleanupTimer);
-        this.memoryCache.clear();
-        if (this.db) this.db.close();
-        this.dbReady = false;
-        this.logger.info('Cache manager destroyed');
+    function cleanup() {
+        var cleaned = 0;
+        var nowTime = now();
+        
+        // Clean memory
+        for (var key in _memoryCache) {
+            if (_memoryCache.hasOwnProperty(key)) {
+                if (_memoryCache[key].expiresAt && nowTime > _memoryCache[key].expiresAt) {
+                    delete _memoryCache[key];
+                    cleaned++;
+                }
+            }
+        }
+        
+        // Clean localStorage
+        var prefix = config.storagePrefix;
+        var keysToRemove = [];
+        
+        for (var i = 0; i < localStorage.length; i++) {
+            var lsKey = localStorage.key(i);
+            if (lsKey && lsKey.indexOf(prefix) === 0) {
+                try {
+                    var entry = JSON.parse(localStorage.getItem(lsKey));
+                    if (entry && entry.expiresAt && nowTime > entry.expiresAt) {
+                        keysToRemove.push(lsKey);
+                    }
+                } catch(e) {
+                    keysToRemove.push(lsKey);
+                }
+            }
+        }
+        
+        for (var j = 0; j < keysToRemove.length; j++) {
+            localStorage.removeItem(keysToRemove[j]);
+            cleaned++;
+        }
+        
+        if (cleaned > 0) {
+            console.debug('[Cache] Cleaned ' + cleaned + ' expired items');
+        }
     }
-}
+    
+    function startCleanup() {
+        if (_cleanupTimer) clearInterval(_cleanupTimer);
+        _cleanupTimer = setInterval(cleanup, config.cleanupInterval);
+    }
+    
+    function clear() {
+        _memoryCache = {};
+        clearStorage();
+        _stats = { hits: 0, misses: 0, sets: 0, evictions: 0 };
+    }
+    
+    // ============================================
+    // PUBLIC API
+    // ============================================
+    
+    // Start cleanup
+    startCleanup();
+    
+    return {
+        get: get,
+        set: set,
+        remove: remove,
+        has: has,
+        getOrSet: getOrSet,
+        
+        getMany: getMany,
+        setMany: setMany,
+        
+        clear: clear,
+        cleanup: cleanup,
+        
+        /**
+         * Get cache statistics
+         */
+        getStats: function() {
+            var total = _stats.hits + _stats.misses;
+            return {
+                hits: _stats.hits,
+                misses: _stats.misses,
+                sets: _stats.sets,
+                evictions: _stats.evictions,
+                memoryItems: getMemoryCount(),
+                storageItems: getStorageCount(),
+                hitRate: total > 0 ? Math.round((_stats.hits / total) * 100) : 0
+            };
+        },
+        
+        /**
+         * Get all cache keys
+         */
+        getKeys: function() {
+            var keys = getMemoryKeys();
+            var prefix = config.storagePrefix;
+            
+            for (var i = 0; i < localStorage.length; i++) {
+                var lsKey = localStorage.key(i);
+                if (lsKey && lsKey.indexOf(prefix) === 0) {
+                    var key = lsKey.substring(prefix.length);
+                    if (keys.indexOf(key) === -1) {
+                        keys.push(key);
+                    }
+                }
+            }
+            
+            return keys;
+        },
+        
+        /**
+         * Update configuration
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+            }
+        },
+        
+        /**
+         * Destroy cache manager
+         */
+        destroy: function() {
+            if (_cleanupTimer) {
+                clearInterval(_cleanupTimer);
+                _cleanupTimer = null;
+            }
+        }
+    };
+})();
 
-// Create singleton
-const cacheManager = new CacheManager();
-
-export default cacheManager;
-export { CacheManager };
+// ============================================
+// USAGE:
+// ============================================
+// CacheManager.set('user_list', users, 300000); // 5 min TTL
+// var users = CacheManager.get('user_list');
+// 
+// CacheManager.getOrSet('stats', function() {
+//     return fetchStatsFromAPI();
+// }, 60000).then(function(stats) {
+//     console.log(stats);
+// });
+// 
+// var stats = CacheManager.getStats();
+// console.log('Hit rate:', stats.hitRate + '%');
+// ============================================

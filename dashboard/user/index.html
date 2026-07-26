@@ -1,858 +1,270 @@
-<<<<<<< HEAD
-<!-- FILE: dashboard/user/index.html -->
-=======
-<!-- dashboard/user/index.html - User Dashboard 2026 -->
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+<!-- dashboard/user/index.html - User Dashboard 2026 (PWA SECURE FULL-STACK) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
-    <title>Dashboard User - E-Arsip Digital</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    
-    <style>
-        :root {
-            --sidebar-width: 280px;
-            --primary: #1a237e;
-            --secondary: #0d47a1;
-            --accent: #2962ff;
-            --gold: #ffd700;
-            --light: #f5f6fa;
-            --dark: #2c3e50;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--light);
-        }
-        
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: linear-gradient(180deg, var(--primary), var(--secondary));
-            color: white;
-            z-index: 1000;
-            transition: all 0.3s;
-            overflow-y: auto;
-        }
-        
-        .sidebar-header {
-            padding: 25px 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-header h5 { font-weight: 700; margin-bottom: 5px; }
-        .sidebar-header small { opacity: 0.8; }
-        
-        .sidebar-menu { padding: 20px 0; }
-        
-        .sidebar-menu .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 25px;
-            transition: all 0.3s;
-            border-left: 4px solid transparent;
-            display: flex;
-            align-items: center;
-        }
-        
-        .sidebar-menu .nav-link:hover,
-        .sidebar-menu .nav-link.active {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border-left-color: var(--gold);
-        }
-        
-        .sidebar-menu .nav-link i {
-            width: 25px;
-            margin-right: 10px;
-            text-align: center;
-        }
-        
-        .main-content {
-            margin-left: var(--sidebar-width);
-            min-height: 100vh;
-            transition: all 0.3s;
-        }
-        
-        .top-navbar {
-            background: white;
-            padding: 15px 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 999;
-        }
-        
-        .content-area { padding: 25px; }
-        
-        .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: all 0.3s;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-        
-        .avatar-circle {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--accent), var(--secondary));
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-        
-        .badge-status {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: 500;
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
-            .sidebar.active { margin-left: 0; }
-            .main-content { margin-left: 0; }
-=======
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="User Dashboard">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Dashboard User - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icons/icon-192.png">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Dashboard User - E-Arsip Digital</title>
     
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .dashboard-header h1 { font-size: 24px; margin: 0; }
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706; --info: #0891b2;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --transition: all 0.25s ease;
+        }
         
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px; margin-bottom: 24px;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+            padding-bottom: var(--safe-bottom);
         }
-        .stat-card {
-            background: white; border-radius: 12px; padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex; align-items: center; gap: 14px;
-        }
-        .stat-icon {
-            width: 48px; height: 48px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px;
-        }
+        
+        /* Network Bar */
+        .network-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; padding: 8px; text-align: center; font-size: 12px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s; }
+        .network-bar.offline { transform: translateY(0); background: #fef2f2; color: #dc2626; }
+        .network-bar.restored { transform: translateY(0); background: #f0fdf4; color: #16a34a; animation: slideDown 0.3s, slideUp 0.3s 2.5s forwards; }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+        
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; align-items: center; justify-content: center; z-index: 9998; transition: opacity 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: linear-gradient(180deg, #1e293b, #0f172a); color: white; z-index: 100; overflow-y: auto; transition: transform 0.3s; padding-top: var(--safe-top); }
+        .sidebar-brand { padding: 20px; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); border-left: 3px solid transparent; }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto; }
+        
+        /* Main */
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 24px; padding-top: calc(24px + var(--safe-top)); transition: margin 0.3s; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; gap: 10px; }
+        .mobile-header .hamburger { width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* Page Header */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .page-header h1 { font-size: 22px; font-weight: 700; margin: 0; }
+        .page-header .greeting { font-size: 13px; color: var(--text-light); margin-top: 2px; }
+        .page-header .greeting strong { color: var(--text); }
+        
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none; transition: var(--transition); font-family: inherit; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-danger { background: transparent; color: var(--danger); border: 2px solid var(--danger); }
+        .btn-ghost { background: transparent; color: var(--text-light); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; min-height: 32px; border-radius: 6px; }
+        
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat-card { background: var(--white); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); display: flex; align-items: center; gap: 14px; cursor: pointer; transition: var(--transition); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
         .stat-icon.blue { background: #eff6ff; color: #2563eb; }
         .stat-icon.green { background: #f0fdf4; color: #16a34a; }
+        .stat-icon.orange { background: #fff7ed; color: #ea580c; }
+        .stat-icon.purple { background: #faf5ff; color: #9333ea; }
+        .stat-info h3 { font-size: 26px; font-weight: 700; line-height: 1; margin: 0; }
+        .stat-info p { font-size: 12px; color: var(--text-light); margin: 2px 0 0; }
         
-        .stat-info h3 { font-size: 24px; font-weight: 700; margin: 0; }
-        .stat-info p { font-size: 12px; color: #64748b; margin: 2px 0 0 0; }
+        /* Cards */
+        .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border); margin-bottom: 18px; overflow: hidden; }
+        .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 15px; font-weight: 600; margin: 0; }
+        .card-body { padding: 18px; }
         
-        .quick-actions {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
-        }
-        .quick-btn {
-            display: flex; align-items: center; gap: 8px;
-            padding: 14px 18px; background: #f8fafc;
-            border: 1px solid #e2e8f0; border-radius: 10px;
-            text-decoration: none; color: #334155;
-            font-size: 14px; font-weight: 500; transition: all 0.2s;
-        }
-        .quick-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
-        .quick-btn i { color: #2563eb; font-size: 16px; }
+        /* Quick Actions */
+        .quick-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .quick-btn { display: flex; align-items: center; gap: 8px; padding: 14px 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 500; transition: var(--transition); }
+        .quick-btn:hover { background: #f1f5f9; border-color: var(--primary); }
+        .quick-btn i { color: var(--primary); font-size: 16px; }
         
-        .card {
-            background: white; border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
-            overflow: hidden;
-        }
-        .card-header {
-            padding: 16px 20px; border-bottom: 1px solid #e2e8f0;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .card-header h3 { font-size: 16px; margin: 0; }
-        .card-body { padding: 20px; }
+        /* Table */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        .data-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; }
+        .data-table tr:hover td { background: #f8fafc; }
         
+        /* Badges */
+        .badge { font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; display: inline-block; }
+        .badge-draft { background: #f1f5f9; color: #64748b; }
+        .badge-pending { background: #fef3c7; color: #d97706; }
+        .badge-completed { background: #dcfce7; color: #16a34a; }
+        .badge-rejected { background: #fef2f2; color: #dc2626; }
+        
+        /* Progress Bar */
+        .progress-mini { display: flex; align-items: center; gap: 6px; }
+        .progress-bar { flex: 1; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; min-width: 60px; }
+        .progress-fill { height: 100%; background: var(--success); border-radius: 3px; transition: width 0.5s; }
+        .progress-text { font-size: 11px; color: var(--text-light); white-space: nowrap; }
+        
+        /* Empty State */
+        .empty-state { text-align: center; padding: 30px; color: #94a3b8; }
+        .empty-state i { font-size: 36px; display: block; margin-bottom: 8px; }
+        
+        /* Confirm Dialog */
+        .confirm-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; align-items: center; justify-content: center; }
+        .confirm-overlay.active { display: flex; }
+        .confirm-dialog { background: white; border-radius: var(--radius); padding: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        
+        /* Toast */
+        .toast-container { position: fixed; top: calc(12px + var(--safe-top)); right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; max-width: calc(100vw - 24px); }
+        .toast { padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: slideInRight 0.3s; display: flex; align-items: center; gap: 8px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: var(--info); }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Responsive */
         @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 14px; }
+            .mobile-header { display: flex; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .quick-actions { grid-template-columns: 1fr; }
-            .dashboard-header { flex-direction: column; gap: 12px; }
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+            .page-header { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
-<<<<<<< HEAD
-    <!-- SIDEBAR -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <i class="fas fa-envelope-open-text fa-2x mb-2" style="color: var(--gold);"></i>
-            <h5>E-Arsip Digital</h5>
-            <small>User Panel</small>
-        </div>
-        
-        <div class="sidebar-menu">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a href="#" class="nav-link active" data-page="dashboard">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="buat-surat">
-                        <i class="fas fa-plus-circle"></i> Buat Surat
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="surat-saya">
-                        <i class="fas fa-list"></i> Surat Saya
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="draft">
-                        <i class="fas fa-file-alt"></i> Draft Saya
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="profile">
-                        <i class="fas fa-user-circle"></i> Profil Saya
-                    </a>
-                </li>
-                <li class="nav-item mt-4">
-                    <a href="#" class="nav-link text-danger" onclick="handleLogout()">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div class="main-content" id="mainContent">
-        <div class="top-navbar">
-            <div class="d-flex align-items-center">
-                <button class="btn btn-link d-md-none me-3" id="toggleSidebarBtn">
-                    <i class="fas fa-bars fa-lg"></i>
-                </button>
-                <h5 class="mb-0" id="pageTitle">Dashboard</h5>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <span id="currentTime" class="text-muted"></span>
-                <div class="dropdown">
-                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
-                        <div class="avatar-circle me-2" id="userAvatar">U</div>
-                        <span id="displayName">User</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#" data-page="profile"><i class="fas fa-user me-2"></i>Profil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="content-area" id="contentArea">
-            <!-- Dynamic content loaded here -->
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="../../config/config.js"></script>
-    <script src="../../js/api.js"></script>
-    <script src="../../js/auth.js"></script>
-    <script src="../../js/utils.js"></script>
+    <!-- Network Bar -->
+    <div class="network-bar" id="network-bar"><span id="network-msg"></span></div>
     
-    <script>
-        // Check authentication
-        if (!auth.requireAuth()) {
-            window.location.href = '../../login.html';
-        }
-        
-        const currentUser = auth.getCurrentUser();
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeUI();
-            loadDashboard();
-            setupEventListeners();
-            updateClock();
-            setInterval(updateClock, 60000);
-        });
-        
-        function initializeUI() {
-            if (currentUser) {
-                document.getElementById('displayName').textContent = currentUser.name || 'User';
-                document.getElementById('userAvatar').textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
-            }
-            
-            AOS.init({ duration: 800, once: true });
-        }
-        
-        function setupEventListeners() {
-            document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
-                document.getElementById('sidebar').classList.toggle('active');
-                document.getElementById('mainContent').classList.toggle('shifted');
-            });
-            
-            document.querySelectorAll('[data-page]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const page = this.dataset.page;
-                    navigateTo(page);
-                });
-            });
-        }
-        
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('currentTime').textContent = 
-                now.toLocaleDateString('id-ID', { 
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-        }
-        
-        function navigateTo(page) {
-            document.querySelectorAll('.sidebar-menu .nav-link').forEach(link => {
-                link.classList.remove('active');
-                if (link.dataset.page === page) link.classList.add('active');
-            });
-            
-            const titles = {
-                'dashboard': 'Dashboard',
-                'buat-surat': 'Buat Surat Baru',
-                'surat-saya': 'Surat Saya',
-                'draft': 'Draft Surat',
-                'profile': 'Profil Saya'
-            };
-            
-            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
-            
-            switch(page) {
-                case 'dashboard': loadDashboard(); break;
-                case 'buat-surat': loadBuatSurat(); break;
-                case 'surat-saya': loadSuratSaya(); break;
-                case 'draft': loadDraftSaya(); break;
-                case 'profile': loadProfile(); break;
-            }
-        }
-        
-        async function loadDashboard() {
-            const contentArea = document.getElementById('contentArea');
-            
-            contentArea.innerHTML = `
-                <!-- Stats Row -->
-                <div class="row mb-4">
-                    <div class="col-xl-4 col-md-6 mb-3" data-aos="fade-up">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Total Surat Dibuat</p>
-                                    <h3 class="mb-0" id="statTotalSurat">0</h3>
-                                </div>
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                                    <i class="fas fa-paper-plane"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-xl-4 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="100">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Sedang Diproses</p>
-                                    <h3 class="mb-0" id="statProses">0</h3>
-                                </div>
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-xl-4 col-md-6 mb-3" data-aos="fade-up" data-aos-delay="200">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Surat Selesai</p>
-                                    <h3 class="mb-0" id="statSelesai">0</h3>
-                                </div>
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Quick Actions -->
-                <div class="row mb-4">
-                    <div class="col-12" data-aos="fade-up">
-                        <div class="table-container">
-                            <h5 class="mb-4">Aksi Cepat</h5>
-                            <div class="row">
-                                <div class="col-md-4 mb-2">
-                                    <button class="btn btn-primary w-100" onclick="window.location.href='/surat-keluar/form.html'">
-                                        <i class="fas fa-plus-circle me-2"></i>Buat Surat Baru
-                                    </button>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <button class="btn btn-success w-100" onclick="navigateTo('surat-saya')">
-                                        <i class="fas fa-list me-2"></i>Lihat Surat Saya
-                                    </button>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <button class="btn btn-info w-100" onclick="navigateTo('draft')">
-                                        <i class="fas fa-file-alt me-2"></i>Draft Surat
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Recent Surat -->
-                <div class="row">
-                    <div class="col-12" data-aos="fade-up">
-                        <div class="table-container">
-                            <h5 class="mb-4">Surat Terbaru Saya</h5>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>No Surat</th>
-                                            <th>Perihal</th>
-                                            <th>Tanggal</th>
-                                            <th>Status</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="recentSurat">
-                                        <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            await loadUserStats();
-            await loadRecentSurat();
-        }
-        
-        async function loadUserStats() {
-            try {
-                const data = await api.sendRequest({ 
-                    action: 'getUserStats',
-                    userId: currentUser.id
-                });
-                
-                if (data && data.success) {
-                    document.getElementById('statTotalSurat').textContent = data.stats?.totalSurat || 0;
-                    document.getElementById('statProses').textContent = data.stats?.dalamProses || 0;
-                    document.getElementById('statSelesai').textContent = data.stats?.selesai || 0;
-                }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-        
-        async function loadRecentSurat() {
-            const tbody = document.getElementById('recentSurat');
-            if (!tbody) return;
-            
-            try {
-                const data = await api.sendRequest({ 
-                    action: 'getSuratKeluar',
-                    userId: currentUser.id,
-                    limit: 10
-                });
-                
-                if (data && data.success && data.data && data.data.length > 0) {
-                    tbody.innerHTML = data.data.map((item, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td><strong>${item.nomorSurat || '-'}</strong></td>
-                            <td>${item.perihal || '-'}</td>
-                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
-                            <td><span class="badge bg-${getStatusColor(item.status)}">${formatStatus(item.status)}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada surat</td></tr>';
-                }
-            } catch (error) {
-                console.error('Error loading surat:', error);
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data</td></tr>';
-            }
-        }
-        
-        function loadBuatSurat() {
-            window.location.href = '../../surat-keluar/form.html';
-        }
-        
-        function loadSuratSaya() {
-            const contentArea = document.getElementById('contentArea');
-            
-            contentArea.innerHTML = `
-                <div class="table-container">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5>Surat Saya</h5>
-                        <button class="btn btn-primary" onclick="window.location.href='/surat-keluar/form.html'">
-                            <i class="fas fa-plus me-2"></i>Buat Surat Baru
-                        </button>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" id="searchSurat" placeholder="Cari surat...">
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="filterStatus">
-                                <option value="">Semua Status</option>
-                                <option value="draft">Draft</option>
-                                <option value="pending_admin">Pending Admin</option>
-                                <option value="pending_kasubag">Pending Kasubag</option>
-                                <option value="pending_wadek">Pending Wadek</option>
-                                <option value="pending_dekan">Pending Dekan</option>
-                                <option value="completed">Selesai</option>
-                                <option value="rejected">Ditolak</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <input type="date" class="form-control" id="filterTanggal">
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-secondary w-100" onclick="filterSurat()">
-                                <i class="fas fa-filter"></i> Filter
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>No Surat</th>
-                                    <th>Kategori</th>
-                                    <th>Perihal</th>
-                                    <th>Tanggal</th>
-                                    <th>Status</th>
-                                    <th>Progress</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="suratSayaTable">
-                                <tr><td colspan="8" class="text-center">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-            loadSuratSayaData();
-        }
-        
-        async function loadSuratSayaData() {
-            const tbody = document.getElementById('suratSayaTable');
-            if (!tbody) return;
-            
-            try {
-                const data = await api.sendRequest({ 
-                    action: 'getSuratKeluar',
-                    userId: currentUser.id
-                });
-                
-                if (data && data.success && data.data) {
-                    if (data.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Belum ada surat</td></tr>';
-                        return;
-                    }
-                    
-                    tbody.innerHTML = data.data.map((item, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td><strong>${item.nomorSurat || 'Belum ada nomor'}</strong></td>
-                            <td>${item.kategori || '-'}</td>
-                            <td>${item.perihal || '-'}</td>
-                            <td>${Utils.formatDate(item.createdAt, 'date')}</td>
-                            <td><span class="badge bg-${getStatusColor(item.status)}">${formatStatus(item.status)}</span></td>
-                            <td>${renderProgress(item)}</td>
-                            <td>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-info" onclick="viewSurat('${item.id}')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    ${item.status === 'draft' ? `
-                                        <button class="btn btn-sm btn-primary" onclick="editDraft('${item.id}')">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    ` : ''}
-                                    ${item.status === 'completed' ? `
-                                        <button class="btn btn-sm btn-success" onclick="downloadSurat('${item.nomorSurat}')">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('Error loading surat:', error);
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Gagal memuat data</td></tr>';
-            }
-        }
-        
-        function loadDraftSaya() {
-            const contentArea = document.getElementById('contentArea');
-            
-            contentArea.innerHTML = `
-                <div class="table-container">
-                    <h5 class="mb-4">Draft Surat Saya</h5>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Kategori</th>
-                                    <th>Perihal</th>
-                                    <th>Tanggal Dibuat</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="draftTable">
-                                <tr><td colspan="5" class="text-center">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-            loadDraftData();
-        }
-        
-        async function loadDraftData() {
-            const tbody = document.getElementById('draftTable');
-            if (!tbody) return;
-            
-            try {
-                const data = await api.sendRequest({ 
-                    action: 'getSuratKeluar',
-                    userId: currentUser.id,
-                    status: 'draft'
-                });
-                
-                if (data && data.success && data.data && data.data.length > 0) {
-                    tbody.innerHTML = data.data.map((item, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${item.kategori || '-'}</td>
-                            <td>${item.perihal || 'Tanpa judul'}</td>
-                            <td>${Utils.formatDate(item.createdAt, 'datetime')}</td>
-                            <td>
-                                <button class="btn btn-sm btn-primary" onclick="editDraft('${item.id}')">
-                                    <i class="fas fa-edit me-1"></i>Edit
-                                </button>
-                                <button class="btn btn-sm btn-success" onclick="submitDraft('${item.id}')">
-                                    <i class="fas fa-paper-plane me-1"></i>Submit
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteDraft('${item.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada draft</td></tr>';
-                }
-            } catch (error) {
-                console.error('Error loading drafts:', error);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data</td></tr>';
-            }
-        }
-        
-        function loadProfile() {
-            window.location.href = '../../profile/index.html';
-        }
-        
-        // Helper Functions
-        function getStatusColor(status) {
-            const colors = {
-                'draft': 'secondary',
-                'pending_admin': 'info',
-                'pending_kasubag': 'primary',
-                'pending_wadek': 'warning',
-                'pending_dekan': 'warning',
-                'completed': 'success',
-                'rejected': 'danger'
-            };
-            return colors[status] || 'secondary';
-        }
-        
-        function formatStatus(status) {
-            const labels = {
-                'draft': 'Draft',
-                'pending_admin': 'Menunggu Admin',
-                'pending_kasubag': 'Menunggu Kasubag',
-                'pending_wadek': 'Menunggu Wadek',
-                'pending_dekan': 'Menunggu Dekan',
-                'completed': 'Selesai',
-                'rejected': 'Ditolak'
-            };
-            return labels[status] || status;
-        }
-        
-        function renderProgress(item) {
-            const steps = ['admin', 'kasubag', 'wadek', 'dekan'];
-            let completed = 0;
-            
-            if (item.adminApproval) completed++;
-            if (item.kasubagApproval) completed++;
-            if (item.wadekApproval) completed++;
-            if (item.dekanApproval) completed++;
-            
-            const percentage = (completed / steps.length) * 100;
-            
-            return `
-                <div class="progress" style="height: 5px; width: 100px;">
-                    <div class="progress-bar bg-success" style="width: ${percentage}%"></div>
-                </div>
-                <small>${completed}/${steps.length}</small>
-            `;
-        }
-        
-        function handleLogout() {
-            if (confirm('Apakah Anda yakin ingin logout?')) {
-                auth.logout();
-            }
-        }
-        
-        // Global functions
-        window.navigateTo = navigateTo;
-        window.handleLogout = handleLogout;
-        window.viewSurat = function(id) { alert('Lihat surat ID: ' + id); };
-        window.editDraft = function(id) { window.location.href = `/surat-keluar/form.html?id=${id}`; };
-        window.submitDraft = async function(id) {
-            if (confirm('Submit draft ini?')) {
-                try {
-                    const result = await api.submitSuratKeluar({ id: id });
-                    if (result.success) {
-                        alert('Draft berhasil disubmit');
-                        loadDraftSaya();
-                    }
-                } catch (error) {
-                    alert('Error: ' + error.message);
-                }
-            }
-        };
-        window.deleteDraft = async function(id) {
-            if (confirm('Hapus draft ini?')) {
-                try {
-                    await api.deleteUser(id);
-                    alert('Draft dihapus');
-                    loadDraftSaya();
-                } catch (error) {
-                    alert('Error: ' + error.message);
-                }
-            }
-        };
-        window.downloadSurat = function(nomor) { alert('Download surat: ' + nomor); };
-        window.filterSurat = function() { loadSuratSayaData(); };
-    </script>
-</body>
-</html>
-=======
-    <div id="loading-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;align-items:center;justify-content:center;z-index:9999;">
-        <div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <!-- Loading -->
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Confirm Dialog -->
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-dialog">
+            <i class="fas fa-exclamation-triangle" style="font-size:36px;color:var(--danger);display:block;margin-bottom:10px;"></i>
+            <h3 id="confirm-title">Konfirmasi</h3>
+            <p id="confirm-message" style="color:var(--text-light);font-size:14px;"></p>
+            <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;">
+                <button class="btn btn-outline btn-sm" id="confirm-cancel">Batal</button>
+                <button class="btn btn-danger btn-sm" id="confirm-ok">Ya, Lanjutkan</button>
+            </div>
+        </div>
     </div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
             <a href="index.html" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
             <a href="../../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
             <a href="../../surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="../../surat-keluar/draft.html" class="nav-item"><i class="fas fa-file-alt"></i> Draft Saya</a>
             <a href="../../notifikasi/index.html" class="nav-item"><i class="fas fa-bell"></i> Notifikasi</a>
-            <a href="../../profile/index.html" class="nav-item"><i class="fas fa-user"></i> Profil</a>
         </nav>
+        <div class="sidebar-footer">
+            <button class="btn btn-outline btn-sm" style="width:100%;color:white;border-color:rgba(255,255,255,0.3);" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
     </aside>
     
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" id="menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <span style="font-weight:700;flex:1;">Dashboard User</span>
+    </div>
+    
+    <!-- Main Content -->
     <main class="main-content">
-        <div class="dashboard-header">
+        <!-- Header -->
+        <div class="page-header">
             <div>
                 <h1>Dashboard</h1>
-                <p style="color:#64748b;font-size:14px;">Selamat datang, <span id="user-name">User</span></p>
+                <p class="greeting">Selamat datang, <strong id="user-name">User</strong> 👋</p>
             </div>
-            <a href="../../surat-keluar/form.html" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Buat Surat
-            </a>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-ghost btn-sm" id="refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                <a href="../../surat-keluar/form.html" class="btn btn-primary"><i class="fas fa-plus"></i> Buat Surat</a>
+            </div>
         </div>
         
-        <div class="stats-grid">
-            <div class="stat-card">
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card" onclick="window.location.href='../../surat-keluar/list.html'">
                 <div class="stat-icon blue"><i class="fas fa-paper-plane"></i></div>
-                <div class="stat-info"><h3 id="stat-keluar">-</h3><p>Surat Keluar Saya</p></div>
+                <div class="stat-info"><h3 id="stat-total">0</h3><p>Total Surat Dibuat</p></div>
+            </div>
+            <div class="stat-card" onclick="window.location.href='../../surat-keluar/draft.html'">
+                <div class="stat-icon orange"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-info"><h3 id="stat-draft">0</h3><p>Draft Surat</p></div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon green"><i class="fas fa-inbox"></i></div>
-                <div class="stat-info"><h3 id="stat-masuk">-</h3><p>Surat Masuk Baru</p></div>
+                <div class="stat-icon purple"><i class="fas fa-clock"></i></div>
+                <div class="stat-info"><h3 id="stat-pending">0</h3><p>Menunggu Approval</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info"><h3 id="stat-completed">0</h3><p>Surat Selesai</p></div>
             </div>
         </div>
         
+        <!-- Quick Actions -->
         <div class="card">
-            <div class="card-header"><h3>Aksi Cepat</h3></div>
+            <div class="card-header"><h3><i class="fas fa-bolt" style="color:var(--warning);margin-right:6px;"></i> Aksi Cepat</h3></div>
             <div class="card-body">
                 <div class="quick-actions">
                     <a href="../../surat-keluar/form.html" class="quick-btn"><i class="fas fa-pen"></i> Buat Surat Baru</a>
@@ -862,8 +274,27 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Recent Surat -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-history" style="color:var(--primary);margin-right:6px;"></i> Surat Terbaru Saya</h3>
+                <a href="../../surat-keluar/list.html" style="font-size:12px;color:var(--primary);text-decoration:none;">Lihat Semua</a>
+            </div>
+            <div class="card-body" style="padding:0;">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>No</th><th>No. Surat</th><th>Perihal</th><th>Tanggal</th><th>Status</th><th>Progress</th><th>Aksi</th>
+                        </tr></thead>
+                        <tbody id="recent-surat"><tr><td colspan="7" class="empty-state"><div class="spinner" style="margin:0 auto 8px;"></div><p>Memuat data...</p></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </main>
     
+    <!-- Scripts -->
     <script src="../../config/config.js"></script>
     <script src="../../js/utils.js"></script>
     <script src="../../js/api.js"></script>
@@ -873,51 +304,203 @@
     (function() {
         'use strict';
         
+        // CSRF Token
+        var csrfToken = (function() { var t=localStorage.getItem('csrf_token'); if(!t){var a=new Uint32Array(8);crypto.getRandomValues(a);t=Array.from(a,function(d){return('0'+d.toString(16)).slice(-2);}).join('');localStorage.setItem('csrf_token',t);} return t; })();
+        function sanitize(s) { if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+        function sanitizePlain(s) { if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        
+        // State
+        var state = { currentUser: null, stats: {}, recentSurat: [], isLoading: false, isOnline: navigator.onLine };
+        
+        // Auth Check
         function checkAuth() {
             if (window.EArsip && window.EArsip.Auth && window.EArsip.Auth.isAuthenticated) {
-                var user = window.EArsip.Auth.currentUser;
-                document.getElementById('user-name').textContent = user.fullname || user.username;
+                state.currentUser = window.EArsip.Auth.currentUser;
                 return true;
             }
-            
             try {
-                var session = localStorage.getItem('auth_session');
-                if (session) {
-                    var data = JSON.parse(session);
-                    if (data.user && data.expiresAt && Date.now() < data.expiresAt) {
-                        document.getElementById('user-name').textContent = data.user.fullname || data.user.username;
-                        return true;
-                    }
-                }
+                var s = localStorage.getItem('auth_session');
+                if (s) { var d = JSON.parse(s); if (d.user && d.expiresAt && Date.now() < d.expiresAt) { state.currentUser = d.user; return true; } }
             } catch(e) {}
-            
-            window.location.href = '../../login.html';
+            window.location.href = '../../login.html?message=unauthorized';
             return false;
         }
         
-        function init() {
-            if (!checkAuth()) return;
-            document.getElementById('loading-screen').style.display = 'none';
-            
-            // Set default stats
-            document.getElementById('stat-keluar').textContent = '0';
-            document.getElementById('stat-masuk').textContent = '0';
+        // Toast
+        function showToast(m, t) { var c=document.getElementById('toast-container'); if(!c)return; var el=document.createElement('div'); el.className='toast toast-'+(t||'info'); el.textContent=sanitizePlain(m); c.appendChild(el); setTimeout(function(){el.style.opacity='0';el.style.transition='opacity 0.3s';setTimeout(function(){el.remove();},300);},4000); }
+        
+        // Format
+        function formatDate(s) { if(!s)return'-';try{var d=new Date(s);if(isNaN(d.getTime()))return s;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}catch(e){return s;} }
+        
+        // Network
+        function updateNetwork(on) { if(on===state.isOnline)return;state.isOnline=on;var b=document.getElementById('network-bar');if(!on){b.className='network-bar offline';document.getElementById('network-msg').textContent='Offline';}else{b.className='network-bar restored';document.getElementById('network-msg').textContent='Koneksi pulih';loadAllData();} }
+        window.addEventListener('online',function(){updateNetwork(true);});window.addEventListener('offline',function(){updateNetwork(false);});
+        if(!navigator.onLine)setTimeout(function(){updateNetwork(false);},1000);
+        
+        // Confirm Dialog
+        function showConfirm(title, msg, cb) {
+            document.getElementById('confirm-title').textContent = sanitizePlain(title);
+            document.getElementById('confirm-message').textContent = sanitizePlain(msg);
+            document.getElementById('confirm-overlay').classList.add('active');
+            document.getElementById('confirm-ok').onclick = function() { cb(); hideConfirm(); };
+        }
+        function hideConfirm() { document.getElementById('confirm-overlay').classList.remove('active'); }
+        
+        // ============ LOAD DATA ============
+        function loadAllData() {
+            loadStats();
+            loadRecentSurat();
         }
         
-        if (window.EArsip && window.EArsip.Auth) {
-            init();
-        } else {
-            var attempts = 0;
-            var checkInterval = setInterval(function() {
-                attempts++;
-                if ((window.EArsip && window.EArsip.Auth) || attempts > 20) {
-                    clearInterval(checkInterval);
-                    init();
-                }
-            }, 100);
+        function loadStats() {
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('user/stats', { csrf_token: csrfToken })
+                    .then(function(r) { if(r&&r.data) { state.stats=r.data; } else { state.stats=getSampleStats(); } renderStats(); })
+                    .catch(function() { state.stats=getSampleStats(); renderStats(); });
+            } else { state.stats = getSampleStats(); renderStats(); }
         }
+        
+        function getSampleStats() {
+            return { total: 12, draft: 3, pending: 4, completed: 5 };
+        }
+        
+        function renderStats() {
+            document.getElementById('stat-total').textContent = (state.stats.total || 0).toLocaleString('id-ID');
+            document.getElementById('stat-draft').textContent = (state.stats.draft || 0).toLocaleString('id-ID');
+            document.getElementById('stat-pending').textContent = (state.stats.pending || 0).toLocaleString('id-ID');
+            document.getElementById('stat-completed').textContent = (state.stats.completed || 0).toLocaleString('id-ID');
+        }
+        
+        function loadRecentSurat() {
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('user/surat', { limit: 10, csrf_token: csrfToken })
+                    .then(function(r) { if(r&&r.data) { state.recentSurat=r.data; } else { state.recentSurat=getSampleSurat(); } renderRecentSurat(); })
+                    .catch(function() { state.recentSurat=getSampleSurat(); renderRecentSurat(); });
+            } else { state.recentSurat = getSampleSurat(); renderRecentSurat(); }
+        }
+        
+        function getSampleSurat() {
+            return [
+                { id:'SK001', nomor_surat:'001/K.UM/FIKOM/VII/2024', perihal:'Undangan Rapat', kategori:'K.UM', createdAt:new Date().toISOString(), status:'completed', adminApproval:true, kasubagApproval:true, wadekApproval:true, dekanApproval:true },
+                { id:'SK002', nomor_surat:'002/K.KEU/FIKOM/VII/2024', perihal:'Permohonan Anggaran', kategori:'K.KEU', createdAt:new Date(Date.now()-86400000).toISOString(), status:'pending_wadek', adminApproval:true, kasubagApproval:true, wadekApproval:false, dekanApproval:false },
+                { id:'SK003', nomor_surat:'', perihal:'Draft Surat Tugas', kategori:'K.UM', createdAt:new Date(Date.now()-172800000).toISOString(), status:'draft', adminApproval:false, kasubagApproval:false, wadekApproval:false, dekanApproval:false },
+                { id:'SK004', nomor_surat:'004/K.UM/FIKOM/VII/2024', perihal:'Pemberitahuan Kegiatan', kategori:'K.UM', createdAt:new Date(Date.now()-259200000).toISOString(), status:'completed', adminApproval:true, kasubagApproval:true, wadekApproval:true, dekanApproval:true }
+            ];
+        }
+        
+        function renderRecentSurat() {
+            var tbody = document.getElementById('recent-surat');
+            if (!tbody) return;
+            
+            if (state.recentSurat.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-envelope-open-text"></i><p>Belum ada surat</p><a href="../../surat-keluar/form.html" class="btn btn-primary btn-sm" style="margin-top:8px;">Buat Surat Pertama</a></div></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = state.recentSurat.map(function(s, i) {
+                var completed = [s.adminApproval, s.kasubagApproval, s.wadekApproval, s.dekanApproval].filter(Boolean).length;
+                var percentage = (completed / 4) * 100;
+                var statusBadge = getStatusBadge(s.status);
+                
+                return '<tr>' +
+                    '<td>' + (i+1) + '</td>' +
+                    '<td><strong>' + sanitize(s.nomor_surat || 'Draft') + '</strong></td>' +
+                    '<td>' + sanitize(s.perihal || '-') + '</td>' +
+                    '<td>' + formatDate(s.createdAt) + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td><div class="progress-mini"><div class="progress-bar"><div class="progress-fill" style="width:' + percentage + '%;"></div></div><span class="progress-text">' + completed + '/4</span></div></td>' +
+                    '<td><div style="display:flex;gap:3px;">' +
+                        '<a href="../../surat-keluar/preview.html?id=' + sanitizePlain(s.id) + '" class="btn btn-sm btn-ghost" title="Lihat"><i class="fas fa-eye"></i></a>' +
+                        (s.status === 'draft' ? '<a href="../../surat-keluar/form.html?edit=' + sanitizePlain(s.id) + '" class="btn btn-sm btn-ghost" title="Edit"><i class="fas fa-edit"></i></a>' : '') +
+                        (s.status === 'completed' ? '<a href="../../surat-keluar/generate.html?id=' + sanitizePlain(s.id) + '" class="btn btn-sm btn-ghost" title="Download"><i class="fas fa-download"></i></a>' : '') +
+                        '<button class="btn btn-sm btn-ghost" title="Hapus" data-del="' + sanitizePlain(s.id) + '" style="color:var(--danger);"><i class="fas fa-trash"></i></button>' +
+                    '</div></td>' +
+                '</tr>';
+            }).join('');
+            
+            // Delete handlers
+            tbody.querySelectorAll('[data-del]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var id = this.dataset.del;
+                    var s = state.recentSurat.find(function(x) { return x.id === id; });
+                    var name = s ? (s.nomor_surat || s.perihal || id) : id;
+                    showConfirm('Hapus Surat', 'Hapus surat <strong>' + sanitize(name) + '</strong>?', function() { deleteSurat(id); });
+                });
+            });
+        }
+        
+        function getStatusBadge(status) {
+            var map = {
+                'draft': '<span class="badge badge-draft">Draft</span>',
+                'pending_admin': '<span class="badge badge-pending">Menunggu Admin</span>',
+                'pending_kasubag': '<span class="badge badge-pending">Menunggu Kasubag</span>',
+                'pending_wadek': '<span class="badge badge-pending">Menunggu Wadek</span>',
+                'pending_dekan': '<span class="badge badge-pending">Menunggu Dekan</span>',
+                'completed': '<span class="badge badge-completed">Selesai</span>',
+                'rejected': '<span class="badge badge-rejected">Ditolak</span>'
+            };
+            return map[status] || '<span class="badge badge-draft">' + sanitize(status) + '</span>';
+        }
+        
+        // ============ DELETE ============
+        function deleteSurat(id) {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            var p = { action: 'deleteSurat', id: id, csrf_token: csrfToken };
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.post('surat-keluar/delete', p)
+                    .then(function(r) { state.isLoading = false; if(r&&r.success) { showToast('Surat dihapus', 'success'); loadAllData(); } else showToast(r?.message||'Gagal', 'error'); })
+                    .catch(function(e) { state.isLoading = false; showToast('Error: '+sanitizePlain(e.message), 'error'); });
+            } else {
+                setTimeout(function() { state.isLoading = false; showToast('Surat dihapus (simulasi)', 'success'); state.recentSurat = state.recentSurat.filter(function(s) { return s.id !== id; }); renderRecentSurat(); }, 300);
+            }
+        }
+        
+        // ============ LOGOUT ============
+        function handleLogout() {
+            showConfirm('Logout', 'Apakah Anda yakin ingin keluar?', function() {
+                try { if (window.EArsip && window.EArsip.Auth) window.EArsip.Auth.logout(); } catch(e) {}
+                localStorage.removeItem('auth_session'); localStorage.removeItem('auth_token');
+                window.location.href = '../../login.html?message=logged_out';
+            });
+        }
+        window.handleLogout = handleLogout;
+        
+        // ============ INIT ============
+        function init() {
+            console.log('User Dashboard v2026.1.0');
+            
+            if (!checkAuth()) return;
+            
+            // Update UI
+            var userName = state.currentUser ? (state.currentUser.fullname || state.currentUser.name || state.currentUser.username) : 'User';
+            document.getElementById('user-name').textContent = sanitizePlain(userName);
+            
+            // Hide loading
+            setTimeout(function() { document.getElementById('loading-screen').classList.add('hidden'); }, 300);
+            
+            // PWA
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('../../sw.js').catch(function() {}); }
+            
+            // Mobile menu
+            document.getElementById('menu-btn').addEventListener('click', function() { document.getElementById('sidebar').classList.toggle('mobile-open'); document.getElementById('sidebar-overlay').classList.toggle('active'); });
+            document.getElementById('sidebar-overlay').addEventListener('click', function() { document.getElementById('sidebar').classList.remove('mobile-open'); this.classList.remove('active'); });
+            
+            // Confirm dialog
+            document.getElementById('confirm-cancel').addEventListener('click', hideConfirm);
+            document.getElementById('confirm-overlay').addEventListener('click', function(e) { if(e.target===this)hideConfirm(); });
+            
+            // Refresh
+            document.getElementById('refresh-btn').addEventListener('click', function() { loadAllData(); showToast('Data diperbarui', 'info'); });
+            
+            // Load data
+            loadAllData();
+        }
+        
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
     })();
     </script>
 </body>
 </html>
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

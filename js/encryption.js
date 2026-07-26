@@ -1,620 +1,426 @@
-// js/notifications.js - Advanced Notification System 2026
+// js/notifications.js - Notification System 2026 (SAFE & LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Notification System
  * Version: 2026.1.0
- * Features: Toast notifications, push notifications, notification center, sounds
+ * 
+ * Features:
+ * - Toast notifications (success, error, warning, info)
+ * - Auto-dismiss with progress bar
+ * - Queue system (max visible)
+ * - Pause on hover
+ * - Sound (optional)
+ * - No dependencies
  */
 
-import { Logger } from './logger.js';
-import utils from './utils.js';
-
-class NotificationSystem {
-    constructor(options = {}) {
-        this.logger = new Logger('Notifications');
-        
-        // Configuration
-        this.config = {
-            position: 'top-right', // top-right, top-left, bottom-right, bottom-left, top-center, bottom-center
-            duration: 5000, // Auto-dismiss duration (0 = sticky)
-            maxVisible: 5, // Maximum visible toasts
-            pauseOnHover: true,
-            showProgress: true,
-            sound: true,
-            soundVolume: 0.5,
-            animationDuration: 300,
-            ...options
-        };
-        
-        // State
-        this.notifications = [];
-        this.visibleToasts = [];
-        this.queue = [];
-        this.isPaused = false;
-        
-        // Containers
-        this.toastContainer = null;
-        this.notificationCenter = null;
-        
-        // Sound
-        this.sounds = {};
-        
-        // Initialize
-        this.init();
+var NotificationSystem = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        position: 'top-right',
+        duration: 4000,
+        maxVisible: 5,
+        pauseOnHover: true,
+        showProgress: true,
+        sound: false,              // DISABLED by default
+        soundVolume: 0.3
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _container = null;
+    var _queue = [];
+    var _visibleToasts = [];
+    var _idCounter = 0;
+    
+    // ============================================
+    // SANITIZATION
+    // ============================================
+    
+    function sanitizeHTML(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
     
-    init() {
-        this.createContainers();
-        this.loadSounds();
-        this.setupKeyboardShortcuts();
-        
-        this.logger.info('Notification system initialized', {
-            position: this.config.position
-        });
+    function sanitizeText(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
     }
     
     // ============================================
-    // CONTAINERS
+    // CONTAINER
     // ============================================
     
-    createContainers() {
-        // Toast container
-        this.toastContainer = document.createElement('div');
-        this.toastContainer.className = `toast-container toast-${this.config.position}`;
-        this.toastContainer.setAttribute('aria-live', 'polite');
-        this.toastContainer.setAttribute('aria-atomic', 'false');
-        document.body.appendChild(this.toastContainer);
+    function getContainer() {
+        if (_container) return _container;
         
-        // Notification center (bell icon + dropdown)
-        this.createNotificationCenter();
-    }
-    
-    createNotificationCenter() {
-        // Check if notification center already exists
-        if (document.querySelector('.notification-center')) return;
+        _container = document.createElement('div');
+        _container.className = 'toast-container toast-' + config.position;
+        _container.setAttribute('aria-live', 'polite');
+        _container.setAttribute('aria-atomic', 'false');
+        _container.style.cssText = 'position:fixed;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:380px;width:calc(100% - 32px);pointer-events:none;';
         
-        const center = document.createElement('div');
-        center.className = 'notification-center';
-        center.innerHTML = `
-            <button class="notification-bell" id="notification-bell" aria-label="Notifikasi">
-                <i class="fas fa-bell"></i>
-                <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
-            </button>
-            <div class="notification-dropdown" id="notification-dropdown" style="display:none;">
-                <div class="notification-dropdown-header">
-                    <h4>Notifikasi</h4>
-                    <div class="notification-actions">
-                        <button id="mark-all-read" class="btn btn-sm btn-ghost">
-                            Tandai Semua Dibaca
-                        </button>
-                        <button id="clear-all-notifications" class="btn btn-sm btn-ghost">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="notification-list" id="notification-list">
-                    <div class="notification-empty">
-                        <i class="fas fa-bell-slash"></i>
-                        <p>Tidak ada notifikasi</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(center);
-        
-        // Attach event listeners
-        this.attachCenterEvents();
-    }
-    
-    attachCenterEvents() {
-        const bell = document.getElementById('notification-bell');
-        const dropdown = document.getElementById('notification-dropdown');
-        
-        bell?.addEventListener('click', () => {
-            const isVisible = dropdown.style.display === 'block';
-            dropdown.style.display = isVisible ? 'none' : 'block';
-        });
-        
-        // Close dropdown on outside click
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.notification-center')) {
-                const dropdown = document.getElementById('notification-dropdown');
-                if (dropdown) dropdown.style.display = 'none';
-            }
-        });
-        
-        // Mark all read
-        document.getElementById('mark-all-read')?.addEventListener('click', () => {
-            this.markAllAsRead();
-        });
-        
-        // Clear all
-        document.getElementById('clear-all-notifications')?.addEventListener('click', () => {
-            this.clearAll();
-        });
-    }
-    
-    // ============================================
-    // TOAST NOTIFICATIONS
-    // ============================================
-    
-    toast(message, options = {}) {
-        const config = {
-            type: 'info', // info, success, warning, error
-            title: '',
-            message: message,
-            duration: this.config.duration,
-            icon: null,
-            action: null,
-            ...options
-        };
-        
-        // Generate unique ID
-        const id = utils.generateUUID();
-        
-        const toast = {
-            id,
-            ...config,
-            createdAt: Date.now(),
-            timer: null,
-            element: null
-        };
-        
-        // Queue or show immediately
-        if (this.visibleToasts.length >= this.config.maxVisible) {
-            this.queue.push(toast);
+        // Position
+        if (config.position.indexOf('top') === 0) {
+            _container.style.top = '16px';
         } else {
-            this.showToast(toast);
+            _container.style.bottom = '16px';
+        }
+        if (config.position.indexOf('right') !== -1) {
+            _container.style.right = '16px';
+        } else if (config.position.indexOf('left') !== -1) {
+            _container.style.left = '16px';
+        } else {
+            _container.style.left = '50%';
+            _container.style.transform = 'translateX(-50%)';
         }
         
-        return id;
+        document.body.appendChild(_container);
+        return _container;
     }
     
-    success(message, options = {}) {
-        return this.toast(message, { ...options, type: 'success', icon: 'check-circle' });
-    }
+    // ============================================
+    // SOUND (Optional, lightweight)
+    // ============================================
     
-    error(message, options = {}) {
-        return this.toast(message, { ...options, type: 'error', icon: 'exclamation-circle', duration: 0 });
-    }
-    
-    warning(message, options = {}) {
-        return this.toast(message, { ...options, type: 'warning', icon: 'exclamation-triangle' });
-    }
-    
-    info(message, options = {}) {
-        return this.toast(message, { ...options, type: 'info', icon: 'info-circle' });
-    }
-    
-    showToast(toast) {
-        // Create toast element
-        const element = this.createToastElement(toast);
-        this.toastContainer.appendChild(element);
+    function playBeep(type) {
+        if (!config.sound) return;
         
-        // Store reference
-        toast.element = element;
-        this.visibleToasts.push(toast);
-        
-        // Add to notification center
-        this.addToNotificationCenter(toast);
-        
-        // Play sound
-        if (this.config.sound) {
-            this.playSound(toast.type);
-        }
-        
-        // Animate in
-        requestAnimationFrame(() => {
-            element.classList.add('visible');
-        });
-        
-        // Auto-dismiss
-        if (toast.duration > 0) {
-            toast.timer = setTimeout(() => {
-                this.dismissToast(toast.id);
-            }, toast.duration);
-        }
-        
-        // Pause on hover
-        if (this.config.pauseOnHover) {
-            element.addEventListener('mouseenter', () => {
-                if (toast.timer) {
-                    clearTimeout(toast.timer);
-                    toast.timer = null;
-                }
-            });
+        try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
             
-            element.addEventListener('mouseleave', () => {
-                if (!toast.timer && toast.duration > 0) {
-                    toast.timer = setTimeout(() => {
-                        this.dismissToast(toast.id);
-                    }, toast.duration / 2); // Shorter duration after hover
-                }
-            });
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            var freq = type === 'success' ? 800 : type === 'error' ? 300 : type === 'warning' ? 500 : 600;
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.value = config.soundVolume;
+            
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+            
+            setTimeout(function() {
+                osc.stop();
+                ctx.close();
+            }, 250);
+        } catch(e) {
+            // Audio not supported
         }
     }
     
-    createToastElement(toast) {
-        const element = document.createElement('div');
-        element.className = `toast toast-${toast.type}`;
+    // ============================================
+    // TOAST CREATION
+    // ============================================
+    
+    function createToastElement(toast) {
+        var element = document.createElement('div');
+        element.className = 'toast toast-' + (toast.type || 'info');
         element.setAttribute('role', 'alert');
-        element.setAttribute('data-toast-id', toast.id);
+        element.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#1e293b;color:white;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.2);font-size:13px;pointer-events:auto;animation:slideInRight 0.3s ease;min-width:280px;';
         
-        const icons = {
-            success: 'fa-check-circle',
-            error: 'fa-exclamation-circle',
-            warning: 'fa-exclamation-triangle',
-            info: 'fa-info-circle'
+        // Icon
+        var icons = {
+            success: 'check-circle',
+            error: 'times-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
         };
+        var iconName = icons[toast.type] || 'info-circle';
+        var iconColor = toast.type === 'success' ? '#16a34a' : toast.type === 'error' ? '#dc2626' : toast.type === 'warning' ? '#d97706' : '#3b82f6';
         
-        element.innerHTML = `
-            <div class="toast-icon">
-                <i class="fas ${toast.icon || icons[toast.type] || 'fa-info-circle'}"></i>
-            </div>
-            <div class="toast-content">
-                ${toast.title ? `<div class="toast-title">${toast.title}</div>` : ''}
-                <div class="toast-message">${toast.message}</div>
-                ${toast.action ? `
-                    <button class="toast-action" onclick="${toast.action.onClick}">
-                        ${toast.action.label}
-                    </button>
-                ` : ''}
-            </div>
-            <button class="toast-close" aria-label="Tutup notifikasi">
-                <i class="fas fa-times"></i>
-            </button>
-            ${this.config.showProgress ? '<div class="toast-progress"></div>' : ''}
-        `;
+        var icon = document.createElement('div');
+        icon.style.cssText = 'font-size:18px;color:' + iconColor + ';flex-shrink:0;margin-top:1px;';
+        icon.innerHTML = '<i class="fas fa-' + iconName + '"></i>';
+        element.appendChild(icon);
+        
+        // Content
+        var content = document.createElement('div');
+        content.style.cssText = 'flex:1;min-width:0;';
+        
+        if (toast.title) {
+            var title = document.createElement('div');
+            title.style.cssText = 'font-weight:600;margin-bottom:2px;font-size:14px;';
+            title.textContent = toast.title;
+            content.appendChild(title);
+        }
+        
+        var message = document.createElement('div');
+        message.style.cssText = 'opacity:0.9;line-height:1.4;';
+        message.textContent = toast.message || '';
+        content.appendChild(message);
+        
+        element.appendChild(content);
         
         // Close button
-        element.querySelector('.toast-close')?.addEventListener('click', () => {
-            this.dismissToast(toast.id);
-        });
+        var closeBtn = document.createElement('button');
+        closeBtn.style.cssText = 'background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;padding:0;font-size:16px;flex-shrink:0;margin-top:1px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = function() {
+            dismissToast(toast.id);
+        };
+        element.appendChild(closeBtn);
         
-        // Progress bar animation
-        if (this.config.showProgress && toast.duration > 0) {
-            const progressBar = element.querySelector('.toast-progress');
-            if (progressBar) {
-                progressBar.style.animationDuration = `${toast.duration}ms`;
-            }
+        // Progress bar
+        if (config.showProgress && toast.duration > 0) {
+            var progress = document.createElement('div');
+            progress.style.cssText = 'position:absolute;bottom:0;left:0;height:3px;background:' + iconColor + ';border-radius:0 0 0 10px;animation:progressShrink ' + toast.duration + 'ms linear forwards;';
+            
+            // Style untuk animasi
+            var styleEl = document.createElement('style');
+            styleEl.textContent = '@keyframes progressShrink { from { width: 100%; } to { width: 0%; } }';
+            document.head.appendChild(styleEl);
+            
+            element.style.position = 'relative';
+            element.style.overflow = 'hidden';
+            element.appendChild(progress);
+        }
+        
+        // Hover pause
+        if (config.pauseOnHover && toast.duration > 0) {
+            element.addEventListener('mouseenter', function() {
+                if (toast._timer) {
+                    clearTimeout(toast._timer);
+                    toast._timer = null;
+                }
+            });
+            element.addEventListener('mouseleave', function() {
+                if (!toast._timer) {
+                    toast._timer = setTimeout(function() {
+                        dismissToast(toast.id);
+                    }, toast.duration / 2);
+                }
+            });
         }
         
         return element;
     }
     
-    dismissToast(id) {
-        const index = this.visibleToasts.findIndex(t => t.id === id);
+    // ============================================
+    // SHOW / DISMISS
+    // ============================================
+    
+    function showToast(toast) {
+        var container = getContainer();
+        var element = createToastElement(toast);
+        
+        container.appendChild(element);
+        toast.element = element;
+        _visibleToasts.push(toast);
+        
+        // Auto-dismiss
+        if (toast.duration > 0) {
+            toast._timer = setTimeout(function() {
+                dismissToast(toast.id);
+            }, toast.duration);
+        }
+        
+        // Sound
+        playBeep(toast.type);
+    }
+    
+    function dismissToast(id) {
+        var index = -1;
+        for (var i = 0; i < _visibleToasts.length; i++) {
+            if (_visibleToasts[i].id === id) {
+                index = i;
+                break;
+            }
+        }
+        
         if (index === -1) return;
         
-        const toast = this.visibleToasts[index];
+        var toast = _visibleToasts[index];
         
         // Clear timer
-        if (toast.timer) {
-            clearTimeout(toast.timer);
+        if (toast._timer) {
+            clearTimeout(toast._timer);
+            toast._timer = null;
         }
         
         // Animate out
         if (toast.element) {
-            toast.element.classList.remove('visible');
-            toast.element.classList.add('hiding');
+            toast.element.style.opacity = '0';
+            toast.element.style.transform = 'translateX(100px)';
+            toast.element.style.transition = 'all 0.3s ease';
             
-            setTimeout(() => {
-                toast.element.remove();
-            }, this.config.animationDuration);
+            setTimeout(function() {
+                if (toast.element && toast.element.parentNode) {
+                    toast.element.parentNode.removeChild(toast.element);
+                }
+            }, 300);
         }
         
-        // Remove from visible list
-        this.visibleToasts.splice(index, 1);
+        // Remove
+        _visibleToasts.splice(index, 1);
         
-        // Show next in queue
-        if (this.queue.length > 0) {
-            const nextToast = this.queue.shift();
-            this.showToast(nextToast);
-        }
-    }
-    
-    dismissAll() {
-        [...this.visibleToasts].forEach(toast => {
-            this.dismissToast(toast.id);
-        });
-        this.queue = [];
-    }
-    
-    // ============================================
-    // NOTIFICATION CENTER
-    // ============================================
-    
-    addToNotificationCenter(toast) {
-        const notification = {
-            id: toast.id,
-            type: toast.type,
-            title: toast.title || toast.message,
-            message: toast.message,
-            timestamp: new Date(),
-            read: false,
-            action: toast.action
-        };
-        
-        this.notifications.unshift(notification);
-        
-        // Keep only last 100 notifications
-        if (this.notifications.length > 100) {
-            this.notifications = this.notifications.slice(0, 100);
-        }
-        
-        this.updateNotificationCenter();
-        this.updateBadge();
-    }
-    
-    updateNotificationCenter() {
-        const list = document.getElementById('notification-list');
-        if (!list) return;
-        
-        const unreadCount = this.notifications.filter(n => !n.read).length;
-        
-        if (this.notifications.length === 0) {
-            list.innerHTML = `
-                <div class="notification-empty">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>Tidak ada notifikasi</p>
-                </div>
-            `;
-        } else {
-            list.innerHTML = this.notifications.map(notif => `
-                <div class="notification-item ${notif.read ? 'read' : 'unread'}" 
-                     data-notification-id="${notif.id}">
-                    <div class="notification-item-icon ${notif.type}">
-                        <i class="fas fa-${this.getNotificationIcon(notif.type)}"></i>
-                    </div>
-                    <div class="notification-item-content">
-                        <div class="notification-item-title">${notif.title}</div>
-                        <div class="notification-item-message">${notif.message}</div>
-                        <div class="notification-item-time">${utils.timeAgo(notif.timestamp)}</div>
-                    </div>
-                    ${!notif.read ? '<span class="notification-dot"></span>' : ''}
-                </div>
-            `).join('');
-            
-            // Attach click handlers
-            list.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const notifId = item.dataset.notificationId;
-                    this.markAsRead(notifId);
-                });
-            });
+        // Show next from queue
+        if (_queue.length > 0) {
+            var next = _queue.shift();
+            showToast(next);
         }
     }
     
-    updateBadge() {
-        const badge = document.getElementById('notification-badge');
-        if (!badge) return;
-        
-        const unreadCount = this.notifications.filter(n => !n.read).length;
-        
-        if (unreadCount > 0) {
-            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-            badge.style.display = 'flex';
-        } else {
-            badge.style.display = 'none';
+    function dismissAll() {
+        var toasts = _visibleToasts.slice();
+        for (var i = 0; i < toasts.length; i++) {
+            dismissToast(toasts[i].id);
         }
-    }
-    
-    markAsRead(id) {
-        const notification = this.notifications.find(n => n.id === id);
-        if (notification) {
-            notification.read = true;
-            this.updateNotificationCenter();
-            this.updateBadge();
-        }
-    }
-    
-    markAllAsRead() {
-        this.notifications.forEach(n => n.read = true);
-        this.updateNotificationCenter();
-        this.updateBadge();
-    }
-    
-    clearAll() {
-        this.notifications = [];
-        this.updateNotificationCenter();
-        this.updateBadge();
-    }
-    
-    // ============================================
-    // PUSH NOTIFICATIONS
-    // ============================================
-    
-    async requestPushPermission() {
-        if (!('Notification' in window)) {
-            this.logger.warn('Push notifications not supported');
-            return 'denied';
-        }
-        
-        try {
-            const permission = await Notification.requestPermission();
-            this.logger.info('Push notification permission:', permission);
-            return permission;
-        } catch (error) {
-            this.logger.error('Push permission request failed', error);
-            return 'denied';
-        }
-    }
-    
-    async sendPushNotification(title, options = {}) {
-        if (Notification.permission !== 'granted') {
-            const permission = await this.requestPushPermission();
-            if (permission !== 'granted') return false;
-        }
-        
-        try {
-            const registration = await navigator.serviceWorker?.ready;
-            if (!registration) return false;
-            
-            await registration.showNotification(title, {
-                body: options.body || '',
-                icon: options.icon || '/icons/icon-192x192.png',
-                badge: '/icons/badge-72x72.png',
-                vibrate: options.vibrate || [200, 100, 200],
-                data: options.data || {},
-                actions: options.actions || [],
-                tag: options.tag || 'default',
-                requireInteraction: options.requireInteraction || false,
-                renotify: options.renotify || false,
-                silent: options.silent || false,
-                timestamp: Date.now()
-            });
-            
-            return true;
-        } catch (error) {
-            this.logger.error('Push notification failed', error);
-            return false;
-        }
-    }
-    
-    // ============================================
-    // SOUND
-    // ============================================
-    
-    loadSounds() {
-        // Use AudioContext for better control
-        try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            this.logger.warn('AudioContext not available');
-        }
-    }
-    
-    async playSound(type) {
-        if (!this.audioContext || !this.config.sound) return;
-        
-        // Resume context if suspended (autoplay policy)
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
-        
-        const frequencies = {
-            success: [523.25, 659.25, 783.99], // C5, E5, G5
-            error: [200, 150, 100],
-            warning: [440, 350, 440],
-            info: [440, 554.37]
-        };
-        
-        const notes = frequencies[type] || [440];
-        
-        try {
-            notes.forEach((freq, i) => {
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
-                
-                oscillator.frequency.value = freq;
-                oscillator.type = 'sine';
-                
-                gainNode.gain.value = this.config.soundVolume;
-                gainNode.gain.exponentialRampToValueAtTime(
-                    0.01,
-                    this.audioContext.currentTime + 0.15 * (i + 1)
-                );
-                
-                oscillator.start(this.audioContext.currentTime + 0.1 * i);
-                oscillator.stop(this.audioContext.currentTime + 0.15 * (i + 1));
-            });
-        } catch (error) {
-            this.logger.warn('Sound playback failed', error);
-        }
-    }
-    
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    getNotificationIcon(type) {
-        const icons = {
-            success: 'check-circle',
-            error: 'exclamation-circle',
-            warning: 'exclamation-triangle',
-            info: 'info-circle'
-        };
-        return icons[type] || 'bell';
-    }
-    
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + N to toggle notification center
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                e.preventDefault();
-                document.getElementById('notification-bell')?.click();
-            }
-            
-            // Escape to dismiss all toasts
-            if (e.key === 'Escape') {
-                this.dismissAll();
-            }
-        });
-    }
-    
-    getUnreadCount() {
-        return this.notifications.filter(n => !n.read).length;
-    }
-    
-    getNotifications() {
-        return [...this.notifications];
+        _queue = [];
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    // Quick notification helper
-    notify(type, message, options = {}) {
-        switch (type) {
-            case 'success': return this.success(message, options);
-            case 'error': return this.error(message, options);
-            case 'warning': return this.warning(message, options);
-            default: return this.info(message, options);
+    function toast(message, options) {
+        if (!options) options = {};
+        
+        // Batasi queue
+        if (_visibleToasts.length >= config.maxVisible) {
+            var toastObj = {
+                id: 'toast_' + (++_idCounter),
+                type: options.type || 'info',
+                title: options.title || '',
+                message: String(message || ''),
+                duration: options.duration || config.duration,
+                timestamp: Date.now()
+            };
+            _queue.push(toastObj);
+            return toastObj.id;
+        }
+        
+        var toastObj = {
+            id: 'toast_' + (++_idCounter),
+            type: options.type || 'info',
+            title: options.title || '',
+            message: String(message || ''),
+            duration: options.duration || config.duration,
+            timestamp: Date.now()
+        };
+        
+        showToast(toastObj);
+        return toastObj.id;
+    }
+    
+    function success(message, options) {
+        if (!options) options = {};
+        options.type = 'success';
+        return toast(message, options);
+    }
+    
+    function error(message, options) {
+        if (!options) options = {};
+        options.type = 'error';
+        options.duration = options.duration || 0; // Sticky by default
+        return toast(message, options);
+    }
+    
+    function warning(message, options) {
+        if (!options) options = {};
+        options.type = 'warning';
+        return toast(message, options);
+    }
+    
+    function info(message, options) {
+        if (!options) options = {};
+        options.type = 'info';
+        return toast(message, options);
+    }
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    function init(options) {
+        if (options) {
+            for (var key in options) {
+                if (options.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                    config[key] = options[key];
+                }
+            }
+        }
+        
+        // Pastikan container dibuat
+        getContainer();
+        
+        // Inject CSS animasi
+        if (!document.getElementById('toast-animations')) {
+            var style = document.createElement('style');
+            style.id = 'toast-animations';
+            style.textContent = '@keyframes slideInRight { from { opacity:0; transform:translateX(100px); } to { opacity:1; transform:translateX(0); } }';
+            document.head.appendChild(style);
         }
     }
     
-    // Confirmation notification
-    confirm(message, onConfirm, onCancel) {
-        return this.toast(message, {
-            type: 'warning',
-            duration: 0,
-            title: 'Konfirmasi',
-            action: {
-                label: 'Ya',
-                onClick: () => {
-                    this.dismissAll();
-                    onConfirm?.();
+    // Auto-init
+    setTimeout(init, 100);
+    
+    return {
+        init: init,
+        toast: toast,
+        success: success,
+        error: error,
+        warning: warning,
+        info: info,
+        dismiss: dismissToast,
+        dismissAll: dismissAll,
+        
+        /**
+         * Get visible toast count
+         */
+        getVisibleCount: function() {
+            return _visibleToasts.length;
+        },
+        
+        /**
+         * Get queue count
+         */
+        getQueueCount: function() {
+            return _queue.length;
+        },
+        
+        /**
+         * Configure
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
                 }
-            },
-            icon: 'question-circle'
-        });
-    }
-    
-    // Persistent notification for important messages
-    alert(title, message, type = 'info') {
-        return this.toast(message, {
-            type,
-            title,
-            duration: 0,
-            icon: 'bell'
-        });
-    }
-    
-    destroy() {
-        this.dismissAll();
-        this.toastContainer?.remove();
-        document.querySelector('.notification-center')?.remove();
-        this.audioContext?.close();
-        this.logger.info('Notification system destroyed');
-    }
-}
+            }
+        },
+        
+        /**
+         * Enable/disable sound
+         */
+        enableSound: function() { config.sound = true; },
+        disableSound: function() { config.sound = false; }
+    };
+})();
 
-// Create singleton
-const notifications = new NotificationSystem();
-
-export default notifications;
-export { NotificationSystem };
+// ============================================
+// USAGE:
+// ============================================
+// NotificationSystem.success('Data berhasil disimpan!');
+// NotificationSystem.error('Gagal memuat data');
+// NotificationSystem.warning('Session akan berakhir');
+// NotificationSystem.info('3 surat baru masuk');
+// 
+// // Custom
+// NotificationSystem.toast('Pesan kustom', { type: 'success', duration: 3000, title: 'Judul' });
+// 
+// // Dismiss
+// var id = NotificationSystem.success('Loading...', { duration: 0 });
+// NotificationSystem.dismiss(id);
+// ============================================

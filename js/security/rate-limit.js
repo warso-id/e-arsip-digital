@@ -1,379 +1,295 @@
-// js/security/rate-limit.js - Advanced Rate Limiter 2026
+// js/security/rate-limit.js - Rate Limiter 2026 (SECURE)
 /**
  * E-Arsip Digital - Rate Limiter
  * Version: 2026.1.0
- * Features: Sliding window, token bucket, IP-based, endpoint-specific, burst allowance
+ * 
+ * Features:
+ * - Sliding window algorithm
+ * - Per-endpoint limits
+ * - Burst allowance
+ * - Auto-cleanup
+ * - Privacy-aware (no fingerprinting)
  */
 
-import { Logger } from '../logger.js';
-import APP_CONFIG from '../../config/config.js';
-
-class RateLimiter {
-    constructor(config = APP_CONFIG.security?.rateLimit || {}) {
-        this.logger = new Logger('RateLimiter');
-        
-        this.config = {
-            enabled: config.enabled !== false,
-            windowMs: config.windowMs || 60000,
-            maxRequests: config.maxRequests || 100,
-            burstMultiplier: config.burstMultiplier || 1.5,
-            skipSuccessfulRequests: config.skipSuccessfulRequests || false,
-            keyGenerator: config.keyGenerator || null,
-            ...config
-        };
-        
-        // Request stores
-        this.requests = new Map();
-        this.blockedIPs = new Map();
-        this.whitelist = new Set(config.whitelist || []);
-        
-        // Statistics
-        this.stats = {
-            totalRequests: 0,
-            allowedRequests: 0,
-            blockedRequests: 0,
-            currentActive: 0
-        };
-        
-        // Cleanup interval
-        this.cleanupInterval = setInterval(() => this.cleanup(), this.config.windowMs * 2);
-        
-        this.initialized = false;
-        
-        this.init();
-    }
+var RateLimiter = (function() {
+    'use strict';
     
-    init() {
-        if (!this.config.enabled) {
-            this.logger.info('Rate limiter is disabled');
-            return;
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        enabled: true,
+        windowMs: 60000,           // 1 menit
+        maxRequests: 100,          // Max request per window
+        burstMultiplier: 1.5,      // Allow 50% burst
+        cleanupIntervalMs: 120000, // Cleanup setiap 2 menit
+        
+        // Endpoint-specific limits
+        endpoints: {
+            'login': { maxRequests: 5, windowMs: 60000 },      // 5 login/min
+            'register': { maxRequests: 3, windowMs: 3600000 },  // 3 register/jam
+            'upload': { maxRequests: 10, windowMs: 60000 },     // 10 upload/min
+            'export': { maxRequests: 5, windowMs: 300000 },     // 5 export/5min
+            'search': { maxRequests: 30, windowMs: 60000 },     // 30 search/min
+            'default': { maxRequests: 100, windowMs: 60000 }    // Default
+        }
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _windows = {};           // { key: [timestamp, ...] }
+    var _blockedKeys = {};       // { key: { blockedAt, expiresAt, reason } }
+    var _whitelist = {};         // { key: true }
+    var _cleanupTimer = null;
+    
+    var _stats = {
+        totalRequests: 0,
+        allowedRequests: 0,
+        blockedRequests: 0
+    };
+    
+    // ============================================
+    // KEY GENERATION (Privacy-aware)
+    // ============================================
+    
+    /**
+     * Generate rate limit key dari session
+     * TIDAK menggunakan fingerprint browser!
+     */
+    function generateKey() {
+        // Gunakan session ID dari auth
+        try {
+            var session = localStorage.getItem('auth_session') || sessionStorage.getItem('auth_session');
+            if (session) {
+                var data = JSON.parse(session);
+                if (data.user && data.user.id) {
+                    return 'user_' + data.user.id;
+                }
+            }
+        } catch(e) {}
+        
+        // Fallback: gunakan session ID dari sessionStorage
+        var sessionId = sessionStorage.getItem('rate_limit_session');
+        if (!sessionId) {
+            sessionId = 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+            sessionStorage.setItem('rate_limit_session', sessionId);
         }
         
-        this.initialized = true;
-        this.logger.info('Rate limiter initialized', {
-            windowMs: this.config.windowMs,
-            maxRequests: this.config.maxRequests
-        });
+        return sessionId;
     }
     
     // ============================================
-    // RATE LIMITING CORE
+    // RATE LIMIT CHECK
     // ============================================
     
-    check(key = null, options = {}) {
-        if (!this.config.enabled) return { allowed: true };
+    /**
+     * Check rate limit untuk key tertentu
+     * @param {string} key - Rate limit key (opsional, auto-generate)
+     * @param {Object} options - Override options
+     * @returns {Object} { allowed, remaining, reset, retryAfter, reason }
+     */
+    function check(key, options) {
+        if (!config.enabled) {
+            return { allowed: true, remaining: -1, reset: 0, reason: 'disabled' };
+        }
         
-        const identifier = key || this.generateKey();
-        const maxRequests = options.maxRequests || this.config.maxRequests;
-        const windowMs = options.windowMs || this.config.windowMs;
+        var identifier = key || generateKey();
+        var maxRequests = (options && options.maxRequests) || config.maxRequests;
+        var windowMs = (options && options.windowMs) || config.windowMs;
+        var burstLimit = Math.floor(maxRequests * config.burstMultiplier);
         
         // Check whitelist
-        if (this.whitelist.has(identifier)) {
-            return { allowed: true, whitelisted: true };
+        if (_whitelist[identifier]) {
+            return { allowed: true, remaining: -1, reset: 0, reason: 'whitelisted' };
         }
         
         // Check if blocked
-        if (this.isBlocked(identifier)) {
-            this.stats.blockedRequests++;
-            return { 
-                allowed: false, 
-                reason: 'IP blocked',
-                retryAfter: this.getBlockTimeRemaining(identifier)
-            };
+        if (_blockedKeys[identifier]) {
+            var blockInfo = _blockedKeys[identifier];
+            if (Date.now() < blockInfo.expiresAt) {
+                _stats.blockedRequests++;
+                return {
+                    allowed: false,
+                    remaining: 0,
+                    retryAfter: Math.max(0, blockInfo.expiresAt - Date.now()),
+                    reason: 'Blocked: ' + (blockInfo.reason || 'rate_limit')
+                };
+            } else {
+                // Block expired
+                delete _blockedKeys[identifier];
+            }
         }
         
-        this.stats.totalRequests++;
+        _stats.totalRequests++;
         
-        const now = Date.now();
+        var now = Date.now();
         
         // Get or create window
-        if (!this.requests.has(identifier)) {
-            this.requests.set(identifier, []);
+        if (!_windows[identifier]) {
+            _windows[identifier] = [];
         }
         
-        const window = this.requests.get(identifier);
+        var window = _windows[identifier];
         
         // Remove expired entries (sliding window)
-        const validRequests = window.filter(time => now - time < windowMs);
-        this.requests.set(identifier, validRequests);
+        _windows[identifier] = window.filter(function(time) {
+            return now - time < windowMs;
+        });
         
-        // Check burst allowance
-        const burstLimit = Math.floor(maxRequests * this.config.burstMultiplier);
+        var currentCount = _windows[identifier].length;
         
-        if (validRequests.length >= burstLimit) {
-            // Block the IP temporarily
-            this.blockIP(identifier, windowMs * 2);
-            this.stats.blockedRequests++;
+        // Check burst limit
+        if (currentCount >= burstLimit) {
+            // Auto-block
+            blockKey(identifier, windowMs * 2, 'Burst limit: ' + currentCount + '/' + burstLimit);
+            _stats.blockedRequests++;
             
-            this.logger.warn('Rate limit exceeded (burst)', {
-                identifier,
-                count: validRequests.length,
-                limit: burstLimit
-            });
-            
-            return { 
-                allowed: false, 
-                reason: 'Burst limit exceeded',
+            return {
+                allowed: false,
+                remaining: 0,
                 retryAfter: windowMs * 2,
-                current: validRequests.length,
-                limit: burstLimit
+                current: currentCount,
+                limit: burstLimit,
+                reason: 'Burst limit exceeded'
             };
         }
         
-        if (validRequests.length >= maxRequests) {
-            this.stats.blockedRequests++;
+        // Check normal limit
+        if (currentCount >= maxRequests) {
+            _stats.blockedRequests++;
             
-            this.logger.warn('Rate limit exceeded', {
-                identifier,
-                count: validRequests.length,
-                limit: maxRequests
-            });
+            var oldestRequest = _windows[identifier][0];
+            var retryAfter = Math.max(0, oldestRequest + windowMs - now);
             
-            return { 
-                allowed: false, 
-                reason: 'Rate limit exceeded',
-                retryAfter: this.getRetryAfter(validRequests, windowMs),
-                current: validRequests.length,
-                limit: maxRequests
+            return {
+                allowed: false,
+                remaining: 0,
+                retryAfter: retryAfter,
+                current: currentCount,
+                limit: maxRequests,
+                reason: 'Rate limit exceeded'
             };
         }
         
-        // Add current request
-        validRequests.push(now);
-        this.requests.set(identifier, validRequests);
-        this.stats.allowedRequests++;
-        
-        // Update active count
-        this.stats.currentActive = this.requests.size;
+        // Allow request
+        _windows[identifier].push(now);
+        _stats.allowedRequests++;
         
         return {
             allowed: true,
-            remaining: maxRequests - validRequests.length,
-            reset: validRequests[0] + windowMs,
-            current: validRequests.length,
+            remaining: maxRequests - currentCount - 1,
+            reset: now + windowMs,
+            current: currentCount + 1,
             limit: maxRequests
         };
     }
     
-    // ============================================
-    // TOKEN BUCKET ALGORITHM
-    // ============================================
-    
-    checkTokenBucket(key = null, options = {}) {
-        const identifier = key || this.generateKey();
-        const maxTokens = options.maxTokens || this.config.maxRequests;
-        const refillRate = options.refillRate || maxTokens / (this.config.windowMs / 1000);
+    /**
+     * Check rate limit untuk endpoint tertentu
+     * @param {string} endpoint - Nama endpoint ('login', 'upload', dll)
+     * @param {string} key - Rate limit key
+     * @returns {Object}
+     */
+    function checkEndpoint(endpoint, key) {
+        var epConfig = (config.endpoints && config.endpoints[endpoint]) || config.endpoints['default'];
         
-        if (!this.tokenBuckets) {
-            this.tokenBuckets = new Map();
-        }
-        
-        let bucket = this.tokenBuckets.get(identifier);
-        const now = Date.now();
-        
-        if (!bucket) {
-            bucket = {
-                tokens: maxTokens,
-                lastRefill: now,
-                maxTokens
-            };
-            this.tokenBuckets.set(identifier, bucket);
-        }
-        
-        // Refill tokens based on time elapsed
-        const elapsed = (now - bucket.lastRefill) / 1000;
-        const tokensToAdd = elapsed * refillRate;
-        
-        bucket.tokens = Math.min(bucket.maxTokens, bucket.tokens + tokensToAdd);
-        bucket.lastRefill = now;
-        
-        if (bucket.tokens >= 1) {
-            bucket.tokens--;
-            return { allowed: true, remainingTokens: bucket.tokens };
-        }
-        
-        const waitTime = ((1 - bucket.tokens) / refillRate) * 1000;
-        
-        return { 
-            allowed: false, 
-            reason: 'No tokens available',
-            retryAfter: waitTime,
-            remainingTokens: bucket.tokens
-        };
-    }
-    
-    // ============================================
-    // IP BLOCKING
-    // ============================================
-    
-    blockIP(identifier, duration = 300000) {
-        this.blockedIPs.set(identifier, {
-            blockedAt: Date.now(),
-            expiresAt: Date.now() + duration,
-            reason: 'rate_limit'
+        return check(key, {
+            maxRequests: epConfig.maxRequests,
+            windowMs: epConfig.windowMs
         });
-        
-        // Clear requests for this identifier
-        this.requests.delete(identifier);
     }
     
-    unblockIP(identifier) {
-        this.blockedIPs.delete(identifier);
+    // ============================================
+    // BLOCK MANAGEMENT
+    // ============================================
+    
+    function blockKey(key, durationMs, reason) {
+        _blockedKeys[key] = {
+            blockedAt: Date.now(),
+            expiresAt: Date.now() + durationMs,
+            reason: reason || 'rate_limit'
+        };
+        
+        // Clear requests untuk key ini
+        delete _windows[key];
     }
     
-    isBlocked(identifier) {
-        const blockInfo = this.blockedIPs.get(identifier);
+    function unblockKey(key) {
+        delete _blockedKeys[key];
+    }
+    
+    function isBlocked(key) {
+        var info = _blockedKeys[key || generateKey()];
+        if (!info) return false;
         
-        if (!blockInfo) return false;
-        
-        // Check if block has expired
-        if (Date.now() > blockInfo.expiresAt) {
-            this.blockedIPs.delete(identifier);
+        if (Date.now() > info.expiresAt) {
+            delete _blockedKeys[key];
             return false;
         }
         
         return true;
     }
     
-    getBlockTimeRemaining(identifier) {
-        const blockInfo = this.blockedIPs.get(identifier);
-        if (!blockInfo) return 0;
-        
-        return Math.max(0, blockInfo.expiresAt - Date.now());
-    }
-    
-    // ============================================
-    // ENDPOINT-SPECIFIC LIMITS
-    // ============================================
-    
-    checkEndpoint(endpoint, key = null) {
-        const limits = {
-            '/api/auth/login': { maxRequests: 5, windowMs: 60000 },
-            '/api/auth/register': { maxRequests: 3, windowMs: 3600000 },
-            '/api/upload': { maxRequests: 10, windowMs: 60000 },
-            '/api/search': { maxRequests: 30, windowMs: 60000 },
-            '/api/export': { maxRequests: 5, windowMs: 300000 }
-        };
-        
-        const endpointConfig = limits[endpoint] || {};
-        
-        return this.check(key, {
-            maxRequests: endpointConfig.maxRequests || this.config.maxRequests,
-            windowMs: endpointConfig.windowMs || this.config.windowMs
-        });
-    }
-    
-    // ============================================
-    // KEY GENERATION
-    // ============================================
-    
-    generateKey() {
-        if (this.config.keyGenerator) {
-            return this.config.keyGenerator();
-        }
-        
-        // Use combination of IP and user agent
-        const ip = this.getClientIP();
-        const ua = navigator.userAgent.substring(0, 50);
-        
-        return `${ip}_${ua}`;
-    }
-    
-    getClientIP() {
-        // Client-side can't get real IP, use session-based identifier
-        const sessionId = localStorage.getItem('session_id');
-        if (sessionId) return sessionId;
-        
-        // Generate a client fingerprint
-        const components = [
-            navigator.userAgent,
-            navigator.language,
-            screen.colorDepth,
-            screen.width,
-            screen.height,
-            new Date().getTimezoneOffset()
-        ];
-        
-        return btoa(components.join('|')).substring(0, 32);
-    }
-    
     // ============================================
     // WHITELIST MANAGEMENT
     // ============================================
     
-    addToWhitelist(identifier) {
-        this.whitelist.add(identifier);
+    function addToWhitelist(key) {
+        _whitelist[key] = true;
     }
     
-    removeFromWhitelist(identifier) {
-        this.whitelist.delete(identifier);
-    }
-    
-    isWhitelisted(identifier) {
-        return this.whitelist.has(identifier);
+    function removeFromWhitelist(key) {
+        delete _whitelist[key];
     }
     
     // ============================================
-    // UTILITY METHODS
+    // CLEANUP
     // ============================================
     
-    getRetryAfter(window, windowMs) {
-        if (window.length === 0) return 0;
-        
-        const oldest = window[0];
-        const retryAfter = oldest + windowMs - Date.now();
-        
-        return Math.max(0, retryAfter);
-    }
-    
-    getRemainingRequests(key) {
-        const identifier = key || this.generateKey();
-        const window = this.requests.get(identifier) || [];
-        const validRequests = window.filter(time => 
-            Date.now() - time < this.config.windowMs
-        );
-        
-        return Math.max(0, this.config.maxRequests - validRequests.length);
-    }
-    
-    cleanup() {
-        const now = Date.now();
-        let cleaned = 0;
+    function cleanup() {
+        var now = Date.now();
+        var cleanedWindows = 0;
+        var cleanedBlocks = 0;
         
         // Clean request windows
-        for (const [key, window] of this.requests) {
-            const valid = window.filter(time => now - time < this.config.windowMs);
-            
-            if (valid.length === 0) {
-                this.requests.delete(key);
-                cleaned++;
-            } else {
-                this.requests.set(key, valid);
-            }
-        }
-        
-        // Clean blocked IPs
-        for (const [key, blockInfo] of this.blockedIPs) {
-            if (now > blockInfo.expiresAt) {
-                this.blockedIPs.delete(key);
-                cleaned++;
-            }
-        }
-        
-        // Clean token buckets
-        if (this.tokenBuckets) {
-            for (const [key, bucket] of this.tokenBuckets) {
-                if (now - bucket.lastRefill > 3600000) { // 1 hour idle
-                    this.tokenBuckets.delete(key);
-                    cleaned++;
+        for (var key in _windows) {
+            if (_windows.hasOwnProperty(key)) {
+                _windows[key] = _windows[key].filter(function(time) {
+                    return now - time < config.windowMs * 2;
+                });
+                
+                if (_windows[key].length === 0) {
+                    delete _windows[key];
+                    cleanedWindows++;
                 }
             }
         }
         
-        this.stats.currentActive = this.requests.size;
+        // Clean expired blocks
+        for (var key in _blockedKeys) {
+            if (_blockedKeys.hasOwnProperty(key)) {
+                if (now > _blockedKeys[key].expiresAt) {
+                    delete _blockedKeys[key];
+                    cleanedBlocks++;
+                }
+            }
+        }
         
-        if (cleaned > 0) {
-            this.logger.debug('Rate limiter cleanup', { cleaned });
+        if (cleanedWindows > 0 || cleanedBlocks > 0) {
+            console.debug('[RateLimiter] Cleanup: ' + cleanedWindows + ' windows, ' + cleanedBlocks + ' blocks');
+        }
+    }
+    
+    function startCleanup() {
+        if (_cleanupTimer) clearInterval(_cleanupTimer);
+        _cleanupTimer = setInterval(cleanup, config.cleanupIntervalMs);
+    }
+    
+    function stopCleanup() {
+        if (_cleanupTimer) {
+            clearInterval(_cleanupTimer);
+            _cleanupTimer = null;
         }
     }
     
@@ -381,84 +297,163 @@ class RateLimiter {
     // STATISTICS
     // ============================================
     
-    getStats() {
+    function getStats() {
+        var activeWindows = 0;
+        var activeBlocks = 0;
+        
+        for (var key in _windows) {
+            if (_windows.hasOwnProperty(key)) activeWindows++;
+        }
+        for (var key in _blockedKeys) {
+            if (_blockedKeys.hasOwnProperty(key)) activeBlocks++;
+        }
+        
         return {
-            ...this.stats,
-            blockedIPs: this.blockedIPs.size,
-            whitelisted: this.whitelist.size,
-            initialized: this.initialized,
-            config: {
-                windowMs: this.config.windowMs,
-                maxRequests: this.config.maxRequests
-            }
+            totalRequests: _stats.totalRequests,
+            allowedRequests: _stats.allowedRequests,
+            blockedRequests: _stats.blockedRequests,
+            activeWindows: activeWindows,
+            activeBlocks: activeBlocks,
+            whitelisted: Object.keys(_whitelist).length,
+            enabled: config.enabled
         };
     }
     
-    getBlockedIPs() {
-        const result = [];
+    function getRemainingRequests(key) {
+        var identifier = key || generateKey();
+        var window = _windows[identifier] || [];
+        var now = Date.now();
         
-        this.blockedIPs.forEach((info, ip) => {
-            result.push({
-                ip,
-                blockedAt: info.blockedAt,
-                expiresAt: info.expiresAt,
-                remaining: Math.max(0, info.expiresAt - Date.now()),
-                reason: info.reason
-            });
+        window = window.filter(function(time) {
+            return now - time < config.windowMs;
         });
         
-        return result;
-    }
-    
-    // ============================================
-    // STRICT MODE
-    // ============================================
-    
-    enableStrictMode() {
-        this.config.maxRequests = Math.floor(this.config.maxRequests / 2);
-        this.config.windowMs = this.config.windowMs * 2;
-        this.logger.warn('Strict mode enabled');
-    }
-    
-    disableStrictMode() {
-        this.config.maxRequests = APP_CONFIG.security?.rateLimit?.maxRequests || 100;
-        this.config.windowMs = APP_CONFIG.security?.rateLimit?.windowMs || 60000;
-        this.logger.info('Strict mode disabled');
+        return Math.max(0, config.maxRequests - window.length);
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    isEnabled() {
-        return this.config.enabled && this.initialized;
-    }
+    // Start cleanup
+    startCleanup();
     
-    reset() {
-        this.requests.clear();
-        this.blockedIPs.clear();
-        if (this.tokenBuckets) this.tokenBuckets.clear();
+    return {
+        /**
+         * Check rate limit
+         */
+        check: check,
         
-        this.stats = {
-            totalRequests: 0,
-            allowedRequests: 0,
-            blockedRequests: 0,
-            currentActive: 0
-        };
+        /**
+         * Check endpoint-specific limit
+         */
+        checkEndpoint: checkEndpoint,
         
-        this.logger.info('Rate limiter stats reset');
-    }
-    
-    destroy() {
-        if (this.cleanupInterval) clearInterval(this.cleanupInterval);
-        this.requests.clear();
-        this.blockedIPs.clear();
-        this.initialized = false;
-        this.logger.info('Rate limiter destroyed');
-    }
-}
+        /**
+         * Block a key
+         */
+        block: blockKey,
+        
+        /**
+         * Unblock a key
+         */
+        unblock: unblockKey,
+        
+        /**
+         * Check if key is blocked
+         */
+        isBlocked: isBlocked,
+        
+        /**
+         * Add to whitelist
+         */
+        whitelist: addToWhitelist,
+        
+        /**
+         * Remove from whitelist
+         */
+        unwhitelist: removeFromWhitelist,
+        
+        /**
+         * Get remaining requests
+         */
+        getRemaining: getRemainingRequests,
+        
+        /**
+         * Get statistics
+         */
+        getStats: getStats,
+        
+        /**
+         * Reset all data
+         */
+        reset: function() {
+            _windows = {};
+            _blockedKeys = {};
+            _stats = {
+                totalRequests: 0,
+                allowedRequests: 0,
+                blockedRequests: 0
+            };
+        },
+        
+        /**
+         * Update configuration
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+            }
+        },
+        
+        /**
+         * Enable rate limiter
+         */
+        enable: function() {
+            config.enabled = true;
+            startCleanup();
+        },
+        
+        /**
+         * Disable rate limiter
+         */
+        disable: function() {
+            config.enabled = false;
+            stopCleanup();
+        },
+        
+        /**
+         * Cleanup manually
+         */
+        cleanup: cleanup,
+        
+        /**
+         * Destroy (stop cleanup)
+         */
+        destroy: function() {
+            stopCleanup();
+            _windows = {};
+            _blockedKeys = {};
+        }
+    };
+})();
 
-const rateLimiter = new RateLimiter();
-
-export default rateLimiter;
-export { RateLimiter };
+// ============================================
+// USAGE:
+// ============================================
+// // General rate limit
+// var result = RateLimiter.check();
+// if (!result.allowed) {
+//     console.log('Rate limited. Retry in:', result.retryAfter, 'ms');
+// }
+// 
+// // Endpoint-specific
+// var loginCheck = RateLimiter.checkEndpoint('login');
+// 
+// // Check remaining
+// var remaining = RateLimiter.getRemaining();
+// ============================================

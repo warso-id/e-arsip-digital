@@ -1,215 +1,95 @@
-// js/security/session-hardening.js - Session Hardening 2026
+// js/security/session-hardening.js - Session Hardening 2026 (PRIVACY-AWARE)
 /**
  * E-Arsip Digital - Session Hardening
  * Version: 2026.1.0
- * Features: Session fingerprinting, concurrent session control,
- *           activity monitoring, automatic session termination
+ * 
+ * Features:
+ * - Idle timeout detection
+ * - Activity monitoring
+ * - Session validation
+ * - Auto-logout on inactivity
+ * - NO fingerprinting (privacy-aware)
  */
 
-import { Logger } from '../logger.js';
-import APP_CONFIG from '../../config/config.js';
-
-class SessionHardening {
-    constructor(config = APP_CONFIG.security?.session || {}) {
-        this.logger = new Logger('SessionHardening');
+var SessionHardening = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        enabled: true,
+        idleTimeout: 1800000,        // 30 menit idle
+        absoluteTimeout: 28800000,   // 8 jam maksimal
+        extendOnActivity: true,      // Perpanjang session saat ada aktivitas
+        activityEvents: [            // Event yang dianggap aktivitas
+            'mousedown', 'keydown', 'scroll',
+            'touchstart', 'click', 'focus'
+        ],
+        heartbeatInterval: 30000,    // Cek session setiap 30 detik
+        warnBeforeTimeout: 60000,    // Peringatan 1 menit sebelum timeout
+        redirectUrl: '../login.html?message=session_expired'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _lastActivity = Date.now();
+    var _sessionStart = Date.now();
+    var _idleTimer = null;
+    var _heartbeatTimer = null;
+    var _warningTimer = null;
+    var _activityHandler = null;
+    var _callbacks = {};            // { onTimeout, onWarning, onActivity }
+    var _initialized = false;
+    var _isWarningShown = false;
+    
+    // ============================================
+    // ACTIVITY TRACKING
+    // ============================================
+    
+    function updateActivity() {
+        _lastActivity = Date.now();
+        _isWarningShown = false;
         
-        this.config = {
-            httpOnly: config.httpOnly !== false,
-            secure: config.secure !== false,
-            sameSite: config.sameSite || 'Strict',
-            maxConcurrentSessions: config.maxConcurrentSessions || 3,
-            idleTimeout: config.idleTimeout || 1800000,
-            absoluteTimeout: config.absoluteTimeout || 28800000,
-            extendOnActivity: config.extendOnActivity !== false,
-            requireReauth: config.requireReauth || false,
-            ...config
+        // Reset timers
+        if (config.extendOnActivity) {
+            resetTimers();
+        }
+        
+        // Callback
+        if (_callbacks.onActivity) {
+            _callbacks.onActivity();
+        }
+    }
+    
+    function startActivityMonitoring() {
+        // Buat handler (debounced)
+        var debounceTimer = null;
+        _activityHandler = function() {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateActivity, 1000);
         };
         
-        // Active session tracking
-        this.activeSessions = new Map();
-        this.currentSessionId = null;
-        
-        // Activity monitoring
-        this.lastActivity = Date.now();
-        this.activityEvents = [
-            'mousedown', 'mousemove', 'keydown', 'scroll',
-            'touchstart', 'touchmove', 'click', 'focus'
-        ];
-        this.activityHandler = null;
-        
-        // Timers
-        this.idleTimer = null;
-        this.absoluteTimer = null;
-        this.heartbeatTimer = null;
-        
-        this.initialized = false;
-        
-        this.init();
-    }
-    
-    init() {
-        this.currentSessionId = this.getOrCreateSessionId();
-        this.registerSession();
-        this.startActivityMonitoring();
-        this.startIdleTimer();
-        this.startAbsoluteTimer();
-        this.startHeartbeat();
-        this.setupTabSync();
-        
-        this.initialized = true;
-        
-        this.logger.info('Session hardening initialized', {
-            sessionId: this.currentSessionId
-        });
-    }
-    
-    // ============================================
-    // SESSION MANAGEMENT
-    // ============================================
-    
-    getOrCreateSessionId() {
-        let sessionId = sessionStorage.getItem('session_id');
-        
-        if (!sessionId) {
-            sessionId = this.generateSessionId();
-            sessionStorage.setItem('session_id', sessionId);
+        // Attach listeners
+        for (var i = 0; i < config.activityEvents.length; i++) {
+            document.addEventListener(config.activityEvents[i], _activityHandler, { passive: true });
         }
         
-        return sessionId;
-    }
-    
-    generateSessionId() {
-        const array = new Uint32Array(4);
-        crypto.getRandomValues(array);
-        
-        return Array.from(array, dec => ('0' + dec.toString(16)).substr(-4)).join('');
-    }
-    
-    registerSession() {
-        const sessionData = {
-            sessionId: this.currentSessionId,
-            tabId: this.getTabId(),
-            createdAt: Date.now(),
-            lastActivity: Date.now(),
-            fingerprint: this.generateFingerprint()
-        };
-        
-        // Store in session storage (tab-specific)
-        sessionStorage.setItem('session_data', JSON.stringify(sessionData));
-        
-        // Register in active sessions
-        this.activeSessions.set(this.currentSessionId, sessionData);
-        
-        // Enforce concurrent session limit
-        this.enforceConcurrentLimit();
-        
-        // Store active sessions in localStorage for cross-tab access
-        this.saveActiveSessions();
-        
-        this.logger.debug('Session registered', {
-            sessionId: this.currentSessionId,
-            activeCount: this.activeSessions.size
-        });
-    }
-    
-    enforceConcurrentLimit() {
-        if (this.activeSessions.size <= this.config.maxConcurrentSessions) return;
-        
-        // Find oldest sessions to terminate
-        const sessions = Array.from(this.activeSessions.entries());
-        sessions.sort((a, b) => a[1].createdAt - b[1].createdAt);
-        
-        const sessionsToRemove = sessions.slice(0, sessions.length - this.config.maxConcurrentSessions);
-        
-        sessionsToRemove.forEach(([id, data]) => {
-            this.activeSessions.delete(id);
-            
-            this.logger.warn('Concurrent session limit enforced', {
-                terminatedSession: id,
-                reason: 'max_concurrent_exceeded'
-            });
-            
-            // Dispatch event
-            window.dispatchEvent(new CustomEvent('session:terminated', {
-                detail: { sessionId: id, reason: 'concurrent_limit' }
-            }));
-        });
-        
-        this.saveActiveSessions();
-    }
-    
-    saveActiveSessions() {
-        try {
-            const sessions = Array.from(this.activeSessions.entries()).map(([id, data]) => ({
-                id,
-                createdAt: data.createdAt,
-                lastActivity: data.lastActivity
-            }));
-            
-            localStorage.setItem('active_sessions', JSON.stringify(sessions));
-        } catch (error) {
-            this.logger.warn('Failed to save active sessions', error);
-        }
-    }
-    
-    loadActiveSessions() {
-        try {
-            const stored = localStorage.getItem('active_sessions');
-            if (stored) {
-                const sessions = JSON.parse(stored);
-                sessions.forEach(s => {
-                    if (!this.activeSessions.has(s.id)) {
-                        this.activeSessions.set(s.id, s);
-                    }
-                });
-            }
-        } catch {
-            // Ignore
-        }
-    }
-    
-    // ============================================
-    // ACTIVITY MONITORING
-    // ============================================
-    
-    startActivityMonitoring() {
-        this.activityHandler = this.debounce(() => {
-            this.updateActivity();
-        }, 1000);
-        
-        this.activityEvents.forEach(event => {
-            document.addEventListener(event, this.activityHandler, { passive: true });
-        });
-        
-        // Also track visibility changes
-        document.addEventListener('visibilitychange', () => {
+        // Visibility change
+        document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
-                this.updateActivity();
+                updateActivity();
             }
         });
     }
     
-    updateActivity() {
-        this.lastActivity = Date.now();
-        
-        // Update session data
-        if (this.activeSessions.has(this.currentSessionId)) {
-            const session = this.activeSessions.get(this.currentSessionId);
-            session.lastActivity = Date.now();
-            
-            // Extend session if configured
-            if (this.config.extendOnActivity) {
-                this.resetIdleTimer();
+    function stopActivityMonitoring() {
+        if (_activityHandler) {
+            for (var i = 0; i < config.activityEvents.length; i++) {
+                document.removeEventListener(config.activityEvents[i], _activityHandler);
             }
-        }
-        
-        // Update session storage
-        try {
-            const sessionData = JSON.parse(sessionStorage.getItem('session_data') || '{}');
-            sessionData.lastActivity = Date.now();
-            sessionStorage.setItem('session_data', JSON.stringify(sessionData));
-        } catch {
-            // Ignore
+            _activityHandler = null;
         }
     }
     
@@ -217,269 +97,274 @@ class SessionHardening {
     // TIMERS
     // ============================================
     
-    startIdleTimer() {
-        this.resetIdleTimer();
+    function resetTimers() {
+        clearTimers();
+        startIdleTimer();
+        startWarningTimer();
     }
     
-    resetIdleTimer() {
-        if (this.idleTimer) clearTimeout(this.idleTimer);
+    function startIdleTimer() {
+        if (_idleTimer) clearTimeout(_idleTimer);
         
-        this.idleTimer = setTimeout(() => {
-            this.logger.warn('Session idle timeout');
+        _idleTimer = setTimeout(function() {
+            console.warn('[SessionHardening] Session expired (idle timeout)');
             
-            window.dispatchEvent(new CustomEvent('session:idle_timeout', {
-                detail: { lastActivity: this.lastActivity, timeout: this.config.idleTimeout }
-            }));
-            
-            // Terminate session after idle timeout
-            this.terminateSession('idle_timeout');
-        }, this.config.idleTimeout);
-    }
-    
-    startAbsoluteTimer() {
-        if (this.absoluteTimer) clearTimeout(this.absoluteTimer);
-        
-        this.absoluteTimer = setTimeout(() => {
-            this.logger.warn('Session absolute timeout');
-            
-            window.dispatchEvent(new CustomEvent('session:absolute_timeout', {
-                detail: { timeout: this.config.absoluteTimeout }
-            }));
-            
-            this.terminateSession('absolute_timeout');
-        }, this.config.absoluteTimeout);
-    }
-    
-    startHeartbeat() {
-        // Periodic check for session validity
-        this.heartbeatTimer = setInterval(() => {
-            this.checkSessionHealth();
-        }, 30000); // Every 30 seconds
-    }
-    
-    checkSessionHealth() {
-        // Check if session is still valid
-        const sessionData = this.activeSessions.get(this.currentSessionId);
-        if (!sessionData) {
-            this.terminateSession('session_not_found');
-            return;
-        }
-        
-        // Check idle time
-        const idleTime = Date.now() - this.lastActivity;
-        if (idleTime > this.config.idleTimeout) {
-            this.terminateSession('idle_timeout');
-            return;
-        }
-        
-        // Check absolute timeout
-        const sessionAge = Date.now() - sessionData.createdAt;
-        if (sessionAge > this.config.absoluteTimeout) {
-            this.terminateSession('absolute_timeout');
-            return;
-        }
-    }
-    
-    // ============================================
-    // SESSION TERMINATION
-    // ============================================
-    
-    terminateSession(reason) {
-        this.logger.warn('Terminating session', {
-            sessionId: this.currentSessionId,
-            reason
-        });
-        
-        // Remove from active sessions
-        this.activeSessions.delete(this.currentSessionId);
-        this.saveActiveSessions();
-        
-        // Clear timers
-        this.clearTimers();
-        
-        // Clear session storage
-        sessionStorage.removeItem('session_id');
-        sessionStorage.removeItem('session_data');
-        
-        // Clear auth data
-        localStorage.removeItem('auth_session');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_refresh_token');
-        
-        // Dispatch event
-        window.dispatchEvent(new CustomEvent('session:terminated', {
-            detail: { sessionId: this.currentSessionId, reason }
-        }));
-        
-        // Redirect to login
-        setTimeout(() => {
-<<<<<<< HEAD
-            window.location.href = resolveAppPath('/login.html?message=session_expired');
-=======
-            window.location.href = '/login.html?message=session_expired';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-        }, 1000);
-    }
-    
-    clearTimers() {
-        if (this.idleTimer) { clearTimeout(this.idleTimer); this.idleTimer = null; }
-        if (this.absoluteTimer) { clearTimeout(this.absoluteTimer); this.absoluteTimer = null; }
-        if (this.heartbeatTimer) { clearInterval(this.heartbeatTimer); this.heartbeatTimer = null; }
-    }
-    
-    // ============================================
-    // FINGERPRINTING
-    // ============================================
-    
-    generateFingerprint() {
-        const components = [
-            navigator.userAgent,
-            navigator.language,
-            screen.colorDepth,
-            screen.width,
-            screen.height,
-            new Date().getTimezoneOffset(),
-            navigator.hardwareConcurrency || 'unknown',
-            navigator.deviceMemory || 'unknown'
-        ];
-        
-        const fingerprint = components.join('|');
-        
-        // Simple hash
-        let hash = 0;
-        for (let i = 0; i < fingerprint.length; i++) {
-            const chr = fingerprint.charCodeAt(i);
-            hash = ((hash << 5) - hash) + chr;
-            hash |= 0;
-        }
-        
-        return Math.abs(hash).toString(36);
-    }
-    
-    validateFingerprint() {
-        try {
-            const sessionData = JSON.parse(sessionStorage.getItem('session_data') || '{}');
-            const currentFingerprint = this.generateFingerprint();
-            
-            if (sessionData.fingerprint && sessionData.fingerprint !== currentFingerprint) {
-                this.logger.warn('Session fingerprint mismatch - possible session hijacking');
-                return false;
+            if (_callbacks.onTimeout) {
+                _callbacks.onTimeout('idle_timeout');
+            } else {
+                // Default: redirect ke login
+                window.location.href = config.redirectUrl;
             }
-            
-            return true;
-        } catch {
-            return false;
-        }
+        }, config.idleTimeout);
     }
     
-    // ============================================
-    // TAB SYNCHRONIZATION
-    // ============================================
-    
-    setupTabSync() {
-        // Listen for storage events from other tabs
-        window.addEventListener('storage', (event) => {
-            if (event.key === 'active_sessions') {
-                this.loadActiveSessions();
-            }
-            
-            if (event.key === 'session_terminate' && event.newValue) {
-                const data = JSON.parse(event.newValue);
-                if (data.sessionId !== this.currentSessionId) {
-                    this.activeSessions.delete(data.sessionId);
-                }
-            }
-        });
+    function startWarningTimer() {
+        if (_warningTimer) clearTimeout(_warningTimer);
         
-        // BroadcastChannel for real-time sync
-        if ('BroadcastChannel' in window) {
-            this.channel = new BroadcastChannel('session-sync');
-            
-            this.channel.onmessage = (event) => {
-                const { type, data } = event.data;
+        var warningTime = config.idleTimeout - config.warnBeforeTimeout;
+        if (warningTime <= 0) return;
+        
+        _warningTimer = setTimeout(function() {
+            if (!_isWarningShown) {
+                _isWarningShown = true;
+                console.warn('[SessionHardening] Session will expire soon');
                 
-                if (type === 'session_created') {
-                    this.activeSessions.set(data.sessionId, data);
-                    this.saveActiveSessions();
-                } else if (type === 'session_terminated') {
-                    this.activeSessions.delete(data.sessionId);
-                    this.saveActiveSessions();
+                if (_callbacks.onWarning) {
+                    _callbacks.onWarning();
                 }
-            };
-        }
+            }
+        }, warningTime);
     }
     
-    getTabId() {
-        let tabId = sessionStorage.getItem('tab_id');
+    function startHeartbeat() {
+        if (_heartbeatTimer) clearInterval(_heartbeatTimer);
         
-        if (!tabId) {
-            tabId = `tab_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`;
-            sessionStorage.setItem('tab_id', tabId);
-        }
-        
-        return tabId;
+        _heartbeatTimer = setInterval(function() {
+            var idleTime = Date.now() - _lastActivity;
+            var sessionAge = Date.now() - _sessionStart;
+            
+            // Check absolute timeout
+            if (sessionAge > config.absoluteTimeout) {
+                console.warn('[SessionHardening] Session expired (absolute timeout)');
+                clearTimers();
+                
+                if (_callbacks.onTimeout) {
+                    _callbacks.onTimeout('absolute_timeout');
+                } else {
+                    window.location.href = config.redirectUrl;
+                }
+                return;
+            }
+            
+            // Check idle timeout
+            if (idleTime > config.idleTimeout) {
+                console.warn('[SessionHardening] Session expired (idle)');
+                clearTimers();
+                
+                if (_callbacks.onTimeout) {
+                    _callbacks.onTimeout('idle_timeout');
+                } else {
+                    window.location.href = config.redirectUrl;
+                }
+            }
+        }, config.heartbeatInterval);
+    }
+    
+    function clearTimers() {
+        if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+        if (_warningTimer) { clearTimeout(_warningTimer); _warningTimer = null; }
+        if (_heartbeatTimer) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
     }
     
     // ============================================
-    // UTILITY METHODS
+    // SESSION INFO
     // ============================================
     
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const context = this;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), wait);
+    function getIdleTime() {
+        return Date.now() - _lastActivity;
+    }
+    
+    function getSessionAge() {
+        return Date.now() - _sessionStart;
+    }
+    
+    function getRemainingTime() {
+        return Math.max(0, config.idleTimeout - getIdleTime());
+    }
+    
+    function getStatus() {
+        var idleTime = getIdleTime();
+        var sessionAge = getSessionAge();
+        
+        return {
+            idleTime: idleTime,
+            sessionAge: sessionAge,
+            remainingTime: Math.max(0, config.idleTimeout - idleTime),
+            isExpiring: idleTime > (config.idleTimeout - config.warnBeforeTimeout),
+            isExpired: idleTime > config.idleTimeout || sessionAge > config.absoluteTimeout,
+            lastActivity: new Date(_lastActivity).toISOString(),
+            sessionStart: new Date(_sessionStart).toISOString()
         };
     }
     
-    getActiveSessionCount() {
-        return this.activeSessions.size;
+    // ============================================
+    // CALLBACKS
+    // ============================================
+    
+    function onTimeout(callback) {
+        _callbacks.onTimeout = callback;
     }
     
-    getSessionAge() {
-        const sessionData = this.activeSessions.get(this.currentSessionId);
-        if (!sessionData) return 0;
-        return Date.now() - sessionData.createdAt;
+    function onWarning(callback) {
+        _callbacks.onWarning = callback;
     }
     
-    getIdleTime() {
-        return Date.now() - this.lastActivity;
-    }
-    
-    isSessionValid() {
-        return this.activeSessions.has(this.currentSessionId) && 
-               this.getIdleTime() < this.config.idleTimeout &&
-               this.getSessionAge() < this.config.absoluteTimeout &&
-               this.validateFingerprint();
+    function onActivity(callback) {
+        _callbacks.onActivity = callback;
     }
     
     // ============================================
-    // CLEANUP
+    // PUBLIC API
     // ============================================
     
-    destroy() {
-        this.clearTimers();
+    return {
+        /**
+         * Initialize session hardening
+         */
+        init: function(options) {
+            if (_initialized) return;
+            
+            if (options) {
+                for (var key in options) {
+                    if (options.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = options[key];
+                    }
+                }
+            }
+            
+            if (!config.enabled) return;
+            
+            _lastActivity = Date.now();
+            _sessionStart = Date.now();
+            
+            startActivityMonitoring();
+            startIdleTimer();
+            startWarningTimer();
+            startHeartbeat();
+            
+            _initialized = true;
+            
+            console.info('[SessionHardening] Initialized (idle: ' + 
+                Math.round(config.idleTimeout / 60000) + 'min, absolute: ' + 
+                Math.round(config.absoluteTimeout / 3600000) + 'hrs)');
+        },
         
-        if (this.activityHandler) {
-            this.activityEvents.forEach(event => {
-                document.removeEventListener(event, this.activityHandler);
-            });
+        /**
+         * Update last activity (panggil manual jika perlu)
+         */
+        touch: function() {
+            updateActivity();
+        },
+        
+        /**
+         * Get session status
+         */
+        getStatus: getStatus,
+        
+        /**
+         * Get idle time in ms
+         */
+        getIdleTime: getIdleTime,
+        
+        /**
+         * Get session age in ms
+         */
+        getSessionAge: getSessionAge,
+        
+        /**
+         * Get remaining time before timeout
+         */
+        getRemainingTime: getRemainingTime,
+        
+        /**
+         * Check if session is valid
+         */
+        isValid: function() {
+            return getIdleTime() < config.idleTimeout && 
+                   getSessionAge() < config.absoluteTimeout;
+        },
+        
+        /**
+         * Register timeout callback
+         */
+        onTimeout: onTimeout,
+        
+        /**
+         * Register warning callback
+         */
+        onWarning: onWarning,
+        
+        /**
+         * Register activity callback
+         */
+        onActivity: onActivity,
+        
+        /**
+         * Update config
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+                // Reset timers dengan config baru
+                if (_initialized) {
+                    resetTimers();
+                }
+            }
+        },
+        
+        /**
+         * Destroy (cleanup)
+         */
+        destroy: function() {
+            clearTimers();
+            stopActivityMonitoring();
+            _callbacks = {};
+            _initialized = false;
         }
-        
-        if (this.channel) {
-            this.channel.close();
-        }
-        
-        this.activeSessions.clear();
-        this.initialized = false;
-        
-        this.logger.info('Session hardening destroyed');
+    };
+})();
+
+// ============================================
+// AUTO-INIT jika config tersedia
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    var sessionConfig = null;
+    
+    if (window.EArsip && window.EArsip.Config && window.EArsip.Config.auth) {
+        sessionConfig = {
+            idleTimeout: window.EArsip.Config.auth.idleTimeout || 1800000,
+            absoluteTimeout: window.EArsip.Config.auth.absoluteTimeout || 28800000,
+            enabled: true
+        };
     }
-}
+    
+    SessionHardening.init(sessionConfig);
+});
 
-// Create singleton
-const sessionHardening = new SessionHardening();
-
-export default sessionHardening;
-export { SessionHardening };
+// ============================================
+// USAGE:
+// ============================================
+// SessionHardening.init({ idleTimeout: 1800000 });
+// 
+// SessionHardening.onTimeout(function(reason) {
+//     alert('Session expired: ' + reason);
+//     window.location.href = '../login.html';
+// });
+// 
+// var status = SessionHardening.getStatus();
+// console.log('Remaining:', status.remainingTime, 'ms');
+// ============================================

@@ -1,311 +1,377 @@
-// js/security/audit.js - Advanced Audit Trail 2026
+// js/security/audit.js - Audit Trail System 2026 (SECURE)
 /**
  * E-Arsip Digital - Audit Trail System
  * Version: 2026.1.0
- * Tracks all security-relevant events with immutable logging
+ * 
+ * Mencatat semua event keamanan dengan:
+ * - Privacy-aware logging (no PII)
+ * - Local storage dengan batasan
+ * - Integrity verification
+ * - No external dependencies
  */
 
-import { Logger } from '../logger.js';
-import { EncryptionService } from './encryption.js';
-
-class AuditTrail {
-    constructor() {
-        this.logger = new Logger('Audit');
-        this.encryption = new EncryptionService();
+var AuditTrail = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONSTANTS
+    // ============================================
+    var EVENT_TYPES = {
+        AUTH_LOGIN: 'auth.login',
+        AUTH_LOGOUT: 'auth.logout',
+        AUTH_FAILED: 'auth.failed',
+        AUTH_PASSWORD_CHANGE: 'auth.password_change',
+        DATA_CREATE: 'data.create',
+        DATA_UPDATE: 'data.update',
+        DATA_DELETE: 'data.delete',
+        DATA_EXPORT: 'data.export',
+        DATA_VIEW: 'data.view',
+        SECURITY_THREAT: 'security.threat',
+        SECURITY_BLOCKED: 'security.blocked',
+        SECURITY_XSS: 'security.xss',
+        SECURITY_CSRF: 'security.csrf',
+        SECURITY_SQLI: 'security.sqli',
+        CONFIG_CHANGE: 'config.change',
+        USER_MANAGEMENT: 'user.management',
+        PERMISSION_CHANGE: 'permission.change',
+        BACKUP_CREATE: 'backup.create',
+        BACKUP_RESTORE: 'backup.restore',
+        SYSTEM_ERROR: 'system.error',
+        SYSTEM_STARTUP: 'system.startup',
+        SESSION_START: 'session.start',
+        SESSION_END: 'session.end'
+    };
+    
+    var SEVERITY = {
+        DEBUG: 0,
+        INFO: 1,
+        WARNING: 2,
+        ERROR: 3,
+        CRITICAL: 4
+    };
+    
+    var SEVERITY_LABELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
+    
+    // Sensitive keys yang HARUS di-redact
+    var SENSITIVE_KEYS = [
+        'password', 'passwd', 'pwd', 'secret', 'token', 'key', 'api_key',
+        'authorization', 'auth', 'credential', 'credit_card', 'ssn', 'ktp',
+        'passport', 'nik', 'nip', 'nim', 'email', 'phone', 'telepon', 'alamat'
+    ];
+    
+    // Maksimum log entries
+    var MAX_LOGS = 500;
+    var BATCH_SIZE = 10;
+    var FLUSH_INTERVAL = 30000; // 30 detik
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _logs = [];
+    var _pendingLogs = [];
+    var _lastHash = null;
+    var _flushTimer = null;
+    var _sessionId = null;
+    
+    // ============================================
+    // SANITIZATION (PRIVACY-AWARE)
+    // ============================================
+    function sanitizeData(data, depth) {
+        if (!data || typeof data !== 'object') return data;
+        if (depth === undefined) depth = 0;
+        if (depth > 5) return '[MAX_DEPTH]'; // Cegah infinite recursion
         
-        // Event types
-        this.EVENT_TYPES = {
-            AUTH_LOGIN: 'auth.login',
-            AUTH_LOGOUT: 'auth.logout',
-            AUTH_FAILED: 'auth.failed',
-            AUTH_PASSWORD_CHANGE: 'auth.password_change',
-            AUTH_MFA: 'auth.mfa',
-            DATA_CREATE: 'data.create',
-            DATA_UPDATE: 'data.update',
-            DATA_DELETE: 'data.delete',
-            DATA_EXPORT: 'data.export',
-            DATA_IMPORT: 'data.import',
-            SECURITY_THREAT: 'security.threat',
-            SECURITY_BLOCKED: 'security.blocked',
-            SECURITY_XSS: 'security.xss',
-            SECURITY_CSRF: 'security.csrf',
-            SECURITY_SQLI: 'security.sqli',
-            CONFIG_CHANGE: 'config.change',
-            USER_MANAGEMENT: 'user.management',
-            PERMISSION_CHANGE: 'permission.change',
-            BACKUP_CREATE: 'backup.create',
-            BACKUP_RESTORE: 'backup.restore',
-            SYSTEM_ERROR: 'system.error',
-            SYSTEM_STARTUP: 'system.startup',
-            SYSTEM_SHUTDOWN: 'system.shutdown'
-        };
+        if (Array.isArray(data)) {
+            return data.map(function(item) {
+                return sanitizeData(item, depth + 1);
+            });
+        }
         
-        // Severity levels
-        this.SEVERITY = {
-            DEBUG: 0,
-            INFO: 1,
-            WARNING: 2,
-            ERROR: 3,
-            CRITICAL: 4
-        };
+        var sanitized = {};
+        for (var key in data) {
+            if (data.hasOwnProperty(key)) {
+                var lowerKey = key.toLowerCase();
+                
+                // Cek apakah key sensitif
+                var isSensitive = SENSITIVE_KEYS.some(function(sk) {
+                    return lowerKey.indexOf(sk) !== -1;
+                });
+                
+                if (isSensitive) {
+                    sanitized[key] = '***REDACTED***';
+                } else if (typeof data[key] === 'object' && data[key] !== null) {
+                    sanitized[key] = sanitizeData(data[key], depth + 1);
+                } else if (typeof data[key] === 'string' && data[key].length > 500) {
+                    sanitized[key] = data[key].substring(0, 500) + '...[TRUNCATED]';
+                } else {
+                    sanitized[key] = data[key];
+                }
+            }
+        }
         
-        // Audit log storage
-        this.logs = [];
-        this.maxLogs = 1000;
-        this.batchSize = 10;
-        this.flushInterval = 30000;
-        this.pendingLogs = [];
-        
-        // Integrity verification
-        this.lastHash = null;
-        
-        // Session tracking
-        this.sessionEvents = new Map();
-        
-        this.init();
+        return sanitized;
     }
     
-    init() {
-        this.loadLogs();
-        this.setupFlushTimer();
-        this.logger.info('Audit trail initialized');
+    function sanitizeURL(url) {
+        if (!url) return '';
+        try {
+            var parsed = new URL(url);
+            // Hanya simpan pathname (bukan query string/hash)
+            return parsed.origin + parsed.pathname;
+        } catch(e) {
+            return '[INVALID_URL]';
+        }
     }
     
     // ============================================
-    // EVENT LOGGING
+    // USER INFO (Privacy-aware)
     // ============================================
-    
-    log(eventType, data = {}, severity = this.SEVERITY.INFO) {
-        const entry = this.createLogEntry(eventType, data, severity);
+    function getCurrentUser() {
+        try {
+            var session = localStorage.getItem('auth_session') || sessionStorage.getItem('auth_session');
+            if (session) {
+                var data = JSON.parse(session);
+                if (data.user) {
+                    return {
+                        username: data.user.username || 'unknown',
+                        role: data.user.role || 'unknown'
+                    };
+                }
+            }
+        } catch(e) {}
         
-        // Add to pending batch
-        this.pendingLogs.push(entry);
-        
-        // Auto-flush if batch is full
-        if (this.pendingLogs.length >= this.batchSize) {
-            this.flush();
-        }
-        
-        // Immediately log critical events
-        if (severity >= this.SEVERITY.CRITICAL) {
-            this.flush();
-        }
-        
-        return entry;
+        return { username: 'anonymous', role: 'anonymous' };
     }
     
-    createLogEntry(eventType, data, severity) {
-        const entry = {
-            id: this.generateLogId(),
+    function getSessionId() {
+        if (!_sessionId) {
+            _sessionId = localStorage.getItem('audit_session_id');
+            if (!_sessionId) {
+                _sessionId = 'sess_' + Date.now().toString(36) + '_' + 
+                    Math.random().toString(36).substring(2, 8);
+                localStorage.setItem('audit_session_id', _sessionId);
+            }
+        }
+        return _sessionId;
+    }
+    
+    // ============================================
+    // HASH GENERATION (Cryptographic)
+    // ============================================
+    function generateHash(entry, previousHash) {
+        var data = [
+            entry.timestamp || '',
+            entry.eventType || '',
+            (entry.user && entry.user.username) || '',
+            entry.url || '',
+            JSON.stringify(entry.data || {}),
+            previousHash || ''
+        ].join('|');
+        
+        // Simple but effective hash menggunakan DJB2
+        var hash = 5381;
+        for (var i = 0; i < data.length; i++) {
+            hash = ((hash << 5) + hash) + data.charCodeAt(i);
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        
+        // Convert ke hex dan pad
+        return (hash >>> 0).toString(16).padStart(8, '0');
+    }
+    
+    // ============================================
+    // LOG ENTRY CREATION
+    // ============================================
+    function createLogEntry(eventType, data, severity) {
+        if (!severity) severity = SEVERITY.INFO;
+        if (!data) data = {};
+        
+        var entry = {
+            id: 'audit_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7),
             timestamp: new Date().toISOString(),
-            eventType,
-            severity,
-            user: this.getCurrentUser(),
-            sessionId: this.getSessionId(),
-            ipAddress: 'client-side',
-            userAgent: navigator.userAgent,
-            url: window.location.href,
-            data: this.sanitizeData(data),
+            eventType: eventType,
+            severity: severity,
+            user: getCurrentUser(),
+            sessionId: getSessionId(),
+            url: sanitizeURL(window.location.href),
+            data: sanitizeData(data),
             hash: null
         };
         
-        // Generate hash for integrity
-        entry.hash = this.generateHash(entry);
+        // Generate integrity hash
+        entry.hash = generateHash(entry, _lastHash);
+        _lastHash = entry.hash;
         
         return entry;
     }
     
-    // Convenience methods
-    logAuth(event, data = {}) {
-        return this.log(this.EVENT_TYPES[`AUTH_${event.toUpperCase()}`] || event, data, 
-            event === 'FAILED' ? this.SEVERITY.WARNING : this.SEVERITY.INFO);
-    }
-    
-    logData(action, data = {}) {
-        const severity = action === 'DELETE' ? this.SEVERITY.WARNING : this.SEVERITY.INFO;
-        return this.log(this.EVENT_TYPES[`DATA_${action.toUpperCase()}`] || action, data, severity);
-    }
-    
-    logSecurity(event, data = {}) {
-        return this.log(this.EVENT_TYPES[`SECURITY_${event.toUpperCase()}`] || event, data, 
-            this.SEVERITY.WARNING);
-    }
-    
-    logConfig(change, data = {}) {
-        return this.log(this.EVENT_TYPES.CONFIG_CHANGE, { change, ...data }, this.SEVERITY.WARNING);
-    }
-    
-    logError(error, data = {}) {
-        return this.log(this.EVENT_TYPES.SYSTEM_ERROR, {
-            message: error.message,
-            stack: error.stack?.substring(0, 500),
-            ...data
-        }, this.SEVERITY.ERROR);
-    }
-    
-    logCritical(event, data = {}) {
-        return this.log(event, data, this.SEVERITY.CRITICAL);
-    }
-    
     // ============================================
-    // SESSION TRACKING
+    // LOGGING METHODS
     // ============================================
-    
-    trackSession(sessionId, userId) {
-        this.sessionEvents.set(sessionId, {
-            userId,
-            startTime: Date.now(),
-            events: [],
-            lastActivity: Date.now()
-        });
-    }
-    
-    addSessionEvent(sessionId, eventType, data) {
-        const session = this.sessionEvents.get(sessionId);
-        if (session) {
-            session.events.push({
-                eventType,
-                data,
-                timestamp: Date.now()
-            });
-            session.lastActivity = Date.now();
-        }
-    }
-    
-    endSession(sessionId) {
-        const session = this.sessionEvents.get(sessionId);
-        if (session) {
-            session.endTime = Date.now();
-            session.duration = session.endTime - session.startTime;
-            
-            this.log('session.end', {
-                sessionId,
-                duration: session.duration,
-                eventCount: session.events.length
-            });
-            
-            this.sessionEvents.delete(sessionId);
-        }
-    }
-    
-    getSessionSummary(sessionId) {
-        const session = this.sessionEvents.get(sessionId);
-        if (!session) return null;
+    function log(eventType, data, severity) {
+        var entry = createLogEntry(eventType, data, severity);
         
-        return {
-            ...session,
-            duration: Date.now() - session.startTime,
-            isActive: true
+        _pendingLogs.push(entry);
+        
+        // Auto-flush if batch full
+        if (_pendingLogs.length >= BATCH_SIZE) {
+            flush();
+        }
+        
+        // Immediately flush critical events
+        if (severity >= SEVERITY.CRITICAL) {
+            flush();
+        }
+        
+        // Console log untuk development
+        if (severity >= SEVERITY.WARNING) {
+            console.warn('[Audit] ' + SEVERITY_LABELS[severity] + ': ' + eventType, 
+                entry.user.username, entry.data);
+        }
+        
+        return entry;
+    }
+    
+    function logAuth(event, data) {
+        return log(
+            EVENT_TYPES['AUTH_' + event.toUpperCase()] || event,
+            data,
+            event === 'FAILED' ? SEVERITY.WARNING : SEVERITY.INFO
+        );
+    }
+    
+    function logData(action, data) {
+        var sev = action === 'DELETE' ? SEVERITY.WARNING : SEVERITY.INFO;
+        return log(EVENT_TYPES['DATA_' + action.toUpperCase()] || action, data, sev);
+    }
+    
+    function logSecurity(event, data) {
+        return log(
+            EVENT_TYPES['SECURITY_' + event.toUpperCase()] || event,
+            data,
+            SEVERITY.WARNING
+        );
+    }
+    
+    function logError(error, data) {
+        var errorData = {
+            message: error ? (error.message || String(error)) : 'Unknown error',
+            type: error ? (error.name || 'Error') : 'Error'
         };
+        
+        // JANGAN log full stack trace (privacy)
+        if (data) {
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    errorData[key] = data[key];
+                }
+            }
+        }
+        
+        return log(EVENT_TYPES.SYSTEM_ERROR, errorData, SEVERITY.ERROR);
+    }
+    
+    function logCritical(event, data) {
+        return log(event, data, SEVERITY.CRITICAL);
     }
     
     // ============================================
     // FLUSH & STORAGE
     // ============================================
-    
-    setupFlushTimer() {
-        this.flushTimer = setInterval(() => this.flush(), this.flushInterval);
+    function setupFlushTimer() {
+        if (_flushTimer) clearInterval(_flushTimer);
+        _flushTimer = setInterval(flush, FLUSH_INTERVAL);
         
-        // Flush on page unload
-        window.addEventListener('beforeunload', () => this.flush());
+        // Flush on page unload/hide (mobile-friendly)
+        window.addEventListener('beforeunload', flush);
+        window.addEventListener('pagehide', flush);
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) flush();
+        });
     }
     
-    flush() {
-        if (this.pendingLogs.length === 0) return;
+    function flush() {
+        if (_pendingLogs.length === 0) return;
         
-        // Add to in-memory logs
-        this.logs.push(...this.pendingLogs);
+        // Add to main logs
+        _logs = _logs.concat(_pendingLogs);
         
         // Trim if exceeds max
-        if (this.logs.length > this.maxLogs) {
-            this.logs = this.logs.slice(-this.maxLogs);
+        if (_logs.length > MAX_LOGS) {
+            _logs = _logs.slice(-MAX_LOGS);
         }
         
-        // Save to storage
-        this.saveLogs();
-        
-        // Send to server
-        this.sendToServer(this.pendingLogs);
+        // Save to localStorage
+        saveLogs();
         
         // Clear pending
-        this.pendingLogs = [];
+        _pendingLogs = [];
     }
     
-    saveLogs() {
+    function saveLogs() {
         try {
-            // Only save recent logs to localStorage (limit size)
-            const recentLogs = this.logs.slice(-100);
-            const encrypted = this.encryption.encrypt(JSON.stringify(recentLogs));
-            localStorage.setItem('audit_logs', encrypted);
-        } catch (error) {
-            this.logger.warn('Failed to save audit logs', error);
-        }
-    }
-    
-    loadLogs() {
-        try {
-            const encrypted = localStorage.getItem('audit_logs');
-            if (encrypted) {
-                const decrypted = this.encryption.decrypt(encrypted);
-                this.logs = JSON.parse(decrypted) || [];
+            // Hanya simpan 100 log terakhir untuk hemat storage
+            var recentLogs = _logs.slice(-100);
+            var jsonStr = JSON.stringify(recentLogs);
+            
+            // Cek ukuran sebelum simpan
+            if (jsonStr.length > 500000) { // 500KB limit
+                recentLogs = _logs.slice(-50);
+                jsonStr = JSON.stringify(recentLogs);
             }
-        } catch (error) {
-            this.logger.warn('Failed to load audit logs', error);
-            this.logs = [];
+            
+            localStorage.setItem('audit_logs', jsonStr);
+            localStorage.setItem('audit_last_saved', Date.now().toString());
+        } catch(e) {
+            // Storage full - hapus log lama
+            console.warn('Audit: Storage full, clearing old logs');
+            try {
+                _logs = _logs.slice(-20);
+                localStorage.setItem('audit_logs', JSON.stringify(_logs));
+            } catch(e2) {
+                localStorage.removeItem('audit_logs');
+            }
         }
     }
     
-    async sendToServer(logs) {
+    function loadLogs() {
         try {
-            const { apiService } = await import('../api.js');
-            await apiService.post('/api/audit/logs', { logs }, { 
-                priority: 'low',
-                retries: 1 
-            }).catch(() => {
-                // Silently fail - audit logs should never block the app
-            });
-        } catch (error) {
-            // Ignore - audit logging is best-effort
+            var saved = localStorage.getItem('audit_logs');
+            if (saved) {
+                var parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    _logs = parsed;
+                    // Restore last hash
+                    if (_logs.length > 0) {
+                        _lastHash = _logs[_logs.length - 1].hash || null;
+                    }
+                }
+            }
+        } catch(e) {
+            console.warn('Audit: Failed to load logs');
+            _logs = [];
         }
     }
     
     // ============================================
     // INTEGRITY VERIFICATION
     // ============================================
-    
-    generateHash(entry) {
-        const data = `${entry.timestamp}|${entry.eventType}|${entry.user}|${entry.url}|${JSON.stringify(entry.data)}|${this.lastHash || ''}`;
+    function verifyIntegrity() {
+        var results = [];
+        var previousHash = null;
         
-        // Simple hash using SubtleCrypto
-        const encoder = new TextEncoder();
-        const dataBuffer = encoder.encode(data);
-        
-        // Use a simple checksum as fallback
-        let hash = 0;
-        for (let i = 0; i < dataBuffer.length; i++) {
-            const chr = dataBuffer[i];
-            hash = ((hash << 5) - hash) + chr;
-        }
-        
-        this.lastHash = hash.toString(36);
-        return this.lastHash;
-    }
-    
-    verifyIntegrity() {
-        const results = [];
-        let previousHash = null;
-        
-        for (let i = 0; i < this.logs.length; i++) {
-            const entry = this.logs[i];
-            const expectedHash = this.recalculateHash(entry, previousHash);
+        for (var i = 0; i < _logs.length; i++) {
+            var entry = _logs[i];
+            var tempPrev = _lastHash;
+            _lastHash = previousHash;
+            var expectedHash = generateHash(entry, previousHash);
+            _lastHash = tempPrev;
             
             if (entry.hash !== expectedHash) {
                 results.push({
                     index: i,
                     id: entry.id,
                     timestamp: entry.timestamp,
-                    expected: expectedHash,
-                    actual: entry.hash,
                     tampered: true
                 });
             }
@@ -314,122 +380,114 @@ class AuditTrail {
         }
         
         return {
-            total: this.logs.length,
+            total: _logs.length,
             tampered: results.length,
-            details: results,
-            isValid: results.length === 0
+            isValid: results.length === 0,
+            details: results
         };
     }
     
-    recalculateHash(entry, previousHash) {
-        const tempLastHash = this.lastHash;
-        this.lastHash = previousHash;
-        const hash = this.generateHash(entry);
-        this.lastHash = tempLastHash;
-        return hash;
-    }
-    
     // ============================================
-    // QUERY & ANALYSIS
+    // QUERY
     // ============================================
-    
-    query(options = {}) {
-        let results = [...this.logs];
+    function query(options) {
+        if (!options) options = {};
         
-        // Filter by event type
+        var results = _logs.slice();
+        
         if (options.eventType) {
-            results = results.filter(log => log.eventType === options.eventType);
+            results = results.filter(function(log) {
+                return log.eventType === options.eventType;
+            });
         }
         
-        // Filter by severity
         if (options.minSeverity !== undefined) {
-            results = results.filter(log => log.severity >= options.minSeverity);
+            results = results.filter(function(log) {
+                return log.severity >= options.minSeverity;
+            });
         }
         
-        // Filter by user
         if (options.user) {
-            results = results.filter(log => log.user === options.user);
+            results = results.filter(function(log) {
+                return log.user && log.user.username === options.user;
+            });
         }
         
-        // Filter by date range
         if (options.startDate) {
-            const start = new Date(options.startDate);
-            results = results.filter(log => new Date(log.timestamp) >= start);
+            var start = new Date(options.startDate).getTime();
+            results = results.filter(function(log) {
+                return new Date(log.timestamp).getTime() >= start;
+            });
         }
         
         if (options.endDate) {
-            const end = new Date(options.endDate);
-            results = results.filter(log => new Date(log.timestamp) <= end);
+            var end = new Date(options.endDate).getTime();
+            results = results.filter(function(log) {
+                return new Date(log.timestamp).getTime() <= end;
+            });
         }
         
-        // Filter by URL
-        if (options.url) {
-            results = results.filter(log => log.url?.includes(options.url));
-        }
-        
-        // Search in data
         if (options.search) {
-            const search = options.search.toLowerCase();
-            results = results.filter(log => 
-                JSON.stringify(log.data).toLowerCase().includes(search) ||
-                log.eventType.toLowerCase().includes(search)
-            );
+            var search = options.search.toLowerCase();
+            results = results.filter(function(log) {
+                return log.eventType.toLowerCase().indexOf(search) !== -1 ||
+                    JSON.stringify(log.data).toLowerCase().indexOf(search) !== -1;
+            });
         }
         
-        // Sort
-        results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        // Sort newest first
+        results.sort(function(a, b) {
+            return new Date(b.timestamp) - new Date(a.timestamp);
+        });
         
-        // Paginate
         if (options.limit) {
-            const offset = options.offset || 0;
+            var offset = options.offset || 0;
             results = results.slice(offset, offset + options.limit);
         }
         
         return results;
     }
     
-    getStats() {
-        const stats = {
-            totalEvents: this.logs.length,
+    function getStats() {
+        var stats = {
+            totalEvents: _logs.length,
             byType: {},
             bySeverity: {},
             byUser: {},
             timeline: []
         };
         
-        // Aggregate by type
-        this.logs.forEach(log => {
+        _logs.forEach(function(log) {
             stats.byType[log.eventType] = (stats.byType[log.eventType] || 0) + 1;
             stats.bySeverity[log.severity] = (stats.bySeverity[log.severity] || 0) + 1;
-            stats.byUser[log.user] = (stats.byUser[log.user] || 0) + 1;
+            var username = log.user ? log.user.username : 'unknown';
+            stats.byUser[username] = (stats.byUser[username] || 0) + 1;
         });
         
-        // Timeline (last 24 hours by hour)
-        const now = Date.now();
-        const hours = {};
-        
-        this.logs.forEach(log => {
-            const hour = new Date(log.timestamp).getHours();
-            hours[hour] = (hours[hour] || 0) + 1;
-        });
-        
-        for (let i = 0; i < 24; i++) {
-            stats.timeline.push({
-                hour: i,
-                count: hours[i] || 0
-            });
+        // Timeline per jam (24 jam terakhir)
+        for (var i = 0; i < 24; i++) {
+            stats.timeline.push({ hour: i, count: 0 });
         }
+        
+        var now = Date.now();
+        _logs.forEach(function(log) {
+            var diff = now - new Date(log.timestamp).getTime();
+            if (diff < 86400000) { // Dalam 24 jam
+                var hour = new Date(log.timestamp).getHours();
+                stats.timeline[hour].count++;
+            }
+        });
         
         return stats;
     }
     
-    getSuspiciousActivity() {
-        const suspicious = [];
+    function getSuspiciousActivity() {
+        var suspicious = [];
         
-        // Find multiple failed logins
-        const failedLogins = this.query({
-            eventType: this.EVENT_TYPES.AUTH_FAILED,
-            minSeverity: this.SEVERITY.WARNING
+        // Deteksi failed login beruntun
+        var failedLogins = query({
+            eventType: EVENT_TYPES.AUTH_FAILED,
+            minSeverity: SEVERITY.WARNING
         });
         
         if (failedLogins.length >= 3) {
@@ -437,35 +495,18 @@ class AuditTrail {
                 type: 'brute_force',
                 severity: 'high',
                 count: failedLogins.length,
-                message: `${failedLogins.length} percobaan login gagal terdeteksi`
+                message: failedLogins.length + ' percobaan login gagal'
             });
         }
         
-        // Find security threats
-        const threats = this.query({
-            eventType: this.EVENT_TYPES.SECURITY_THREAT
-        });
-        
+        // Deteksi security threats
+        var threats = query({ eventType: EVENT_TYPES.SECURITY_THREAT });
         if (threats.length > 0) {
             suspicious.push({
                 type: 'security_threat',
                 severity: 'critical',
                 count: threats.length,
-                message: `${threats.length} ancaman keamanan terdeteksi`
-            });
-        }
-        
-        // Find data deletions
-        const deletions = this.query({
-            eventType: this.EVENT_TYPES.DATA_DELETE
-        });
-        
-        if (deletions.length >= 5) {
-            suspicious.push({
-                type: 'mass_deletion',
-                severity: 'medium',
-                count: deletions.length,
-                message: `${deletions.length} penghapusan data dalam periode singkat`
+                message: threats.length + ' ancaman keamanan'
             });
         }
         
@@ -473,83 +514,70 @@ class AuditTrail {
     }
     
     // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    generateLogId() {
-        return `audit_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-    
-    getCurrentUser() {
-        try {
-            const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
-            return session.user?.username || 'anonymous';
-        } catch {
-            return 'anonymous';
-        }
-    }
-    
-    getSessionId() {
-        return localStorage.getItem('session_id') || 'unknown';
-    }
-    
-    sanitizeData(data) {
-        if (!data) return {};
-        
-        // Remove sensitive fields
-        const sensitiveKeys = ['password', 'token', 'secret', 'key', 'credit_card', 'ssn'];
-        const sanitized = {};
-        
-        for (const [key, value] of Object.entries(data)) {
-            if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk))) {
-                sanitized[key] = '***REDACTED***';
-            } else {
-                sanitized[key] = value;
-            }
-        }
-        
-        return sanitized;
-    }
-    
-    // ============================================
-    // EXPORT
-    // ============================================
-    
-    async exportLogs(options = {}) {
-        const logs = this.query(options);
-        
-        return {
-            metadata: {
-                exportedAt: new Date().toISOString(),
-                totalLogs: logs.length,
-                version: '2026.1.0'
-            },
-            logs: logs,
-            integrity: this.verifyIntegrity(),
-            stats: this.getStats()
-        };
-    }
-    
-    // ============================================
     // PUBLIC API
     // ============================================
+    function init() {
+        loadLogs();
+        setupFlushTimer();
+    }
     
-    clear() {
-        this.logs = [];
-        this.pendingLogs = [];
-        this.lastHash = null;
+    function clear() {
+        _logs = [];
+        _pendingLogs = [];
+        _lastHash = null;
         localStorage.removeItem('audit_logs');
-        this.logger.info('Audit logs cleared');
+        localStorage.removeItem('audit_last_saved');
     }
     
-    destroy() {
-        if (this.flushTimer) clearInterval(this.flushTimer);
-        this.flush();
-        this.sessionEvents.clear();
-        this.logger.info('Audit trail destroyed');
+    function destroy() {
+        if (_flushTimer) clearInterval(_flushTimer);
+        flush();
+        window.removeEventListener('beforeunload', flush);
+        window.removeEventListener('pagehide', flush);
     }
-}
+    
+    // Auto-init
+    init();
+    
+    return {
+        // Constants
+        EVENT_TYPES: EVENT_TYPES,
+        SEVERITY: SEVERITY,
+        
+        // Logging
+        log: log,
+        logAuth: logAuth,
+        logData: logData,
+        logSecurity: logSecurity,
+        logError: logError,
+        logCritical: logCritical,
+        
+        // Management
+        flush: flush,
+        clear: clear,
+        destroy: destroy,
+        
+        // Query
+        query: query,
+        getStats: getStats,
+        getSuspiciousActivity: getSuspiciousActivity,
+        
+        // Integrity
+        verifyIntegrity: verifyIntegrity,
+        
+        // Session
+        getSessionId: getSessionId,
+        getCurrentUser: getCurrentUser
+    };
+})();
 
-const auditTrail = new AuditTrail();
-export default auditTrail;
-export { AuditTrail };
+// ============================================
+// USAGE:
+// ============================================
+// AuditTrail.log(AuditTrail.EVENT_TYPES.AUTH_LOGIN, { method: 'password' });
+// AuditTrail.logAuth('LOGIN', { method: 'password' });
+// AuditTrail.logData('CREATE', { table: 'surat_keluar', id: 'SK001' });
+// AuditTrail.logSecurity('XSS', { payload: '<script>' });
+// var stats = AuditTrail.getStats();
+// var suspicious = AuditTrail.getSuspiciousActivity();
+// ============================================

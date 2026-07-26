@@ -1,5 +1,6 @@
 # docker-compose.yml - E-Arsip Digital 2026
-# Production-ready Docker Compose configuration
+# Enterprise Docker Compose Configuration
+# Usage: docker compose up -d
 
 version: '3.9'
 
@@ -8,44 +9,109 @@ version: '3.9'
 # ============================================
 networks:
   frontend:
+    name: e-arsip-frontend
     driver: bridge
     driver_opts:
       com.docker.network.bridge.name: br-e-arsip-front
   backend:
+    name: e-arsip-backend
     driver: bridge
     internal: true
     driver_opts:
       com.docker.network.bridge.name: br-e-arsip-back
+  monitoring:
+    name: e-arsip-monitoring
+    driver: bridge
+    internal: true
 
 # ============================================
 # VOLUMES
 # ============================================
 volumes:
-  app_data:
-    name: e-arsip-data
   app_uploads:
     name: e-arsip-uploads
+    driver: local
   app_backups:
     name: e-arsip-backups
+    driver: local
   nginx_logs:
     name: e-arsip-nginx-logs
+    driver: local
   certbot_data:
     name: e-arsip-certbot
+    driver: local
+  redis_data:
+    name: e-arsip-redis-data
+    driver: local
+  db_data:
+    name: e-arsip-db-data
+    driver: local
 
 # ============================================
 # SERVICES
 # ============================================
 services:
-  # Application
+  # ==========================================
+  # NGINX Reverse Proxy (Production)
+  # ==========================================
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: e-arsip-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    networks:
+      - frontend
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - app_uploads:/usr/share/nginx/html/uploads:ro
+      - nginx_logs:/var/log/nginx
+      - certbot_data:/etc/letsencrypt:ro
+    environment:
+      - NGINX_HOST=${DOMAIN:-localhost}
+      - NGINX_PORT=80
+    depends_on:
+      app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - production
+
+  # ==========================================
+  # Application (Nginx serving static files)
+  # ==========================================
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
+      args:
+        APP_VERSION: ${APP_VERSION:-2026.1.0}
+        NODE_ENV: production
     container_name: e-arsip-app
     restart: unless-stopped
     networks:
       - frontend
+      - backend
     volumes:
       - app_uploads:/usr/share/nginx/html/uploads
       - app_backups:/usr/share/nginx/html/backups
@@ -53,7 +119,119 @@ services:
     environment:
       - TZ=Asia/Jakarta
       - NODE_ENV=production
-      - APP_VERSION=2026.1.0
+      - APP_VERSION=${APP_VERSION:-2026.1.0}
+      - APP_URL=${APP_URL:-https://localhost}
+      - GAS_SCRIPT_URL=${GAS_SCRIPT_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    env_file:
+      - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+        labels: "production,app"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "com.e-arsip.service=app"
+      - "com.e-arsip.version=${APP_VERSION:-2026.1.0}"
+
+  # ==========================================
+  # SSL/TLS Certificate Management
+  # ==========================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: e-arsip-certbot
+    restart: unless-stopped
+    networks:
+      - frontend
+    volumes:
+      - certbot_data:/etc/letsencrypt
+      - app_uploads:/var/www/html:ro
+    entrypoint: |
+      /bin/sh -c '
+      trap exit TERM;
+      while :; do
+        certbot renew --quiet --deploy-hook "nginx -s reload";
+        sleep 12h & wait $${!};
+      done
+      '
+    environment:
+      - TZ=Asia/Jakarta
+    profiles:
+      - production
+
+  # ==========================================
+  # Redis Cache (Optional)
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: e-arsip-redis
+    restart: unless-stopped
+    networks:
+      - backend
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-change-me-redis-password}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    profiles:
+      - production
+      - with-redis
+
+  # ==========================================
+  # PostgreSQL Database (Optional)
+  # ==========================================
+  db:
+    image: postgres:16-alpine
+    container_name: e-arsip-db
+    restart: unless-stopped
+    networks:
+      - backend
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME:-e_arsip}
+      - POSTGRES_USER=${DB_USER:-e_arsip_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-change-me-db-password}
+      - TZ=Asia/Jakarta
     deploy:
       resources:
         limits:
@@ -68,94 +246,143 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-e_arsip_user} -d ${DB_NAME:-e_arsip}"]
+      interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  # SSL/TLS Termination (optional - for production with HTTPS)
-  certbot:
-    image: certbot/certbot:latest
-    container_name: e-arsip-certbot
-    restart: unless-stopped
-    networks:
-      - frontend
-    volumes:
-      - certbot_data:/etc/letsencrypt
-      - app_data:/var/www/html
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      retries: 5
     profiles:
       - production
-      - ssl
+      - with-db
 
-  # Redis for session storage (optional)
-  redis:
-    image: redis:7-alpine
-    container_name: e-arsip-redis
+  # ==========================================
+  # Backup Service (Optional)
+  # ==========================================
+  backup:
+    image: alpine:latest
+    container_name: e-arsip-backup
     restart: unless-stopped
     networks:
       - backend
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_data:/data
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "3"
+      - app_backups:/backups:rw
+      - app_uploads:/uploads:ro
+      - db_data:/db-data:ro
+    environment:
+      - TZ=Asia/Jakarta
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+    entrypoint: |
+      /bin/sh -c '
+      apk add --no-cache postgresql-client curl;
+      echo "0 2 * * 0 /scripts/backup.sh" > /etc/crontabs/root;
+      crond -f -l 2
+      '
     profiles:
       - production
-      - with-redis
+      - with-backup
 
-  # Development server
+  # ==========================================
+  # Development Server
+  # ==========================================
   dev:
     build:
       context: .
       dockerfile: Dockerfile
       target: development
+      args:
+        NODE_ENV: development
     container_name: e-arsip-dev
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${DEV_PORT:-8080}:8080"
+      - "${DEV_DEBUG_PORT:-9229}:9229"
     networks:
       - frontend
+      - backend
     volumes:
-      - .:/app
+      - .:/app:delegated
       - /app/node_modules
+      - app_uploads:/app/uploads
     environment:
       - TZ=Asia/Jakarta
       - NODE_ENV=development
       - HOT_RELOAD=true
+      - DEBUG_PORT=9229
     stdin_open: true
     tty: true
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
     profiles:
       - development
 
-  # Static file server for testing
-  static:
+  # ==========================================
+  # Static Preview Server
+  # ==========================================
+  preview:
     image: nginx:1.27-alpine
-    container_name: e-arsip-static
-    restart: unless-stopped
+    container_name: e-arsip-preview
+    restart: "no"
     ports:
-      - "8080:80"
+      - "${PREVIEW_PORT:-4173}:80"
     networks:
       - frontend
     volumes:
       - ./dist:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.preview.conf:/etc/nginx/nginx.conf:ro
     profiles:
-      - testing
       - preview
+      - testing
+
+  # ==========================================
+  # Monitoring - Prometheus (Optional)
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: e-arsip-prometheus
+    restart: unless-stopped
+    networks:
+      - monitoring
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    profiles:
+      - monitoring
+
+  # ==========================================
+  # Monitoring - Grafana (Optional)
+  # ==========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: e-arsip-grafana
+    restart: unless-stopped
+    networks:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
 
 # ============================================
-# VOLUME DEFINITIONS
+# ADDITIONAL VOLUMES
 # ============================================
 volumes:
-  redis_data:
-    name: e-arsip-redis-data
+  grafana_data:
+    name: e-arsip-grafana-data
+    driver: local

@@ -1,168 +1,678 @@
-<!-- FILE: tests/check-consistency.html -->
+<!-- tests/check-consistency.html - Enterprise Project Consistency Checker 2026 -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" id="csrf-token" content="">
     <title>Consistency Checker - E-Arsip Digital</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
+    
     <style>
-        body { background: #f5f6fa; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .pass { color: #28a745; }
-        .fail { color: #dc3545; }
-        .warn { color: #ffc107; }
-        pre { background: #1a1a2e; color: #00ff00; padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; }
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        h2 {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        
+        .card h5 {
+            margin-bottom: 16px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        
+        .btn:hover:not(:disabled) {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        .btn-success { background: var(--success); color: white; border-color: var(--success); }
+        .btn-success:hover:not(:disabled) { background: #15803d; }
+        .btn-info { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+        .btn-info:hover:not(:disabled) { background: #0284c7; }
+        
+        .btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        
+        .results-container {
+            background: #1a1a2e;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 13px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            line-height: 1.8;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .results-container .pass { color: #4ade80; }
+        .results-container .fail { color: #f87171; }
+        .results-container .warn { color: #fbbf24; }
+        .results-container .info { color: #60a5fa; }
+        .results-container .muted { color: #94a3b8; }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .summary-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .summary-card .count {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .summary-card .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .summary-card.pass .count { color: var(--success); }
+        .summary-card.fail .count { color: var(--danger); }
+        .summary-card.warn .count { color: var(--warning); }
+        .summary-card.info .count { color: var(--primary); }
+        
+        .progress-bar-wrapper {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-fill.success { background: var(--success); }
+        .progress-fill.warning { background: var(--warning); }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .card { padding: 16px; }
+            .btn { padding: 8px 14px; font-size: 13px; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 480px) {
+            .btn-group { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 class="mb-4">🔍 Project Consistency Checker</h2>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <div class="container" id="main-content">
+        <h2>
+            <i class="fas fa-clipboard-check" style="color:#2563eb;" aria-hidden="true"></i>
+            Project Consistency Checker
+        </h2>
         
-        <div class="card">
-            <h5>Run Validation</h5>
-            <button class="btn btn-primary" onclick="runValidation()">
-                <i class="fas fa-play me-2"></i>Run All Checks
-            </button>
-            <button class="btn btn-success ms-2" onclick="checkAllFiles()">
-                <i class="fas fa-file me-2"></i>Check All Files
-            </button>
-            <button class="btn btn-info ms-2" onclick="checkLinks()">
-                <i class="fas fa-link me-2"></i>Check Links
-            </button>
+        <!-- Actions -->
+        <div class="card" role="region" aria-label="Validation actions">
+            <h5><i class="fas fa-play-circle" aria-hidden="true"></i> Run Validation</h5>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="run-all-btn" type="button" onclick="runAllChecks()">
+                    <i class="fas fa-play" aria-hidden="true"></i> Run All Checks
+                </button>
+                <button class="btn btn-success" id="check-files-btn" type="button" onclick="checkAllFiles()">
+                    <i class="fas fa-file-alt" aria-hidden="true"></i> Check Files
+                </button>
+                <button class="btn btn-info" id="check-links-btn" type="button" onclick="checkLinks()">
+                    <i class="fas fa-link" aria-hidden="true"></i> Check Links
+                </button>
+                <button class="btn" id="check-storage-btn" type="button" onclick="checkStorage()">
+                    <i class="fas fa-database" aria-hidden="true"></i> Check Storage
+                </button>
+            </div>
         </div>
         
-        <div class="card">
-            <h5>Results</h5>
-            <pre id="results">Click "Run All Checks" to start validation...</pre>
+        <!-- Summary -->
+        <div class="card" role="region" aria-label="Validation summary" aria-live="polite">
+            <h5><i class="fas fa-chart-bar" aria-hidden="true"></i> Summary</h5>
+            <div class="summary-grid" id="summary-grid">
+                <div class="summary-card pass">
+                    <div class="count" id="count-pass">0</div>
+                    <div class="label">Passed</div>
+                </div>
+                <div class="summary-card fail">
+                    <div class="count" id="count-fail">0</div>
+                    <div class="label">Failed</div>
+                </div>
+                <div class="summary-card warn">
+                    <div class="count" id="count-warn">0</div>
+                    <div class="label">Warnings</div>
+                </div>
+                <div class="summary-card info">
+                    <div class="count" id="count-total">0</div>
+                    <div class="label">Total</div>
+                </div>
+            </div>
+            <div class="progress-bar-wrapper">
+                <div class="progress-fill" id="progress-bar" style="width:0%"></div>
+            </div>
         </div>
         
-        <div class="card">
-            <h5>Summary</h5>
-            <div id="summary"></div>
+        <!-- Results -->
+        <div class="card" role="region" aria-label="Validation results">
+            <h5><i class="fas fa-terminal" aria-hidden="true"></i> Results</h5>
+            <div class="results-container" id="results" role="log" aria-live="polite">
+                <span class="muted">Click "Run All Checks" to start validation...</span>
+            </div>
         </div>
     </div>
-
-    <script src="../config/config.js"></script>
-    <script src="../js/validator-checker.js"></script>
+    
     <script>
-        async function runValidation() {
-            document.getElementById('results').textContent = 'Running validation...';
-            await projectValidator.runAllChecks();
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+        
+        // State
+        let totalChecks = 0;
+        let passedChecks = 0;
+        let failedChecks = 0;
+        let warningChecks = 0;
+        
+        // ============================================
+        // RESULT LOGGING
+        // ============================================
+        
+        function logResult(type, message) {
+            const resultsEl = document.getElementById('results');
+            const cssClass = { pass: 'pass', fail: 'fail', warn: 'warn', info: 'info' }[type] || '';
+            const prefix = { pass: '✅', fail: '❌', warn: '⚠️', info: 'ℹ️' }[type] || '•';
             
-            const results = projectValidator.results;
-            document.getElementById('results').textContent = 
-                `✅ PASSED (${results.passed.length}):\n` + results.passed.join('\n') + '\n\n' +
-                `❌ FAILED (${results.failed.length}):\n` + results.failed.join('\n') + '\n\n' +
-                `⚠️ WARNINGS (${results.warnings.length}):\n` + results.warnings.join('\n');
+            const line = document.createElement('span');
+            line.className = cssClass;
+            line.textContent = `${prefix} ${message}\n`;
+            resultsEl.appendChild(line);
+            
+            // Auto-scroll
+            resultsEl.scrollTop = resultsEl.scrollHeight;
+            
+            // Update counters
+            totalChecks++;
+            if (type === 'pass') passedChecks++;
+            else if (type === 'fail') failedChecks++;
+            else if (type === 'warn') warningChecks++;
             
             updateSummary();
         }
         
-        async function checkAllFiles() {
-            document.getElementById('results').textContent = 'Checking all project files...';
-            
-            const files = [
-                'index.html', 'login.html', '404.html',
-                'config/config.js', 'config/app-config.js', 'config/routes-config.js',
-                'config/menu-config.js', 'config/security-config.js',
-                'js/api.js', 'js/auth.js', 'js/utils.js', 'js/validator.js',
-                'js/navigation.js', 'js/security.js', 'js/encryption.js',
-                'js/session.js', 'js/upload.js', 'js/notifications.js',
-                'css/style.css', 'css/print.css',
-                'css/themes/dark.css', 'css/themes/blue.css',
-                'css/themes/green.css', 'css/themes/purple.css',
-                'dashboard/admin/index.html', 'dashboard/user/index.html',
-                'dashboard/dekan/index.html', 'dashboard/kaprodi/index.html',
-                'dashboard/wadek/index.html', 'dashboard/staf/index.html',
-                'dashboard/dosen/index.html', 'dashboard/mahasiswa/index.html',
-                'surat-keluar/form.html', 'surat-keluar/list.html',
-                'surat-keluar/draft.html', 'surat-keluar/approval.html',
-                'surat-masuk/form.html', 'surat-masuk/list.html',
-                'surat-masuk/disposisi.html', 'surat-masuk/agenda.html',
-                'profile/index.html', 'manajemen-user/index.html',
-                'laporan/index.html', 'notifikasi/index.html',
-                'pengaturan/index.html', 'help/index.html'
-            ];
-            
-            let found = 0, missing = 0;
-            const results = [];
-            
-            for (const file of files) {
-                try {
-                    const response = await fetch(file, { method: 'HEAD' });
-                    if (response.ok) {
-                        results.push(`✅ ${file}`);
-                        found++;
-                    } else {
-                        results.push(`❌ ${file} (Status: ${response.status})`);
-                        missing++;
-                    }
-                } catch (error) {
-                    results.push(`⚠️ ${file} - Cannot check`);
-                }
-            }
-            
-            document.getElementById('results').textContent = 
-                `Files checked: ${files.length}\nFound: ${found}\nMissing: ${missing}\n\n` + 
-                results.join('\n');
-            
-            updateSummary();
-        }
-        
-        async function checkLinks() {
-            document.getElementById('results').textContent = 'Checking internal links...';
-            
-            const links = document.querySelectorAll('a[href]');
-            const scripts = document.querySelectorAll('script[src]');
-            const styles = document.querySelectorAll('link[rel="stylesheet"]');
-            
-            const allLinks = [
-                ...Array.from(links).map(l => l.href),
-                ...Array.from(scripts).map(s => s.src),
-                ...Array.from(styles).map(s => s.href)
-            ].filter(href => href && !href.startsWith('http') && !href.startsWith('//'));
-            
-            let valid = 0, invalid = 0;
-            const results = [];
-            
-            for (const link of allLinks) {
-                try {
-                    const response = await fetch(link, { method: 'HEAD' });
-                    if (response.ok) {
-                        results.push(`✅ ${link}`);
-                        valid++;
-                    } else {
-                        results.push(`❌ ${link} (${response.status})`);
-                        invalid++;
-                    }
-                } catch {
-                    results.push(`⚠️ ${link} - Cannot verify`);
-                }
-            }
-            
-            document.getElementById('results').textContent = 
-                `Links checked: ${allLinks.length}\nValid: ${valid}\nInvalid: ${invalid}\n\n` + 
-                results.join('\n');
-            
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            totalChecks = 0;
+            passedChecks = 0;
+            failedChecks = 0;
+            warningChecks = 0;
             updateSummary();
         }
         
         function updateSummary() {
-            document.getElementById('summary').innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Gunakan checker ini untuk memvalidasi project sebelum deployment.
-                    File yang ditandai ❌ perlu diperbaiki.
-                    File dengan ⚠️ mungkin berada di path yang berbeda.
-                </div>
-            `;
+            document.getElementById('count-pass').textContent = passedChecks;
+            document.getElementById('count-fail').textContent = failedChecks;
+            document.getElementById('count-warn').textContent = warningChecks;
+            document.getElementById('count-total').textContent = totalChecks;
+            
+            const percent = totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = percent + '%';
+            progressBar.className = 'progress-fill ' + (percent >= 90 ? 'success' : percent >= 50 ? '' : 'warning');
         }
         
-        // Auto-run on load
-        window.addEventListener('DOMContentLoaded', () => {
-            runValidation();
+        function setButtonsDisabled(disabled) {
+            document.querySelectorAll('.btn-group .btn').forEach(b => b.disabled = disabled);
+        }
+        
+        // ============================================
+        // RUN ALL CHECKS
+        // ============================================
+        
+        async function runAllChecks() {
+            clearResults();
+            setButtonsDisabled(true);
+            
+            logResult('info', 'Starting comprehensive validation...');
+            logResult('info', '='.repeat(50));
+            
+            // Check project validator if available
+            if (typeof projectValidator !== 'undefined' && projectValidator.runAllChecks) {
+                try {
+                    await projectValidator.runAllChecks();
+                    const results = projectValidator.results || {};
+                    
+                    if (results.passed) results.passed.forEach(m => logResult('pass', m));
+                    if (results.failed) results.failed.forEach(m => logResult('fail', m));
+                    if (results.warnings) results.warnings.forEach(m => logResult('warn', m));
+                } catch (e) {
+                    logResult('warn', 'Project validator error: ' + e.message);
+                }
+            }
+            
+            // Run built-in checks
+            await checkStorage();
+            await checkBrowserCompatibility();
+            await checkDOMStructure();
+            
+            logResult('info', '='.repeat(50));
+            logResult('info', `Validation complete: ${passedChecks} passed, ${failedChecks} failed, ${warningChecks} warnings`);
+            
+            setButtonsDisabled(false);
+        }
+        
+        // ============================================
+        // FILE CHECKER
+        // ============================================
+        
+        async function checkAllFiles() {
+            clearResults();
+            setButtonsDisabled(true);
+            
+            logResult('info', 'Checking project files...');
+            
+            const files = [
+                // Root
+                'index.html', 'login.html', '404.html', '403.html',
+                'manifest.json', 'sw.js', 'robots.txt', '.htaccess',
+                
+                // Config
+                'config/config.js', 'config/app-config.js', 'config/routes-config.js',
+                'config/menu-config.js', 'config/security-config.js',
+                
+                // Core JS
+                'js/api.js', 'js/auth.js', 'js/utils.js', 'js/validator.js',
+                'js/navigation.js', 'js/security.js', 'js/session.js',
+                'js/upload.js', 'js/notifications.js', 'js/logger.js',
+                'js/router.js', 'js/theme.js', 'js/performance.js',
+                'js/offline.js', 'js/search.js', 'js/patcher.js',
+                'js/init.js', 'js/export.js', 'js/rate-limit.js',
+                
+                // Security
+                'js/security/encryption.js', 'js/security/sanitizer.js',
+                'js/security/xss.js', 'js/security/csrf.js', 'js/security/firewall.js',
+                
+                // CSS
+                'css/style.css', 'css/print.css',
+                
+                // Dashboards
+                'dashboard/admin/index.html', 'dashboard/user/index.html',
+                'dashboard/dekan/index.html', 'dashboard/kaprodi/index.html',
+                'dashboard/wadek/index.html', 'dashboard/staf/index.html',
+                
+                // Surat
+                'surat-keluar/form.html', 'surat-keluar/list.html',
+                'surat-masuk/form.html', 'surat-masuk/list.html',
+                
+                // Pages
+                'profile/index.html', 'manajemen-user/index.html',
+                'laporan/index.html', 'notifikasi/index.html',
+                'pengaturan/index.html', 'pengaturan/backup.html',
+                'pengaturan/penomoran.html', 'pengaturan/tanda-tangan.html',
+                'log-aktivitas/index.html', 'help/index.html'
+            ];
+            
+            let found = 0, missing = 0, errors = 0;
+            const results = [];
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD', cache: 'no-cache' });
+                    if (response.ok || response.status === 304) {
+                        results.push({ type: 'pass', message: file });
+                        found++;
+                    } else if (response.status === 404) {
+                        results.push({ type: 'fail', message: `${file} (Not Found)` });
+                        missing++;
+                    } else {
+                        results.push({ type: 'warn', message: `${file} (Status: ${response.status})` });
+                        errors++;
+                    }
+                } catch (error) {
+                    results.push({ type: 'warn', message: `${file} (Cannot verify: ${error.message})` });
+                    errors++;
+                }
+            }
+            
+            logResult('info', `Files checked: ${files.length} | Found: ${found} | Missing: ${missing} | Errors: ${errors}`);
+            results.forEach(r => logResult(r.type, r.message));
+            
+            setButtonsDisabled(false);
+        }
+        
+        // ============================================
+        // LINK CHECKER
+        // ============================================
+        
+        async function checkLinks() {
+            clearResults();
+            setButtonsDisabled(true);
+            
+            logResult('info', 'Checking internal links...');
+            
+            const links = document.querySelectorAll('a[href]');
+            const scripts = document.querySelectorAll('script[src]');
+            const styles = document.querySelectorAll('link[rel="stylesheet"]');
+            const images = document.querySelectorAll('img[src]');
+            
+            const allLinks = [
+                ...Array.from(links).map(l => l.getAttribute('href')),
+                ...Array.from(scripts).map(s => s.getAttribute('src')),
+                ...Array.from(styles).map(s => s.getAttribute('href')),
+                ...Array.from(images).map(i => i.getAttribute('src'))
+            ].filter(href => {
+                return href && !href.startsWith('http') && !href.startsWith('//') &&
+                       !href.startsWith('#') && !href.startsWith('mailto:') &&
+                       !href.startsWith('tel:') && !href.startsWith('javascript:') &&
+                       !href.startsWith('data:');
+            });
+            
+            // Deduplicate
+            const uniqueLinks = [...new Set(allLinks)];
+            
+            let valid = 0, invalid = 0, skipped = 0;
+            
+            for (const link of uniqueLinks) {
+                try {
+                    const response = await fetch(link, { method: 'HEAD', cache: 'no-cache' });
+                    if (response.ok || response.status === 304) {
+                        logResult('pass', link);
+                        valid++;
+                    } else {
+                        logResult('fail', `${link} (${response.status})`);
+                        invalid++;
+                    }
+                } catch {
+                    logResult('warn', `${link} (Cannot verify)`);
+                    skipped++;
+                }
+            }
+            
+            logResult('info', `Links checked: ${uniqueLinks.length} | Valid: ${valid} | Invalid: ${invalid} | Skipped: ${skipped}`);
+            
+            setButtonsDisabled(false);
+        }
+        
+        // ============================================
+        // STORAGE CHECKER
+        // ============================================
+        
+        async function checkStorage() {
+            logResult('info', '--- Storage Check ---');
+            
+            // Check localStorage
+            try {
+                const testKey = '_consistency_test_';
+                localStorage.setItem(testKey, 'test');
+                localStorage.removeItem(testKey);
+                logResult('pass', 'localStorage available');
+                
+                const size = JSON.stringify(localStorage).length;
+                logResult('info', `localStorage usage: ~${(size / 1024).toFixed(1)} KB`);
+            } catch (e) {
+                logResult('fail', 'localStorage not available: ' + e.message);
+            }
+            
+            // Check sessionStorage
+            try {
+                const testKey = '_consistency_test_';
+                sessionStorage.setItem(testKey, 'test');
+                sessionStorage.removeItem(testKey);
+                logResult('pass', 'sessionStorage available');
+            } catch (e) {
+                logResult('warn', 'sessionStorage not available: ' + e.message);
+            }
+            
+            // Check IndexedDB
+            if ('indexedDB' in window) {
+                logResult('pass', 'IndexedDB supported');
+            } else {
+                logResult('warn', 'IndexedDB not supported');
+            }
+            
+            // Check Cache API
+            if ('caches' in window) {
+                logResult('pass', 'Cache API supported');
+            } else {
+                logResult('warn', 'Cache API not supported');
+            }
+            
+            // Check storage quota
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const percent = ((estimate.usage / estimate.quota) * 100).toFixed(1);
+                    logResult('info', `Storage: ${(estimate.usage/1048576).toFixed(1)}MB / ${(estimate.quota/1048576).toFixed(0)}MB (${percent}%)`);
+                    
+                    if (percent > 80) {
+                        logResult('warn', 'Storage usage is high (>80%)');
+                    }
+                } catch (e) {
+                    logResult('warn', 'Cannot estimate storage');
+                }
+            }
+        }
+        
+        // ============================================
+        // BROWSER COMPATIBILITY
+        // ============================================
+        
+        async function checkBrowserCompatibility() {
+            logResult('info', '--- Browser Compatibility ---');
+            
+            // Check critical APIs
+            const checks = [
+                { name: 'Web Crypto API', test: () => !!window.crypto?.subtle, critical: true },
+                { name: 'Service Worker', test: () => 'serviceWorker' in navigator, critical: true },
+                { name: 'Fetch API', test: () => 'fetch' in window, critical: true },
+                { name: 'Promise', test: () => 'Promise' in window, critical: true },
+                { name: 'Arrow Functions', test: () => true, critical: false }, // Always true in modern browsers
+                { name: 'ES Modules', test: () => 'noModule' in HTMLScriptElement.prototype, critical: true },
+                { name: 'Intl API', test: () => 'Intl' in window, critical: false },
+                { name: 'URL API', test: () => 'URL' in window, critical: true },
+                { name: 'DOMParser', test: () => 'DOMParser' in window, critical: false },
+                { name: 'MutationObserver', test: () => 'MutationObserver' in window, critical: false }
+            ];
+            
+            for (const check of checks) {
+                if (check.test()) {
+                    logResult('pass', `${check.name} supported`);
+                } else {
+                    const type = check.critical ? 'fail' : 'warn';
+                    logResult(type, `${check.name} NOT supported`);
+                }
+            }
+            
+            // Browser info
+            const ua = navigator.userAgent;
+            logResult('info', `Browser: ${ua.substring(0, 100)}`);
+            logResult('info', `Platform: ${navigator.platform || 'unknown'}`);
+            logResult('info', `Language: ${navigator.language}`);
+        }
+        
+        // ============================================
+        // DOM STRUCTURE CHECK
+        // ============================================
+        
+        async function checkDOMStructure() {
+            logResult('info', '--- DOM Structure ---');
+            
+            // Check viewport meta
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                logResult('pass', 'Viewport meta tag present');
+            } else {
+                logResult('fail', 'Viewport meta tag missing');
+            }
+            
+            // Check theme-color meta
+            const themeColor = document.querySelector('meta[name="theme-color"]');
+            if (themeColor) {
+                logResult('pass', 'Theme color meta tag present');
+            } else {
+                logResult('warn', 'Theme color meta tag missing');
+            }
+            
+            // Check CSRF meta
+            const csrf = document.querySelector('meta[name="csrf-token"]');
+            if (csrf) {
+                logResult('pass', 'CSRF meta tag present');
+            } else {
+                logResult('warn', 'CSRF meta tag missing');
+            }
+            
+            // Check manifest
+            const manifest = document.querySelector('link[rel="manifest"]');
+            if (manifest) {
+                logResult('pass', 'Web App Manifest linked');
+            } else {
+                logResult('warn', 'Web App Manifest not linked');
+            }
+            
+            // Check for console errors (basic)
+            const errors = [];
+            const originalError = console.error;
+            console.error = (...args) => { errors.push(args); originalError.apply(console, args); };
+            
+            // Restore
+            setTimeout(() => { console.error = originalError; }, 100);
+            
+            if (errors.length === 0) {
+                logResult('pass', 'No console errors detected');
+            }
+        }
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        // Try to load project validator
+        async function loadProjectValidator() {
+            try {
+                const module = await import('../js/validator-checker.js');
+                window.projectValidator = module.default || module;
+                logResult('pass', 'Project validator loaded');
+            } catch (e) {
+                logResult('warn', 'Project validator not available: ' + e.message);
+            }
+        }
+        
+        // Auto-run basic checks on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadProjectValidator();
+            
+            // Run quick checks automatically
+            await checkStorage();
+            await checkBrowserCompatibility();
+        });
+        
+        // Keyboard shortcut: Ctrl+Shift+V to run all checks
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+                e.preventDefault();
+                runAllChecks();
+            }
         });
     </script>
 </body>

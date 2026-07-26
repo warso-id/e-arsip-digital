@@ -2,57 +2,31 @@
 <!DOCTYPE html>
 <html lang="id" dir="ltr">
 <head>
-<<<<<<< HEAD
-    <script>
-        (function () {
-            const getAppBasePath = () => {
-                const pathname = window.location.pathname || '/';
-                const segments = pathname.split('/').filter(Boolean);
-                if (segments.length === 0) return '/';
-                const repoSegment = segments[0];
-                const isLikelySubfolder = pathname.includes(`/${repoSegment}/`) || pathname.endsWith(`/${repoSegment}`);
-                if (isLikelySubfolder && repoSegment !== 'dashboard' && repoSegment !== 'surat-masuk' && repoSegment !== 'surat-keluar') {
-                    return `/${repoSegment}/`;
-                }
-                return '/';
-            };
-            const appBasePath = getAppBasePath();
-            const rewrite = (value) => {
-                if (!value || !value.startsWith('/')) return value;
-                const clean = value.replace(/^\/+/, '');
-                return `${appBasePath}${clean}`.replace(/\/+/g, '/');
-            };
-            document.querySelectorAll('link[href], script[src], img[src], a[href]').forEach((el) => {
-                ['href', 'src'].forEach((attr) => {
-                    if (!el.hasAttribute(attr)) return;
-                    const value = el.getAttribute(attr);
-                    if (value && value.startsWith('/')) {
-                        el.setAttribute(attr, rewrite(value));
-                    }
-                });
-            });
-        })();
-    </script>
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Halaman tidak ditemukan - E-Arsip Digital">
+    <meta name="csrf-token" id="csrf-token" content="">
+    
+    <!-- PWA Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
     <title>404 - Halaman Tidak Ditemukan | E-Arsip Digital</title>
     
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <style>
-        * {
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -64,6 +38,8 @@
         .error-container {
             text-align: center;
             animation: fadeInUp 0.6s ease;
+            width: 100%;
+            max-width: 520px;
         }
         
         @keyframes fadeInUp {
@@ -75,8 +51,7 @@
             background: white;
             border-radius: 20px;
             padding: 48px 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -88,24 +63,26 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
-        
-        .error-code {
-            font-size: 120px;
-            font-weight: 800;
-            line-height: 1;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #e83e8c);
         }
         
         .error-icon {
             font-size: 48px;
             color: #667eea;
             margin-bottom: 16px;
+            display: block;
+        }
+        
+        .error-code {
+            font-size: clamp(80px, 15vw, 120px);
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #667eea; /* Fallback for non-WebKit */
+            margin-bottom: 8px;
         }
         
         .error-title {
@@ -116,10 +93,22 @@
         }
         
         .error-message {
-            font-size: 16px;
+            font-size: 15px;
             color: #64748b;
-            line-height: 1.6;
-            margin-bottom: 32px;
+            line-height: 1.7;
+            margin-bottom: 28px;
+        }
+        
+        .error-message .current-url {
+            display: block;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            word-break: break-all;
+            color: #64748b;
         }
         
         .error-actions {
@@ -142,6 +131,12 @@
             text-decoration: none;
             transition: all 0.3s ease;
             font-family: inherit;
+            white-space: nowrap;
+        }
+        
+        .btn:focus-visible {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
         }
         
         .btn-primary {
@@ -173,49 +168,72 @@
         }
         
         .suggestions h4 {
-            font-size: 14px;
+            font-size: 13px;
             color: #64748b;
             margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
         
         .suggestions ul {
             list-style: none;
+            padding: 0;
         }
         
         .suggestions li {
-            padding: 8px 0;
-            font-size: 14px;
+            padding: 6px 0;
         }
         
         .suggestions a {
-            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
             text-decoration: none;
-            transition: color 0.2s;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
         }
         
         .suggestions a:hover {
-            color: #764ba2;
-            text-decoration: underline;
+            background: #f1f5f9;
+            color: #667eea;
         }
         
-        .suggestions i {
-            margin-right: 8px;
+        .suggestions a i {
+            width: 20px;
+            text-align: center;
             color: #94a3b8;
+            font-size: 13px;
+        }
+        
+        .suggestions a:hover i {
+            color: #667eea;
         }
         
         .version {
             margin-top: 24px;
-            font-size: 12px;
-            color: #94a3b8;
+            font-size: 11px;
+            color: #cbd5e1;
+            text-align: center;
         }
         
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .error-container {
+                animation: none;
+            }
+            .btn {
+                transition: none;
+            }
+        }
+        
+        /* Responsive */
         @media (max-width: 480px) {
             .error-card {
-                padding: 32px 24px;
-            }
-            
-            .error-code {
-                font-size: 80px;
+                padding: 32px 20px;
             }
             
             .error-actions {
@@ -224,124 +242,158 @@
             
             .btn {
                 justify-content: center;
+                width: 100%;
+            }
+            
+            .suggestions a {
+                font-size: 13px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="error-container">
+    <div class="error-container" role="main">
         <div class="error-card">
-            <div class="error-icon">
+            <span class="error-icon" aria-hidden="true">
                 <i class="fas fa-map-signs"></i>
-            </div>
-            <div class="error-code">404</div>
+            </span>
+            <div class="error-code" aria-hidden="true">404</div>
             <h1 class="error-title">Halaman Tidak Ditemukan</h1>
             <p class="error-message">
-                Maaf, halaman yang Anda cari tidak dapat ditemukan. 
+                Maaf, halaman yang Anda cari tidak dapat ditemukan.
                 Mungkin telah dipindahkan, dihapus, atau URL yang dimasukkan salah.
+                <span class="current-url" id="current-url"></span>
             </p>
             
             <div class="error-actions">
-                <a href="/" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Kembali ke Beranda
+                <a href="/" class="btn btn-primary" aria-label="Kembali ke halaman utama">
+                    <i class="fas fa-home" aria-hidden="true"></i> Beranda
                 </a>
-                <a href="/login.html" class="btn btn-outline">
-                    <i class="fas fa-sign-in-alt"></i> Login
+                <a href="/dashboard/" class="btn btn-outline" aria-label="Menuju dashboard">
+                    <i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard
                 </a>
+                <button class="btn btn-outline" onclick="history.back()" type="button" aria-label="Kembali ke halaman sebelumnya">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali
+                </button>
             </div>
             
-            <div class="suggestions">
+            <div class="suggestions" aria-label="Halaman yang mungkin Anda cari">
                 <h4>Mungkin Anda mencari:</h4>
-                <ul>
+                <ul role="list">
                     <li>
-                        <a href="/">
-                            <i class="fas fa-home"></i> Halaman Utama
+                        <a href="/" role="listitem">
+                            <i class="fas fa-home" aria-hidden="true"></i> Halaman Utama
                         </a>
                     </li>
                     <li>
-                        <a href="/login.html">
-                            <i class="fas fa-sign-in-alt"></i> Login ke Sistem
+                        <a href="/dashboard/" role="listitem">
+                            <i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard
                         </a>
                     </li>
                     <li>
-                        <a href="/surat-keluar/form.html">
-                            <i class="fas fa-pen"></i> Buat Surat Keluar
+                        <a href="/surat-keluar/list.html" role="listitem">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i> Surat Keluar
                         </a>
                     </li>
                     <li>
-                        <a href="/surat-masuk/list.html">
-                            <i class="fas fa-inbox"></i> Daftar Surat Masuk
+                        <a href="/surat-masuk/list.html" role="listitem">
+                            <i class="fas fa-inbox" aria-hidden="true"></i> Surat Masuk
                         </a>
                     </li>
                     <li>
-                        <a href="/help/index.html">
-                            <i class="fas fa-question-circle"></i> Pusat Bantuan
+                        <a href="/help/index.html" role="listitem">
+                            <i class="fas fa-question-circle" aria-hidden="true"></i> Pusat Bantuan
                         </a>
                     </li>
                 </ul>
             </div>
             
-            <div class="version">
+            <div class="version" aria-label="Versi aplikasi">
                 E-Arsip Digital v2026.1.0
             </div>
         </div>
     </div>
     
     <script>
+        // Base path resolver
+        (function() {
+            const pathname = window.location.pathname || '/';
+            const segments = pathname.split('/').filter(Boolean);
+            if (segments.length === 0) { window.APP_BASE_PATH = '/'; return; }
+            
+            const knownRoutes = ['dashboard', 'surat-masuk', 'surat-keluar', 'login', 
+                'register', 'profile', 'notifikasi', 'laporan', 'pengaturan', 
+                'manajemen-user', 'log-aktivitas', 'help', 'search'];
+            const repoSegment = segments[0];
+            
+            window.APP_BASE_PATH = (!knownRoutes.includes(repoSegment) && segments.length >= 2)
+                ? '/' + repoSegment + '/'
+                : '/';
+        })();
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+        
+        // Display current URL
+        document.getElementById('current-url').textContent = window.location.pathname;
+        
         // Track 404 error
         (function() {
             const errorInfo = {
                 url: window.location.href,
-                referrer: document.referrer,
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent
+                path: window.location.pathname,
+                referrer: document.referrer || 'direct',
+                timestamp: new Date().toISOString()
             };
             
-            console.warn('404 Error:', errorInfo);
-            
-            // Log to service worker if available
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                    type: 'LOG_ERROR',
-                    payload: {
-                        type: '404',
-                        ...errorInfo
-                    }
-                });
+            // Log to console in development
+            if (window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1') {
+                console.warn('[404] Page not found:', errorInfo);
             }
             
-            // Auto-redirect to home after 30 seconds
-            let countdown = 30;
-            const messageEl = document.querySelector('.error-message');
-            
-            const interval = setInterval(() => {
-                countdown--;
-                if (countdown <= 0) {
-                    clearInterval(interval);
-                    window.location.href = '/';
-                }
-            }, 1000);
+            // Log to service worker for offline analytics
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                try {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'TRACK_404',
+                        payload: errorInfo
+                    });
+                } catch {}
+            }
             
             // Try to fix common URL typos
-            const path = window.location.pathname;
+            const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
             const commonFixes = {
                 '/dashbord': '/dashboard',
                 '/dashborad': '/dashboard',
                 '/dasboard': '/dashboard',
-                '/surat-kelaur': '/surat-keluar',
-                '/surat-masauk': '/surat-masuk',
+                '/surat-kelaur': '/surat-keluar/list.html',
+                '/surat-masauk': '/surat-masuk/list.html',
                 '/pengaturaan': '/pengaturan',
                 '/manajemen-userr': '/manajemen-user',
-                '/lapooran': '/laporan'
+                '/lapooran': '/laporan',
+                '/notifkasi': '/notifikasi',
+                '/profil': '/profile',
+                '/setings': '/pengaturan',
+                '/seting': '/pengaturan'
             };
             
-            const fixedPath = commonFixes[path.toLowerCase()];
+            const fixedPath = commonFixes[path];
             if (fixedPath) {
-                setTimeout(() => {
-                    if (confirm(`Apakah Anda mencari "${fixedPath}"?`)) {
-                        window.location.href = fixedPath;
-                    }
-                }, 2000);
+                const suggestions = document.querySelector('.suggestions ul');
+                if (suggestions) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = fixedPath;
+                    a.setAttribute('role', 'listitem');
+                    a.innerHTML = `<i class="fas fa-lightbulb" aria-hidden="true"></i> Mungkin: ${fixedPath}`;
+                    a.style.color = '#d97706';
+                    li.appendChild(a);
+                    suggestions.insertBefore(li, suggestions.firstChild);
+                }
             }
         })();
     </script>

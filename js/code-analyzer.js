@@ -1,263 +1,236 @@
-// js/code-analyzer.js - Code Quality Analyzer 2026
+// js/code-analyzer.js - Code Quality Analyzer 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Code Quality Analyzer
  * Version: 2026.1.0
- * Analyzes code quality metrics for the application
+ * 
+ * HANYA UNTUK DEVELOPMENT!
+ * Jangan deploy ke production.
+ * 
+ * Fitur:
+ * - Resource counting (scripts, styles)
+ * - Module tracking
+ * - Performance monitoring
+ * - Lightweight (no DOM traversal)
  */
 
-import { Logger } from './logger.js';
-
-class CodeAnalyzer {
-    constructor() {
-        this.logger = new Logger('CodeAnalyzer');
-        
-        // Metrics
-        this.metrics = {
-            totalScripts: 0,
-            totalStyles: 0,
-            totalModules: 0,
-            totalLines: 0,
-            loadedModules: new Set(),
-            loadTimes: new Map(),
-            errors: []
-        };
-        
-        this.init();
-    }
-    
-    init() {
-        this.analyzeLoadedResources();
-        this.monitorPerformance();
-        
-        this.logger.info('Code analyzer initialized');
-    }
+var CodeAnalyzer = (function() {
+    'use strict';
     
     // ============================================
-    // RESOURCE ANALYSIS
+    // CONFIGURATION
     // ============================================
-    
-    analyzeLoadedResources() {
-        // Count scripts
-        const scripts = document.querySelectorAll('script[src]');
-        this.metrics.totalScripts = scripts.length;
-        
-        // Count styles
-        const styles = document.querySelectorAll('link[rel="stylesheet"]');
-        this.metrics.totalStyles = styles.length;
-        
-        // Analyze script types
-        scripts.forEach(script => {
-            const src = script.src;
-            if (src.includes('/js/')) {
-                if (script.type === 'module') {
-                    this.metrics.totalModules++;
-                    this.metrics.loadedModules.add(src);
-                }
-            }
-        });
-        
-        // Count DOM elements as a complexity metric
-        this.metrics.totalDOMElements = document.querySelectorAll('*').length;
-        
-        this.logger.info('Resource analysis complete', {
-            scripts: this.metrics.totalScripts,
-            styles: this.metrics.totalStyles,
-            modules: this.metrics.totalModules,
-            domElements: this.metrics.totalDOMElements
-        });
-    }
-    
-    monitorPerformance() {
-        // Track module load times via Performance API
-        if (window.performance?.getEntriesByType) {
-            const resources = performance.getEntriesByType('resource');
-            
-            resources.forEach(resource => {
-                if (resource.name.includes('/js/') || resource.name.includes('/css/')) {
-                    this.metrics.loadTimes.set(resource.name, resource.duration);
-                }
-            });
-        }
-        
-        // Monitor for console errors
-        const originalError = console.error;
-        const self = this;
-        
-        console.error = function(...args) {
-            self.metrics.errors.push({
-                message: args.map(a => String(a)).join(' '),
-                timestamp: Date.now()
-            });
-            
-            if (self.metrics.errors.length > 50) {
-                self.metrics.errors = self.metrics.errors.slice(-50);
-            }
-            
-            originalError.apply(console, args);
-        };
-    }
+    var config = {
+        enabled: false,              // DISABLED by default
+        trackPerformance: true,
+        maxErrors: 50,
+        slowResourceThreshold: 1000 // 1 detik
+    };
     
     // ============================================
-    // CODE METRICS
+    // PRIVATE STATE
     // ============================================
+    var _metrics = {
+        totalScripts: 0,
+        totalStyles: 0,
+        totalModules: 0,
+        loadedModules: [],
+        loadTimes: {},
+        errors: []
+    };
     
-    getCodeMetrics() {
-        return {
-            scripts: this.metrics.totalScripts,
-            styles: this.metrics.totalStyles,
-            modules: this.metrics.totalModules,
-            domElements: this.metrics.totalDOMElements,
-            loadedModules: this.metrics.loadedModules.size,
-            errors: this.metrics.errors.length,
-            averageLoadTime: this.getAverageLoadTime()
-        };
-    }
-    
-    getAverageLoadTime() {
-        const times = Array.from(this.metrics.loadTimes.values());
-        if (times.length === 0) return 0;
-        
-        const sum = times.reduce((acc, t) => acc + t, 0);
-        return Math.round(sum / times.length);
-    }
-    
-    getLoadedModules() {
-        return Array.from(this.metrics.loadedModules);
-    }
-    
-    getSlowResources(threshold = 1000) {
-        const slow = [];
-        
-        this.metrics.loadTimes.forEach((duration, name) => {
-            if (duration > threshold) {
-                slow.push({ name, duration });
-            }
-        });
-        
-        return slow.sort((a, b) => b.duration - a.duration);
-    }
-    
-    getErrorCount() {
-        return this.metrics.errors.length;
-    }
-    
-    getRecentErrors(limit = 10) {
-        return this.metrics.errors.slice(-limit);
-    }
+    var _originalConsoleError = null;
+    var _initialized = false;
     
     // ============================================
-    // SIZE ESTIMATION
+    // UTILITY FUNCTIONS
     // ============================================
     
-    estimateTotalSize() {
-        let totalSize = 0;
-        
-        // Estimate from Performance API
-        if (window.performance?.getEntriesByType) {
-            const resources = performance.getEntriesByType('resource');
-            
-            resources.forEach(resource => {
-                if (resource.transferSize) {
-                    totalSize += resource.transferSize;
-                }
-            });
-        }
-        
-        // Add localStorage size
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const value = localStorage.getItem(key);
-            totalSize += (key.length + value.length) * 2;
-        }
-        
-        return {
-            bytes: totalSize,
-            formatted: this.formatBytes(totalSize)
-        };
-    }
-    
-    formatBytes(bytes) {
+    function formatBytes(bytes) {
         if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        var k = 1024;
+        var sizes = ['B', 'KB', 'MB', 'GB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
     
     // ============================================
-    // COMPLEXITY ANALYSIS
+    // RESOURCE ANALYSIS (LIGHTWEIGHT)
     // ============================================
     
-    analyzeDOMComplexity() {
-        const metrics = {
-            totalElements: document.querySelectorAll('*').length,
-            depth: this.getMaxDOMDepth(),
-            scripts: document.querySelectorAll('script').length,
-            styles: document.querySelectorAll('style').length,
-            eventListeners: this.estimateEventListenerCount()
-        };
+    function analyzeResources() {
+        // Count scripts (hanya yang punya src)
+        var scripts = document.getElementsByTagName('script');
+        var scriptCount = 0;
+        var moduleCount = 0;
+        var modules = [];
         
-        return {
-            ...metrics,
-            complexity: this.getComplexityLevel(metrics)
-        };
-    }
-    
-    getMaxDOMDepth() {
-        let maxDepth = 0;
-        
-        function walk(node, depth) {
-            if (depth > maxDepth) maxDepth = depth;
-            
-            for (const child of node.children) {
-                walk(child, depth + 1);
+        for (var i = 0; i < scripts.length; i++) {
+            if (scripts[i].src) {
+                scriptCount++;
+                if (scripts[i].type === 'module') {
+                    moduleCount++;
+                    modules.push(scripts[i].src);
+                }
             }
         }
         
-        walk(document.documentElement, 0);
+        // Count styles
+        var styles = document.getElementsByTagName('link');
+        var styleCount = 0;
         
-        return maxDepth;
-    }
-    
-    estimateEventListenerCount() {
-        // Count elements with event attributes
-        const inlineEvents = document.querySelectorAll('[onclick], [onchange], [onsubmit], [onload], [onerror]');
+        for (var j = 0; j < styles.length; j++) {
+            if (styles[j].rel === 'stylesheet') {
+                styleCount++;
+            }
+        }
         
-        return inlineEvents.length;
-    }
-    
-    getComplexityLevel(metrics) {
-        let score = 0;
-        
-        if (metrics.totalElements > 5000) score += 3;
-        else if (metrics.totalElements > 2000) score += 2;
-        else if (metrics.totalElements > 1000) score += 1;
-        
-        if (metrics.depth > 30) score += 2;
-        else if (metrics.depth > 20) score += 1;
-        
-        if (metrics.scripts > 20) score += 2;
-        else if (metrics.scripts > 10) score += 1;
-        
-        if (score >= 5) return 'high';
-        if (score >= 3) return 'medium';
-        return 'low';
+        _metrics.totalScripts = scriptCount;
+        _metrics.totalStyles = styleCount;
+        _metrics.totalModules = moduleCount;
+        _metrics.loadedModules = modules;
     }
     
     // ============================================
-    // REPORTING
+    // PERFORMANCE MONITORING
     // ============================================
     
-    generateReport() {
+    function analyzePerformance() {
+        if (!window.performance || !window.performance.getEntriesByType) {
+            return;
+        }
+        
+        try {
+            var resources = window.performance.getEntriesByType('resource');
+            var loadTimes = {};
+            
+            for (var i = 0; i < resources.length; i++) {
+                var res = resources[i];
+                if (res.name.indexOf('/js/') !== -1 || res.name.indexOf('/css/') !== -1) {
+                    loadTimes[res.name] = res.duration;
+                }
+            }
+            
+            _metrics.loadTimes = loadTimes;
+        } catch(e) {
+            // Performance API tidak tersedia
+        }
+    }
+    
+    // ============================================
+    // ERROR TRACKING (NON-INVASIVE)
+    // ============================================
+    
+    function setupErrorTracking() {
+        // Gunakan window.onerror, BUKAN override console.error
+        var originalOnError = window.onerror;
+        
+        window.onerror = function(message, source, lineno, colno, error) {
+            // Catat error
+            _metrics.errors.push({
+                message: String(message).substring(0, 200),
+                source: source ? source.substring(0, 100) : '',
+                line: lineno,
+                timestamp: Date.now()
+            });
+            
+            // Batasi jumlah error
+            if (_metrics.errors.length > config.maxErrors) {
+                _metrics.errors = _metrics.errors.slice(-config.maxErrors);
+            }
+            
+            // Panggil handler original
+            if (originalOnError) {
+                return originalOnError.apply(this, arguments);
+            }
+            
+            return false;
+        };
+    }
+    
+    function restoreErrorTracking() {
+        if (_originalConsoleError) {
+            console.error = _originalConsoleError;
+            _originalConsoleError = null;
+        }
+    }
+    
+    // ============================================
+    // METRICS CALCULATION
+    // ============================================
+    
+    function getAverageLoadTime() {
+        var total = 0;
+        var count = 0;
+        
+        for (var key in _metrics.loadTimes) {
+            if (_metrics.loadTimes.hasOwnProperty(key)) {
+                total += _metrics.loadTimes[key];
+                count++;
+            }
+        }
+        
+        return count > 0 ? Math.round(total / count) : 0;
+    }
+    
+    function getSlowResources() {
+        var slow = [];
+        var threshold = config.slowResourceThreshold;
+        
+        for (var name in _metrics.loadTimes) {
+            if (_metrics.loadTimes.hasOwnProperty(name)) {
+                if (_metrics.loadTimes[name] > threshold) {
+                    slow.push({ name: name, duration: _metrics.loadTimes[name] });
+                }
+            }
+        }
+        
+        // Sort descending
+        slow.sort(function(a, b) {
+            return b.duration - a.duration;
+        });
+        
+        return slow;
+    }
+    
+    function estimateLocalStorageSize() {
+        var totalSize = 0;
+        
+        try {
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (key) {
+                    var value = localStorage.getItem(key);
+                    totalSize += (key.length + (value ? value.length : 0)) * 2;
+                }
+            }
+        } catch(e) {}
+        
+        return totalSize;
+    }
+    
+    // ============================================
+    // REPORT
+    // ============================================
+    
+    function generateReport() {
+        analyzeResources();
+        analyzePerformance();
+        
         return {
             timestamp: new Date().toISOString(),
-            code: this.getCodeMetrics(),
-            size: this.estimateTotalSize(),
-            complexity: this.analyzeDOMComplexity(),
+            resources: {
+                scripts: _metrics.totalScripts,
+                styles: _metrics.totalStyles,
+                modules: _metrics.totalModules,
+                loadedModules: _metrics.loadedModules.slice(0, 10)
+            },
             performance: {
-                averageLoadTime: this.getAverageLoadTime(),
-                slowResources: this.getSlowResources(),
-                errors: this.getRecentErrors()
+                averageLoadTime: getAverageLoadTime(),
+                slowResources: getSlowResources().slice(0, 5),
+                errors: _metrics.errors.length
+            },
+            storage: {
+                localStorageSize: formatBytes(estimateLocalStorageSize())
             }
         };
     }
@@ -266,20 +239,83 @@ class CodeAnalyzer {
     // PUBLIC API
     // ============================================
     
-    refresh() {
-        this.analyzeLoadedResources();
+    function init(options) {
+        if (_initialized) return;
+        
+        if (options) {
+            for (var key in options) {
+                if (options.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                    config[key] = options[key];
+                }
+            }
+        }
+        
+        if (!config.enabled) {
+            console.info('[CodeAnalyzer] Disabled (development only tool)');
+            return;
+        }
+        
+        analyzeResources();
+        analyzePerformance();
+        setupErrorTracking();
+        
+        _initialized = true;
+        
+        console.info('[CodeAnalyzer] Initialized (' + _metrics.totalScripts + ' scripts, ' + 
+            _metrics.totalStyles + ' styles, ' + _metrics.totalModules + ' modules)');
     }
     
-    destroy() {
-        this.metrics.loadedModules.clear();
-        this.metrics.loadTimes.clear();
-        this.metrics.errors = [];
-        this.logger.info('Code analyzer destroyed');
+    function getMetrics() {
+        return {
+            scripts: _metrics.totalScripts,
+            styles: _metrics.totalStyles,
+            modules: _metrics.totalModules,
+            errors: _metrics.errors.length,
+            averageLoadTime: getAverageLoadTime()
+        };
     }
-}
+    
+    function getErrors() {
+        return _metrics.errors.slice(-20);
+    }
+    
+    function destroy() {
+        restoreErrorTracking();
+        _metrics.loadedModules = [];
+        _metrics.loadTimes = {};
+        _metrics.errors = [];
+        _initialized = false;
+    }
+    
+    return {
+        init: init,
+        generateReport: generateReport,
+        getMetrics: getMetrics,
+        getErrors: getErrors,
+        destroy: destroy,
+        
+        /**
+         * Enable/disable
+         */
+        enable: function() {
+            config.enabled = true;
+            if (!_initialized) init();
+        },
+        disable: function() {
+            config.enabled = false;
+        }
+    };
+})();
 
-// Create singleton
-const codeAnalyzer = new CodeAnalyzer();
+// ============================================
+// AUTO-INIT HANYA JIKA DIPERLUKAN
+// ============================================
+// CodeAnalyzer.init({ enabled: false }); // Disabled by default
 
-export default codeAnalyzer;
-export { CodeAnalyzer };
+// ============================================
+// USAGE (Development only):
+// ============================================
+// CodeAnalyzer.init({ enabled: true });
+// var report = CodeAnalyzer.generateReport();
+// console.log(report);
+// ============================================

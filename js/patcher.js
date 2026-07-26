@@ -1,183 +1,413 @@
-// js/patcher.js - Auto-Fix Common Issues 2026
+// js/patcher.js - Enterprise Auto-Fix & Recovery System 2026
 /**
- * E-Arsip Digital - Auto-Fix Patcher
+ * E-Arsip Digital - Advanced System Patcher
  * Version: 2026.1.0
- * Features: Automatic issue detection and repair,
- *           localStorage cleanup, session recovery,
- *           cache invalidation, dependency repair
+ * Features: Automatic issue detection, safe repair with rollback,
+ *           PWA cache management, IndexedDB repair, service worker recovery,
+ *           storage optimization, session recovery
+ * Security: Backup before patch, integrity verification, safe operations
  */
 
-import { Logger } from './logger.js';
+import APP_CONFIG from '../config/config.js';
 
 class Patcher {
-    constructor() {
-        this.logger = new Logger('Patcher');
+    constructor(options = {}) {
+        // ✅ FIX: Lazy load dependencies
+        this.logger = null;
+        this.encryption = null;
         
-        // Patch definitions
+        // Configuration
+        this.config = {
+            autoRunDelay: 2000,
+            maxBackups: 3,
+            enableRollback: true,
+            enableIndexedDBRepair: true,
+            enableSWRecovery: true,
+            ...APP_CONFIG?.patcher,
+            ...options
+        };
+        
+        // Patches registry
         this.patches = [];
         
         // Fix history
-        this.fixHistory = this.loadFixHistory();
+        this.fixHistory = [];
         
-        // Register default patches
-        this.registerDefaultPatches();
+        // Backup state
+        this.backups = [];
+        
+        // Patch status
+        this.isPatching = false;
+        this.lastPatchTime = null;
+        this.patchInProgress = null;
+        
+        // Storage safety
+        this.protectedKeys = [
+            'encryption_key',
+            'master_key',
+            'private_key',
+            'csrf_token'
+        ];
+        
+        // PWA support
+        this.isPWA = this.detectPWA();
+        this.swRegistration = null;
         
         this.init();
     }
     
-    init() {
-        // Auto-run patches on startup
-        setTimeout(() => {
-            this.runAutoPatches();
-        }, 2000);
+    async init() {
+        try {
+            // Init dependencies
+            await this.initDependencies();
+            
+            // Load state
+            await this.loadState();
+            
+            // Register patches
+            this.registerDefaultPatches();
+            
+            // Setup PWA recovery
+            if (this.isPWA && this.config.enableSWRecovery) {
+                await this.setupServiceWorkerRecovery();
+            }
+            
+            // Auto-run patches on startup
+            if (this.config.autoRun !== false) {
+                this.scheduleAutoPatch();
+            }
+            
+            this.log('info', 'Patcher initialized', {
+                patches: this.patches.length,
+                historyCount: this.fixHistory.length,
+                backupsCount: this.backups.length,
+                isPWA: this.isPWA
+            });
+            
+            // Dispatch ready event
+            window.dispatchEvent(new CustomEvent('patcher:ready', {
+                detail: { patcher: this }
+            }));
+            
+        } catch (error) {
+            console.error('Failed to initialize patcher:', error);
+        }
+    }
+    
+    async initDependencies() {
+        // Lazy load Logger
+        try {
+            const loggerModule = await import('./logger.js');
+            this.logger = new loggerModule.Logger('Patcher');
+        } catch {
+            this.logger = this.createFallbackLogger();
+        }
         
-        this.logger.info('Patcher initialized', {
-            patches: this.patches.length,
-            historyCount: this.fixHistory.length
-        });
+        // Lazy load EncryptionService
+        try {
+            const encModule = await import('./security/encryption.js');
+            this.encryption = new encModule.EncryptionService();
+        } catch {
+            this.encryption = null;
+        }
     }
     
     // ============================================
-    // PATCH REGISTRY
+    // LOGGING & UTILITIES
+    // ============================================
+    
+    log(level, message, data = null) {
+        if (this.logger && typeof this.logger[level] === 'function') {
+            this.logger[level](message, data);
+        } else {
+            const prefix = `[Patcher ${level.toUpperCase()}]`;
+            const logFn = level === 'error' ? console.error :
+                         level === 'warn' ? console.warn : console.info;
+            logFn(`${prefix} ${message}`, data || '');
+        }
+    }
+    
+    createFallbackLogger() {
+        return {
+            debug: console.debug.bind(console, '[Patcher]'),
+            info: console.info.bind(console, '[Patcher]'),
+            warn: console.warn.bind(console, '[Patcher]'),
+            error: console.error.bind(console, '[Patcher]')
+        };
+    }
+    
+    detectPWA() {
+        return typeof window !== 'undefined' && (
+            window.matchMedia('(display-mode: standalone)').matches || 
+            window.navigator.standalone
+        );
+    }
+    
+    async loadState() {
+        try {
+            const stored = localStorage.getItem('patcher_state');
+            if (stored) {
+                const state = JSON.parse(stored);
+                this.fixHistory = state.fixHistory || [];
+                this.backups = state.backups || [];
+                this.lastPatchTime = state.lastPatchTime || null;
+            }
+        } catch {
+            this.fixHistory = [];
+            this.backups = [];
+        }
+    }
+    
+    async saveState() {
+        try {
+            const state = {
+                fixHistory: this.fixHistory.slice(-50),
+                backups: this.backups.slice(-this.config.maxBackups),
+                lastPatchTime: this.lastPatchTime,
+                version: '2026.1.0'
+            };
+            localStorage.setItem('patcher_state', JSON.stringify(state));
+        } catch (error) {
+            this.log('warn', 'Failed to save patcher state', {
+                error: error.message
+            });
+        }
+    }
+    
+    scheduleAutoPatch() {
+        const runPatches = async () => {
+            try {
+                // Tunggu service worker jika PWA
+                if (this.isPWA && 'serviceWorker' in navigator) {
+                    await navigator.serviceWorker.ready;
+                }
+                
+                await this.runAutoPatches();
+            } catch (error) {
+                this.log('error', 'Auto-patch failed', {
+                    error: error.message
+                });
+            }
+        };
+        
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => runPatches(), { 
+                timeout: this.config.autoRunDelay + 1000 
+            });
+        } else {
+            setTimeout(runPatches, this.config.autoRunDelay);
+        }
+    }
+    
+    async setupServiceWorkerRecovery() {
+        if (!('serviceWorker' in navigator)) return;
+        
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            this.swRegistration = registration;
+            
+            // Monitor service worker updates
+            registration.addEventListener('updatefound', () => {
+                this.log('info', 'Service Worker update found - may fix itself');
+            });
+            
+        } catch (error) {
+            this.log('warn', 'Service Worker not available for recovery');
+        }
+    }
+    
+    // ============================================
+    // PATCH REGISTRY (dengan validasi)
     // ============================================
     
     registerPatch(patch) {
-        this.patches.push(patch);
+        // Validate patch structure
+        if (!patch.id || !patch.detect || !patch.fix) {
+            this.log('warn', 'Invalid patch registration', {
+                id: patch.id || 'unknown'
+            });
+            return;
+        }
+        
+        // Check duplicate
+        if (this.patches.find(p => p.id === patch.id)) {
+            this.log('warn', 'Duplicate patch ID', { id: patch.id });
+            return;
+        }
+        
+        this.patches.push({
+            ...patch,
+            registeredAt: Date.now()
+        });
+        
+        // Sort by severity
+        this.patches.sort((a, b) => {
+            const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+            return (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4);
+        });
     }
     
     registerDefaultPatches() {
-        // Patch 1: Fix corrupted localStorage
+        // Patch 1: Fix corrupted localStorage (Critical)
         this.registerPatch({
             id: 'fix_corrupted_storage',
             name: 'Fix Corrupted Storage',
-            description: 'Remove corrupted entries from localStorage',
+            description: 'Detect and remove corrupted entries from localStorage',
             autoRun: true,
-            severity: 'high',
+            severity: 'critical',
+            category: 'storage',
+            canRollback: false,
             detect: () => {
-                let corrupted = 0;
+                const corrupted = [];
+                const scanned = this.scanLocalStorage();
                 
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    
-                    if (key?.startsWith('ENC:')) {
+                scanned.forEach(({ key, value }) => {
+                    // Check encrypted data
+                    if (value?.startsWith('ENC:') && this.encryption) {
                         try {
-                            const value = localStorage.getItem(key);
-                            atob(value.substring(4));
+                            // Simple validation - check if it's valid base64
+                            const encoded = value.substring(4);
+                            if (!/^[A-Za-z0-9+/=]+$/.test(encoded)) {
+                                corrupted.push({ key, type: 'invalid_encrypted' });
+                            }
                         } catch {
-                            corrupted++;
+                            corrupted.push({ key, type: 'corrupted_encrypted' });
                         }
                     }
                     
-                    // Check JSON validity for known JSON keys
-                    const jsonKeys = ['app_settings', 'user_preferences', 'recent_searches',
-                                      'export_history', 'audit_logs', 'applied_migrations'];
+                    // Check JSON validity
+                    const jsonKeys = [
+                        'app_settings', 'user_preferences', 'recent_searches',
+                        'export_history', 'audit_logs', 'applied_migrations',
+                        'offline_pending_ops', 'offline_state'
+                    ];
                     
-                    if (jsonKeys.includes(key)) {
+                    if (jsonKeys.includes(key) && value) {
                         try {
-                            JSON.parse(localStorage.getItem(key));
+                            JSON.parse(value);
                         } catch {
-                            corrupted++;
+                            corrupted.push({ key, type: 'invalid_json' });
                         }
                     }
-                }
+                });
                 
-                return corrupted > 0 ? { corrupted } : null;
+                return corrupted.length > 0 ? { corrupted, count: corrupted.length } : null;
             },
             fix: () => {
-                let fixed = 0;
+                const fixed = [];
+                const scanned = this.scanLocalStorage();
                 
-                for (let i = localStorage.length - 1; i >= 0; i--) {
-                    const key = localStorage.key(i);
-                    
-                    // Remove corrupted encrypted data
-                    if (key?.startsWith('ENC:')) {
-                        try {
-                            const value = localStorage.getItem(key);
-                            atob(value.substring(4));
-                        } catch {
-                            localStorage.removeItem(key);
-                            fixed++;
+                scanned.forEach(({ key, value }) => {
+                    // Fix corrupted encrypted data
+                    if (value?.startsWith('ENC:')) {
+                        const encoded = value.substring(4);
+                        if (!/^[A-Za-z0-9+/=]+$/.test(encoded)) {
+                            try {
+                                localStorage.removeItem(key);
+                                fixed.push({ key, action: 'removed' });
+                            } catch {
+                                fixed.push({ key, action: 'failed' });
+                            }
                         }
                     }
                     
-                    // Remove corrupted JSON data
-                    const jsonKeys = ['app_settings', 'user_preferences', 'recent_searches',
-                                      'export_history', 'audit_logs', 'applied_migrations'];
+                    // Fix corrupted JSON
+                    const jsonKeys = [
+                        'app_settings', 'user_preferences', 'recent_searches',
+                        'export_history', 'audit_logs', 'applied_migrations',
+                        'offline_pending_ops', 'offline_state'
+                    ];
                     
-                    if (jsonKeys.includes(key)) {
+                    if (jsonKeys.includes(key) && value) {
                         try {
-                            JSON.parse(localStorage.getItem(key));
+                            JSON.parse(value);
                         } catch {
-                            localStorage.removeItem(key);
-                            fixed++;
+                            try {
+                                localStorage.removeItem(key);
+                                fixed.push({ key, action: 'removed' });
+                            } catch {
+                                fixed.push({ key, action: 'failed' });
+                            }
                         }
                     }
-                }
+                });
                 
-                return { fixed };
+                return { fixed, count: fixed.length };
             }
         });
         
-        // Patch 2: Fix expired cache
+        // Patch 2: Clean expired cache (Low)
         this.registerPatch({
             id: 'fix_expired_cache',
             name: 'Clean Expired Cache',
-            description: 'Remove expired cache entries',
+            description: 'Remove expired cache entries to free storage',
             autoRun: true,
             severity: 'low',
+            category: 'cache',
+            canRollback: false,
             detect: () => {
-                let expired = 0;
-                const prefix = 'cache_';
+                const expired = [];
+                const now = Date.now();
+                const cachePrefixes = ['cache_', 'api-cache_', 'cache_app_'];
                 
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    
-                    if (key?.startsWith(prefix)) {
-                        try {
-                            const entry = JSON.parse(localStorage.getItem(key));
-                            if (entry.expiresAt && Date.now() > entry.expiresAt) {
-                                expired++;
-                            }
-                        } catch {
-                            expired++;
+                this.scanLocalStorage(cachePrefixes).forEach(({ key, value }) => {
+                    try {
+                        const entry = JSON.parse(value);
+                        if (entry.expiresAt && now > entry.expiresAt) {
+                            expired.push({ key, expiresAt: entry.expiresAt });
+                        } else if (entry.timestamp && (now - entry.timestamp) > 86400000) {
+                            expired.push({ key, age: now - entry.timestamp });
                         }
+                    } catch {
+                        // Corrupted cache entry
+                        expired.push({ key, type: 'corrupted' });
                     }
-                }
+                });
                 
-                return expired > 0 ? { expired } : null;
+                return expired.length > 0 ? { expired, count: expired.length } : null;
             },
             fix: () => {
-                let fixed = 0;
-                const prefix = 'cache_';
+                const fixed = [];
+                const now = Date.now();
+                const cachePrefixes = ['cache_', 'api-cache_', 'cache_app_'];
                 
-                for (let i = localStorage.length - 1; i >= 0; i--) {
-                    const key = localStorage.key(i);
+                this.scanLocalStorage(cachePrefixes).forEach(({ key, value }) => {
+                    let shouldRemove = false;
                     
-                    if (key?.startsWith(prefix)) {
+                    try {
+                        const entry = JSON.parse(value);
+                        if (entry.expiresAt && now > entry.expiresAt) {
+                            shouldRemove = true;
+                        } else if (entry.timestamp && (now - entry.timestamp) > 604800000) {
+                            shouldRemove = true;
+                        }
+                    } catch {
+                        shouldRemove = true;
+                    }
+                    
+                    if (shouldRemove) {
                         try {
-                            const entry = JSON.parse(localStorage.getItem(key));
-                            if (!entry.expiresAt || Date.now() > entry.expiresAt) {
-                                localStorage.removeItem(key);
-                                fixed++;
-                            }
-                        } catch {
                             localStorage.removeItem(key);
-                            fixed++;
+                            fixed.push({ key, action: 'removed' });
+                        } catch {
+                            fixed.push({ key, action: 'failed' });
                         }
                     }
-                }
+                });
                 
-                return { fixed };
+                return { fixed, count: fixed.length };
             }
         });
         
-        // Patch 3: Fix missing default settings
+        // Patch 3: Restore default settings (Medium)
         this.registerPatch({
             id: 'fix_missing_settings',
             name: 'Restore Default Settings',
-            description: 'Restore missing default application settings',
+            description: 'Restore missing or corrupted application settings',
             autoRun: true,
             severity: 'medium',
+            category: 'settings',
+            canRollback: true,
             detect: () => {
                 const settings = localStorage.getItem('app_settings');
                 
@@ -187,10 +417,14 @@ class Patcher {
                 
                 try {
                     const parsed = JSON.parse(settings);
-                    const requiredKeys = ['theme', 'fontSize', 'language'];
+                    const requiredKeys = ['theme', 'fontSize', 'language', 'version'];
                     const missing = requiredKeys.filter(k => !(k in parsed));
                     
-                    return missing.length > 0 ? { missing: true, keys: missing } : null;
+                    return missing.length > 0 ? { 
+                        missing: true, 
+                        keys: missing,
+                        currentKeys: Object.keys(parsed)
+                    } : null;
                 } catch {
                     return { missing: true, corrupted: true };
                 }
@@ -202,199 +436,596 @@ class Patcher {
                     language: 'id',
                     notifications: true,
                     autoBackup: true,
-                    version: '2026.1.0'
+                    version: APP_CONFIG.app?.version || '2026.1.0',
+                    preferences: {
+                        compactMode: false,
+                        enableAnimations: true,
+                        autoSave: true
+                    }
                 };
                 
-                let settings = {};
+                let currentSettings = {};
                 
                 try {
                     const existing = localStorage.getItem('app_settings');
                     if (existing) {
-                        settings = JSON.parse(existing);
+                        currentSettings = JSON.parse(existing);
                     }
                 } catch {
-                    // Use defaults
+                    // Use defaults entirely
+                }
+                
+                // Backup old settings
+                if (Object.keys(currentSettings).length > 0) {
+                    try {
+                        localStorage.setItem(
+                            `backup_settings_${Date.now()}`,
+                            JSON.stringify(currentSettings)
+                        );
+                    } catch {}
                 }
                 
                 // Merge with defaults (existing values take priority)
-                const merged = { ...defaults, ...settings };
+                const merged = { ...defaults, ...currentSettings };
                 localStorage.setItem('app_settings', JSON.stringify(merged));
                 
-                return { restored: true };
+                return { restored: true, merged: !!Object.keys(currentSettings).length };
             }
         });
         
-        // Patch 4: Fix duplicate session data
+        // Patch 4: Fix duplicate session data (Medium)
         this.registerPatch({
-            id: 'fix_duplicate_sessions',
-            name: 'Clean Duplicate Sessions',
-            description: 'Remove duplicate session entries',
+            id: 'fix_session_conflicts',
+            name: 'Resolve Session Conflicts',
+            description: 'Detect and resolve conflicting session data',
             autoRun: true,
-            severity: 'low',
+            severity: 'medium',
+            category: 'session',
+            canRollback: true,
             detect: () => {
-                const sessionKeys = [];
+                const issues = [];
+                const sessionData = {};
                 
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key?.startsWith('auth_') || key?.startsWith('session_')) {
-                        sessionKeys.push(key);
+                this.scanLocalStorage(['auth_', 'session_']).forEach(({ key, value }) => {
+                    if (!sessionData[key]) {
+                        sessionData[key] = [];
                     }
+                    sessionData[key].push({ value, length: value?.length || 0 });
+                });
+                
+                // Check for duplicates
+                Object.entries(sessionData).forEach(([key, entries]) => {
+                    if (entries.length > 1) {
+                        issues.push({ key, type: 'duplicate', count: entries.length });
+                    }
+                });
+                
+                // Check partial session
+                const hasAuthSession = !!localStorage.getItem('auth_session');
+                const hasAuthToken = !!localStorage.getItem('auth_token');
+                const hasRefreshToken = !!localStorage.getItem('auth_refresh_token');
+                
+                if (hasAuthSession && (!hasAuthToken || !hasRefreshToken)) {
+                    issues.push({ type: 'partial_session', missing: 'tokens' });
                 }
                 
-                const duplicates = sessionKeys.filter((key, index) => 
-                    sessionKeys.indexOf(key) !== index
-                );
+                if ((hasAuthToken || hasRefreshToken) && !hasAuthSession) {
+                    issues.push({ type: 'partial_session', missing: 'session' });
+                }
                 
-                return duplicates.length > 0 ? { duplicates: duplicates.length } : null;
+                return issues.length > 0 ? { issues, count: issues.length } : null;
             },
             fix: () => {
-                const seen = new Set();
-                let removed = 0;
+                const fixed = [];
                 
-                for (let i = localStorage.length - 1; i >= 0; i--) {
-                    const key = localStorage.key(i);
-                    
-                    if (key?.startsWith('auth_') || key?.startsWith('session_')) {
-                        if (seen.has(key)) {
-                            localStorage.removeItem(key);
-                            removed++;
-                        } else {
-                            seen.add(key);
-                        }
-                    }
+                // Fix partial sessions
+                const hasAuthSession = !!localStorage.getItem('auth_session');
+                const hasAuthToken = !!localStorage.getItem('auth_token');
+                const hasRefreshToken = !!localStorage.getItem('auth_refresh_token');
+                
+                if (!hasAuthSession && (hasAuthToken || hasRefreshToken)) {
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('auth_refresh_token');
+                    sessionStorage.clear();
+                    fixed.push({ action: 'cleared_tokens' });
                 }
                 
-                return { removed };
-            }
-        });
-        
-        // Patch 5: Fix large localStorage
-        this.registerPatch({
-            id: 'fix_large_storage',
-            name: 'Optimize Storage Size',
-            description: 'Reduce localStorage size by removing old data',
-            autoRun: false,
-            severity: 'low',
-            detect: () => {
-                let totalSize = 0;
-                
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    const value = localStorage.getItem(key);
-                    totalSize += (key.length + value.length) * 2;
-                }
-                
-                const limitMB = 5 * 1024 * 1024; // 5MB
-                const usagePercent = (totalSize / limitMB) * 100;
-                
-                return usagePercent > 80 ? { usagePercent: usagePercent.toFixed(1) } : null;
-            },
-            fix: () => {
-                let freed = 0;
-                
-                // Remove old cache entries first
-                const cachePrefixes = ['cache_', 'api-cache_'];
-                
-                for (let i = localStorage.length - 1; i >= 0; i--) {
-                    const key = localStorage.key(i);
-                    
-                    if (cachePrefixes.some(p => key?.startsWith(p))) {
-                        try {
-                            const entry = JSON.parse(localStorage.getItem(key));
-                            const age = Date.now() - (entry.timestamp || 0);
-                            
-                            if (age > 86400000) { // Older than 1 day
-                                freed += (key.length + (localStorage.getItem(key)?.length || 0)) * 2;
-                                localStorage.removeItem(key);
-                            }
-                        } catch {
-                            freed += (key.length + (localStorage.getItem(key)?.length || 0)) * 2;
-                            localStorage.removeItem(key);
-                        }
-                    }
-                }
-                
-                // Remove old backups
-                for (let i = localStorage.length - 1; i >= 0; i--) {
-                    const key = localStorage.key(i);
-                    
-                    if (key?.startsWith('migration_backup_')) {
-                        const age = Date.now() - parseInt(key.replace('migration_backup_', '') || '0');
-                        
-                        if (isNaN(age) || age > 604800000) { // Older than 7 days
-                            freed += (key.length + (localStorage.getItem(key)?.length || 0)) * 2;
-                            localStorage.removeItem(key);
-                        }
-                    }
-                }
-                
-                return { 
-                    freedBytes: freed,
-                    freedFormatted: this.formatBytes(freed)
-                };
-            }
-        });
-        
-        // Patch 6: Fix session recovery
-        this.registerPatch({
-            id: 'fix_session_recovery',
-            name: 'Session Recovery',
-            description: 'Attempt to recover corrupted session data',
-            autoRun: true,
-            severity: 'high',
-            detect: () => {
-                const authSession = localStorage.getItem('auth_session');
-                const authToken = localStorage.getItem('auth_token');
-                
-                // Has partial session data
-                if ((authSession && !authToken) || (!authSession && authToken)) {
-                    return { partial: true };
-                }
-                
-                // Check session validity
-                if (authSession) {
+                if (hasAuthSession && (!hasAuthToken || !hasRefreshToken)) {
+                    // Try to recover from session
                     try {
-                        const parsed = JSON.parse(authSession);
-                        if (!parsed.user || !parsed.tokens) {
-                            return { invalid: true };
+                        const session = JSON.parse(localStorage.getItem('auth_session'));
+                        if (session?.tokens?.accessToken) {
+                            localStorage.setItem('auth_token', session.tokens.accessToken);
+                            fixed.push({ action: 'recovered_token' });
+                        }
+                        if (session?.tokens?.refreshToken) {
+                            localStorage.setItem('auth_refresh_token', session.tokens.refreshToken);
+                            fixed.push({ action: 'recovered_refresh_token' });
                         }
                     } catch {
-                        return { corrupted: true };
+                        localStorage.removeItem('auth_session');
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_refresh_token');
+                        sessionStorage.clear();
+                        fixed.push({ action: 'cleared_all' });
                     }
+                }
+                
+                return { fixed, count: fixed.length };
+            }
+        });
+        
+        // Patch 5: Optimize storage (Low)
+        this.registerPatch({
+            id: 'optimize_storage',
+            name: 'Optimize Storage Usage',
+            description: 'Reduce localStorage size by removing unnecessary data',
+            autoRun: false,
+            severity: 'low',
+            category: 'optimization',
+            canRollback: false,
+            detect: () => {
+                const estimate = this.estimateStorageUsage();
+                const usagePercent = estimate.percentUsed;
+                
+                return usagePercent > 75 ? { 
+                    usagePercent,
+                    totalSize: estimate.totalSizeFormatted,
+                    itemCount: estimate.itemCount
+                } : null;
+            },
+            fix: () => {
+                const freed = [];
+                const now = Date.now();
+                
+                // Remove old backup files
+                this.scanLocalStorage(['backup_', 'migration_backup_']).forEach(({ key }) => {
+                    const timestamp = parseInt(key.replace(/[^0-9]/g, '') || '0');
+                    if (now - timestamp > 604800000) { // 7 days
+                        try {
+                            localStorage.removeItem(key);
+                            freed.push({ key, type: 'old_backup' });
+                        } catch {}
+                    }
+                });
+                
+                // Remove old error logs
+                try {
+                    const errors = JSON.parse(localStorage.getItem('error_logs') || '[]');
+                    if (errors.length > 50) {
+                        localStorage.setItem('error_logs', JSON.stringify(errors.slice(-25)));
+                        freed.push({ key: 'error_logs', type: 'trimmed' });
+                    }
+                } catch {
+                    localStorage.removeItem('error_logs');
+                    freed.push({ key: 'error_logs', type: 'removed' });
+                }
+                
+                // Remove large items
+                this.scanLocalStorage().forEach(({ key, value }) => {
+                    if (value && value.length > 500000) { // 500KB
+                        try {
+                            const parsed = JSON.parse(value);
+                            if (Array.isArray(parsed) && parsed.length > 100) {
+                                localStorage.setItem(key, JSON.stringify(parsed.slice(-50)));
+                                freed.push({ key, type: 'trimmed_array' });
+                            }
+                        } catch {}
+                    }
+                });
+                
+                return { freed, count: freed.length };
+            }
+        });
+        
+        // Patch 6: Session recovery (Critical)
+        this.registerPatch({
+            id: 'recover_session',
+            name: 'Session Recovery',
+            description: 'Attempt to recover corrupted or expired session',
+            autoRun: true,
+            severity: 'critical',
+            category: 'session',
+            canRollback: true,
+            detect: () => {
+                try {
+                    const authSession = localStorage.getItem('auth_session');
+                    
+                    if (!authSession) return null;
+                    
+                    const session = JSON.parse(authSession);
+                    
+                    // Check expiration
+                    if (session.expiresAt && Date.now() > session.expiresAt) {
+                        return { expired: true, expiresAt: session.expiresAt };
+                    }
+                    
+                    // Check structure
+                    if (!session.user || !session.tokens) {
+                        return { invalid: true, hasUser: !!session.user, hasTokens: !!session.tokens };
+                    }
+                    
+                    // Check token validity (basic check)
+                    if (session.tokens?.accessToken) {
+                        try {
+                            const tokenParts = session.tokens.accessToken.split('.');
+                            if (tokenParts.length !== 3) {
+                                return { invalidToken: true };
+                            }
+                        } catch {
+                            return { invalidToken: true };
+                        }
+                    }
+                    
+                } catch {
+                    return { corrupted: true };
                 }
                 
                 return null;
             },
             fix: () => {
-                const authSession = localStorage.getItem('auth_session');
-                const authToken = localStorage.getItem('auth_token');
-                
-                // If partial or corrupted, clear all auth data
-                if ((authSession && !authToken) || (!authSession && authToken)) {
+                try {
+                    const authSession = localStorage.getItem('auth_session');
+                    
+                    if (!authSession) {
+                        return { action: 'no_session' };
+                    }
+                    
+                    const session = JSON.parse(authSession);
+                    
+                    // Check if expired - clear all auth data
+                    if (session.expiresAt && Date.now() > session.expiresAt) {
+                        localStorage.removeItem('auth_session');
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_refresh_token');
+                        sessionStorage.clear();
+                        return { action: 'cleared_expired', redirectToLogin: true };
+                    }
+                    
+                    // Check if invalid structure
+                    if (!session.user || !session.tokens) {
+                        localStorage.removeItem('auth_session');
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_refresh_token');
+                        sessionStorage.clear();
+                        return { action: 'cleared_invalid', redirectToLogin: true };
+                    }
+                    
+                    return { action: 'session_valid' };
+                    
+                } catch {
+                    // Corrupted - clear all
                     localStorage.removeItem('auth_session');
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('auth_refresh_token');
                     sessionStorage.clear();
-                    
-                    return { cleared: true, action: 'redirect_to_login' };
+                    return { action: 'cleared_corrupted', redirectToLogin: true };
                 }
-                
-                // Try to repair session
-                if (authSession) {
-                    try {
-                        JSON.parse(authSession);
-                    } catch {
-                        localStorage.removeItem('auth_session');
-                        localStorage.removeItem('auth_token');
-                        localStorage.removeItem('auth_refresh_token');
-                        
-                        return { cleared: true, action: 'redirect_to_login' };
-                    }
-                }
-                
-                return { noAction: true };
             }
         });
+        
+        // Patch 7: PWA IndexedDB repair (Low - PWA only)
+        if (this.isPWA && this.config.enableIndexedDBRepair) {
+            this.registerPatch({
+                id: 'repair_indexeddb',
+                name: 'Repair IndexedDB',
+                description: 'Check and repair IndexedDB databases',
+                autoRun: true,
+                severity: 'low',
+                category: 'pwa',
+                canRollback: false,
+                detect: async () => {
+                    if (!('indexedDB' in window)) return null;
+                    
+                    try {
+                        const databases = await indexedDB.databases();
+                        const issues = [];
+                        
+                        for (const db of databases) {
+                            try {
+                                await new Promise((resolve, reject) => {
+                                    const request = indexedDB.open(db.name);
+                                    request.onsuccess = (e) => {
+                                        e.target.result.close();
+                                        resolve();
+                                    };
+                                    request.onerror = () => reject(request.error);
+                                    request.onblocked = () => {
+                                        issues.push({ database: db.name, type: 'blocked' });
+                                        resolve();
+                                    };
+                                });
+                            } catch {
+                                issues.push({ database: db.name, type: 'corrupted' });
+                            }
+                        }
+                        
+                        return issues.length > 0 ? { issues, count: issues.length } : null;
+                    } catch {
+                        return null;
+                    }
+                },
+                fix: async () => {
+                    if (!('indexedDB' in window)) return { fixed: 0 };
+                    
+                    const fixed = [];
+                    
+                    try {
+                        const databases = await indexedDB.databases();
+                        
+                        for (const db of databases) {
+                            try {
+                                await new Promise((resolve, reject) => {
+                                    const request = indexedDB.open(db.name);
+                                    
+                                    request.onblocked = () => {
+                                        // Database blocked, try to close and delete
+                                        request.result?.close();
+                                        const deleteRequest = indexedDB.deleteDatabase(db.name);
+                                        deleteRequest.onsuccess = () => {
+                                            fixed.push({ database: db.name, action: 'deleted_blocked' });
+                                            resolve();
+                                        };
+                                        deleteRequest.onerror = () => resolve();
+                                    };
+                                    
+                                    request.onsuccess = (e) => {
+                                        e.target.result.close();
+                                        resolve();
+                                    };
+                                    
+                                    request.onerror = () => {
+                                        // Corrupted database, delete it
+                                        const deleteRequest = indexedDB.deleteDatabase(db.name);
+                                        deleteRequest.onsuccess = () => {
+                                            fixed.push({ database: db.name, action: 'deleted_corrupted' });
+                                            resolve();
+                                        };
+                                        deleteRequest.onerror = () => resolve();
+                                    };
+                                });
+                            } catch {}
+                        }
+                    } catch {}
+                    
+                    return { fixed, count: fixed.length };
+                }
+            });
+        }
+        
+        // Patch 8: Service Worker recovery (Critical - PWA only)
+        if (this.isPWA) {
+            this.registerPatch({
+                id: 'recover_service_worker',
+                name: 'Service Worker Recovery',
+                description: 'Recover from corrupted or stuck service worker',
+                autoRun: true,
+                severity: 'critical',
+                category: 'pwa',
+                canRollback: false,
+                detect: async () => {
+                    if (!('serviceWorker' in navigator)) return null;
+                    
+                    try {
+                        const registration = await navigator.serviceWorker.getRegistration();
+                        
+                        if (!registration) return null;
+                        
+                        const issues = [];
+                        
+                        // Check if waiting or installing for too long
+                        if (registration.waiting) {
+                            issues.push({ state: 'waiting' });
+                        }
+                        
+                        if (registration.installing) {
+                            issues.push({ state: 'installing' });
+                        }
+                        
+                        // Check if active but not controlling
+                        if (registration.active && !navigator.serviceWorker.controller) {
+                            issues.push({ state: 'not_controlling' });
+                        }
+                        
+                        return issues.length > 0 ? { issues, count: issues.length } : null;
+                    } catch {
+                        return null;
+                    }
+                },
+                fix: async () => {
+                    if (!('serviceWorker' in navigator)) return { fixed: 0 };
+                    
+                    const fixed = [];
+                    
+                    try {
+                        const registration = await navigator.serviceWorker.getRegistration();
+                        
+                        if (!registration) return { fixed: 0 };
+                        
+                        // Update service worker
+                        await registration.update();
+                        fixed.push({ action: 'updated' });
+                        
+                        // If still having issues, unregister and re-register
+                        if (registration.waiting || registration.installing) {
+                            await registration.unregister();
+                            fixed.push({ action: 'unregistered' });
+                            
+                            // Clear SW cache
+                            if ('caches' in window) {
+                                const cacheNames = await caches.keys();
+                                await Promise.all(
+                                    cacheNames.map(name => caches.delete(name))
+                                );
+                                fixed.push({ action: 'cleared_cache' });
+                            }
+                            
+                            // Re-register
+                            try {
+                                const newReg = await navigator.serviceWorker.register('/sw.js');
+                                fixed.push({ action: 're-registered', scope: newReg.scope });
+                            } catch {}
+                        }
+                    } catch (error) {
+                        fixed.push({ action: 'failed', error: error.message });
+                    }
+                    
+                    return { fixed, count: fixed.length };
+                }
+            });
+        }
+    }
+    
+    // ============================================
+    // SAFE STORAGE OPERATIONS
+    // ============================================
+    
+    scanLocalStorage(prefixes = null) {
+        const results = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            
+            // Skip protected keys
+            if (this.protectedKeys.includes(key)) continue;
+            
+            if (prefixes) {
+                const matches = Array.isArray(prefixes) 
+                    ? prefixes.some(p => key?.startsWith(p))
+                    : key?.startsWith(prefixes);
+                
+                if (!matches) continue;
+            }
+            
+            try {
+                const value = localStorage.getItem(key);
+                results.push({ key, value });
+            } catch {
+                results.push({ key, value: null, error: true });
+            }
+        }
+        
+        return results;
+    }
+    
+    estimateStorageUsage() {
+        let totalSize = 0;
+        let itemCount = 0;
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key) || '';
+            totalSize += (key?.length || 0) + value.length;
+            itemCount++;
+        }
+        
+        // Account for UTF-16 encoding (2 bytes per char)
+        totalSize *= 2;
+        
+        // Assume minimum 5MB quota
+        const assumedQuota = 5 * 1024 * 1024;
+        
+        return {
+            itemCount,
+            totalSize,
+            totalSizeFormatted: this.formatBytes(totalSize),
+            percentUsed: parseFloat(((totalSize / assumedQuota) * 100).toFixed(1))
+        };
+    }
+    
+    // ============================================
+    // BACKUP & ROLLBACK
+    // ============================================
+    
+    async createBackup(patchId) {
+        if (!this.config.enableRollback) return null;
+        
+        try {
+            const backup = {
+                id: `backup_${Date.now()}`,
+                patchId,
+                timestamp: Date.now(),
+                data: {}
+            };
+            
+            // Backup relevant keys only
+            const keysToBackup = [
+                'app_settings', 'applied_migrations', 'auth_session',
+                'auth_token', 'user_preferences', 'offline_state'
+            ];
+            
+            keysToBackup.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    backup.data[key] = value;
+                }
+            });
+            
+            // Store backup
+            const backupKey = `patch_backup_${backup.id}`;
+            localStorage.setItem(backupKey, JSON.stringify(backup));
+            
+            this.backups.push(backup);
+            this.cleanupOldBackups();
+            
+            await this.saveState();
+            
+            this.log('debug', 'Backup created', {
+                backupId: backup.id,
+                patchId,
+                keys: Object.keys(backup.data).length
+            });
+            
+            return backup;
+        } catch (error) {
+            this.log('warn', 'Failed to create backup', {
+                error: error.message
+            });
+            return null;
+        }
+    }
+    
+    async rollback(patchId) {
+        const backup = this.backups.find(b => b.patchId === patchId);
+        
+        if (!backup) {
+            this.log('warn', 'No backup found for rollback', { patchId });
+            return false;
+        }
+        
+        try {
+            // Restore backup data
+            Object.entries(backup.data).forEach(([key, value]) => {
+                if (value === null) {
+                    localStorage.removeItem(key);
+                } else {
+                    localStorage.setItem(key, value);
+                }
+            });
+            
+            // Remove backup
+            this.backups = this.backups.filter(b => b.id !== backup.id);
+            localStorage.removeItem(`patch_backup_${backup.id}`);
+            
+            await this.saveState();
+            
+            this.log('info', 'Rollback successful', { patchId });
+            
+            return true;
+        } catch (error) {
+            this.log('error', 'Rollback failed', {
+                patchId,
+                error: error.message
+            });
+            return false;
+        }
+    }
+    
+    cleanupOldBackups() {
+        while (this.backups.length > this.config.maxBackups) {
+            const oldest = this.backups.shift();
+            localStorage.removeItem(`patch_backup_${oldest.id}`);
+        }
     }
     
     // ============================================
@@ -402,34 +1033,128 @@ class Patcher {
     // ============================================
     
     async runAutoPatches() {
+        if (this.isPatching) {
+            this.log('warn', 'Patching already in progress');
+            return;
+        }
+        
+        this.isPatching = true;
+        
         const autoPatches = this.patches.filter(p => p.autoRun);
+        const results = [];
+        
+        this.log('info', 'Running auto patches', {
+            count: autoPatches.length
+        });
         
         for (const patch of autoPatches) {
             try {
-                const issue = patch.detect();
-                
-                if (issue) {
-                    this.logger.info('Issue detected', {
-                        patch: patch.id,
-                        issue
-                    });
-                    
-                    const result = patch.fix();
-                    
-                    this.recordFix(patch.id, result);
-                    
-                    this.logger.info('Patch applied', {
-                        patch: patch.id,
-                        result
-                    });
-                }
+                const result = await this.applyPatch(patch);
+                results.push({
+                    patchId: patch.id,
+                    name: patch.name,
+                    ...result
+                });
             } catch (error) {
-                this.logger.error('Patch failed', {
+                this.log('error', 'Auto-patch failed', {
                     patch: patch.id,
+                    error: error.message
+                });
+                
+                results.push({
+                    patchId: patch.id,
+                    name: patch.name,
+                    applied: false,
                     error: error.message
                 });
             }
         }
+        
+        this.isPatching = false;
+        this.lastPatchTime = Date.now();
+        
+        await this.saveState();
+        
+        // Dispatch event
+        window.dispatchEvent(new CustomEvent('patcher:complete', {
+            detail: { results }
+        }));
+        
+        return results;
+    }
+    
+    async applyPatch(patch) {
+        const startTime = performance.now();
+        
+        this.log('debug', 'Checking patch', {
+            patch: patch.id,
+            name: patch.name
+        });
+        
+        // Detect issue
+        let issue;
+        try {
+            issue = await patch.detect();
+        } catch (error) {
+            return {
+                applied: false,
+                error: `Detection failed: ${error.message}`,
+                duration: performance.now() - startTime
+            };
+        }
+        
+        if (!issue) {
+            return {
+                applied: false,
+                reason: 'No issue detected',
+                duration: performance.now() - startTime
+            };
+        }
+        
+        this.log('info', 'Issue detected', {
+            patch: patch.id,
+            issue: typeof issue === 'object' ? 
+                Object.keys(issue).filter(k => k !== 'corrupted' && k !== 'expired') : 
+                issue
+        });
+        
+        // Create backup if rollback enabled
+        if (this.config.enableRollback && patch.canRollback) {
+            await this.createBackup(patch.id);
+        }
+        
+        // Apply fix
+        let fixResult;
+        try {
+            fixResult = await patch.fix();
+        } catch (error) {
+            // Rollback if enabled
+            if (this.config.enableRollback && patch.canRollback) {
+                await this.rollback(patch.id);
+            }
+            
+            return {
+                applied: false,
+                error: `Fix failed: ${error.message}`,
+                rolledBack: this.config.enableRollback,
+                duration: performance.now() - startTime
+            };
+        }
+        
+        // Record fix
+        this.recordFix(patch.id, fixResult);
+        
+        this.log('info', 'Patch applied successfully', {
+            patch: patch.id,
+            result: fixResult
+        });
+        
+        return {
+            applied: true,
+            issue,
+            result: fixResult,
+            duration: performance.now() - startTime
+        };
     }
     
     async runPatch(patchId) {
@@ -439,16 +1164,11 @@ class Patcher {
             throw new Error(`Patch not found: ${patchId}`);
         }
         
-        const issue = patch.detect();
+        this.patchInProgress = patchId;
+        const result = await this.applyPatch(patch);
+        this.patchInProgress = null;
         
-        if (!issue) {
-            return { applied: false, reason: 'No issue detected' };
-        }
-        
-        const result = patch.fix();
-        this.recordFix(patchId, result);
-        
-        return { applied: true, issue, result };
+        return result;
     }
     
     async runAllPatches() {
@@ -459,9 +1179,13 @@ class Patcher {
             results.push({
                 patchId: patch.id,
                 name: patch.name,
+                severity: patch.severity,
                 ...result
             });
         }
+        
+        this.lastPatchTime = Date.now();
+        await this.saveState();
         
         return results;
     }
@@ -472,10 +1196,11 @@ class Patcher {
     
     async runDiagnostics() {
         const issues = [];
+        const patches = this.patches;
         
-        for (const patch of this.patches) {
+        for (const patch of patches) {
             try {
-                const issue = patch.detect();
+                const issue = await patch.detect();
                 
                 if (issue) {
                     issues.push({
@@ -483,8 +1208,11 @@ class Patcher {
                         name: patch.name,
                         description: patch.description,
                         severity: patch.severity,
-                        issue,
-                        autoFix: patch.autoRun
+                        category: patch.category,
+                        autoRun: patch.autoRun,
+                        canRollback: patch.canRollback,
+                        issue: typeof issue === 'object' ? 
+                            this.sanitizeIssue(issue) : issue
                     });
                 }
             } catch (error) {
@@ -492,38 +1220,80 @@ class Patcher {
                     patchId: patch.id,
                     name: patch.name,
                     severity: 'error',
-                    issue: { error: error.message },
-                    autoFix: false
+                    issue: { error: error.message }
                 });
             }
         }
         
+        const storageInfo = this.estimateStorageUsage();
+        
+        // Add PWA diagnostics
+        const pwaInfo = this.isPWA ? await this.getPWADiagnostics() : null;
+        
         return {
             timestamp: new Date().toISOString(),
-            totalPatches: this.patches.length,
+            totalPatches: patches.length,
             issuesFound: issues.length,
             issues,
-            storage: this.getStorageInfo()
+            storage: storageInfo,
+            pwa: pwaInfo,
+            fixHistory: {
+                total: this.fixHistory.length,
+                lastFix: this.lastPatchTime
+            }
         };
     }
     
-    getStorageInfo() {
-        let totalSize = 0;
-        let itemCount = 0;
+    async getPWADiagnostics() {
+        const info = {
+            isPWA: true,
+            serviceWorker: false,
+            cacheStorage: false,
+            backgroundSync: false
+        };
         
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const value = localStorage.getItem(key);
-            totalSize += (key.length + value.length) * 2;
-            itemCount++;
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                info.serviceWorker = !!registration;
+                info.swState = registration?.active?.state || 'none';
+                info.swScope = registration?.scope || '';
+                
+                if (registration?.waiting) info.swWaiting = true;
+                if (registration?.installing) info.swInstalling = true;
+            } catch {}
         }
         
-        return {
-            itemCount,
-            totalSize,
-            totalSizeFormatted: this.formatBytes(totalSize),
-            quotaEstimate: navigator.storage?.estimate ? 'available' : 'unavailable'
-        };
+        if ('caches' in window) {
+            try {
+                const cacheNames = await caches.keys();
+                info.cacheStorage = true;
+                info.cacheCount = cacheNames.length;
+            } catch {}
+        }
+        
+        if ('SyncManager' in window) {
+            info.backgroundSync = true;
+        }
+        
+        return info;
+    }
+    
+    sanitizeIssue(issue) {
+        // Remove large data dari issue object
+        const sanitized = {};
+        
+        for (const [key, value] of Object.entries(issue)) {
+            if (key === 'corrupted' && Array.isArray(value)) {
+                sanitized[key] = value.length; // Just count
+            } else if (typeof value === 'object' && value !== null) {
+                sanitized[key] = this.sanitizeIssue(value);
+            } else {
+                sanitized[key] = value;
+            }
+        }
+        
+        return sanitized;
     }
     
     // ============================================
@@ -533,33 +1303,18 @@ class Patcher {
     recordFix(patchId, result) {
         this.fixHistory.push({
             patchId,
-            result,
+            result: typeof result === 'object' ? 
+                { summary: Object.keys(result).filter(k => k !== 'fixed' && k !== 'corrupted') } : 
+                result,
             timestamp: Date.now()
         });
         
-        // Keep only last 50 entries
+        // Keep last 50 entries
         if (this.fixHistory.length > 50) {
             this.fixHistory = this.fixHistory.slice(-50);
         }
         
-        this.saveFixHistory();
-    }
-    
-    loadFixHistory() {
-        try {
-            const stored = localStorage.getItem('fix_history');
-            return stored ? JSON.parse(stored) : [];
-        } catch {
-            return [];
-        }
-    }
-    
-    saveFixHistory() {
-        try {
-            localStorage.setItem('fix_history', JSON.stringify(this.fixHistory));
-        } catch {
-            // Ignore
-        }
+        this.saveState();
     }
     
     getFixHistory() {
@@ -568,7 +1323,7 @@ class Patcher {
     
     clearFixHistory() {
         this.fixHistory = [];
-        localStorage.removeItem('fix_history');
+        this.saveState();
     }
     
     // ============================================
@@ -588,8 +1343,10 @@ class Patcher {
             id: p.id,
             name: p.name,
             description: p.description,
+            severity: p.severity,
+            category: p.category,
             autoRun: p.autoRun,
-            severity: p.severity
+            canRollback: p.canRollback
         }));
     }
     
@@ -609,17 +1366,47 @@ class Patcher {
         return this.runPatch(patchId);
     }
     
+    async rollbackPatch(patchId) {
+        return this.rollback(patchId);
+    }
+    
+    getStatus() {
+        return {
+            isPatching: this.isPatching,
+            lastPatchTime: this.lastPatchTime,
+            patchesAvailable: this.patches.length,
+            historyCount: this.fixHistory.length,
+            backupsCount: this.backups.length
+        };
+    }
+    
     destroy() {
         this.patches = [];
-        this.logger.info('Patcher destroyed');
+        this.backups = [];
+        this.fixHistory = [];
+        
+        // Cleanup backup keys
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('patch_backup_')) {
+                try {
+                    localStorage.removeItem(key);
+                } catch {}
+            }
+        }
+        
+        this.saveState();
+        this.log('info', 'Patcher destroyed');
     }
 }
 
 // Create singleton
 const patcher = new Patcher();
 
-// Expose globally
-window.patcher = patcher;
+// Make available globally
+if (typeof window !== 'undefined') {
+    window.patcher = patcher;
+}
 
 export default patcher;
 export { Patcher };

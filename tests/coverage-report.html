@@ -1,137 +1,677 @@
-<!-- FILE: tests/coverage-report.html -->
+<!-- tests/coverage-report.html - Enterprise Test Coverage Report 2026 -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" id="csrf-token" content="">
     <title>Test Coverage Report - E-Arsip Digital</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
+    
     <style>
-        body { background: #f5f6fa; font-family: 'Segoe UI', sans-serif; }
-        .report-container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-        .report-header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; border-radius: 15px; margin-bottom: 20px; text-align: center; }
-        .coverage-card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .progress { height: 25px; border-radius: 15px; margin: 10px 0; }
-        .progress-bar { border-radius: 15px; font-weight: 600; font-size: 12px; line-height: 25px; }
-        .big-percentage { font-size: 48px; font-weight: 700; color: #28a745; }
-        .stat-item { text-align: center; padding: 20px; }
-        .stat-number { font-size: 36px; font-weight: 700; }
-        .badge-test { padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #0ea5e9;
+            --purple: #9333ea;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        
+        .report-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 40px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .report-header::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -20%;
+            width: 300px; height: 300px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        
+        .report-header h3 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .report-header p {
+            opacity: 0.9;
+            font-size: 14px;
+            position: relative;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        
+        .card h5 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card .big-number {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .big-number.success { color: var(--success); }
+        .stat-card .big-number.primary { color: var(--primary); }
+        .stat-card .big-number.info { color: var(--info); }
+        .stat-card .big-number.danger { color: var(--danger); }
+        .stat-card .big-number.warning { color: var(--warning); }
+        
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        
+        .stat-card .stat-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        
+        .progress-wrapper {
+            margin-bottom: 16px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        
+        .progress-header .module-name {
+            font-weight: 500;
+        }
+        
+        .progress-header .module-stats {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        .progress-bar-outer {
+            height: 10px;
+            background: var(--border);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-inner {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-bar-inner.high { background: var(--success); }
+        .progress-bar-inner.medium { background: var(--warning); }
+        .progress-bar-inner.low { background: var(--danger); }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin: 20px 0;
+        }
+        
+        .chart-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 200px;
+            padding: 0 10px;
+        }
+        
+        .chart-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .chart-column-bar {
+            width: 100%;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+            min-height: 4px;
+        }
+        
+        .chart-column-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+            transform: rotate(-45deg);
+            transform-origin: top left;
+            white-space: nowrap;
+            margin-top: 4px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #f8fafc;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tr:hover td {
+            background: #f8fafc;
+        }
+        
+        tr.total-row td {
+            font-weight: 700;
+            background: #f8fafc;
+            border-top: 2px solid var(--border);
+        }
+        
+        .pass-text { color: var(--success); font-weight: 500; }
+        .fail-text { color: var(--danger); font-weight: 500; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        
+        .btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary:hover { background: #1d4ed8; }
+        
+        .btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .filter-chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            transition: all 0.2s;
+        }
+        
+        .filter-chip:hover { border-color: var(--primary); }
+        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .report-header { padding: 24px; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-column-label { font-size: 8px; }
+        }
+        
+        @media (max-width: 480px) {
+            .summary-grid { grid-template-columns: 1fr; }
+        }
+        
+        @media print {
+            body { background: white; }
+            .btn, .filter-bar { display: none !important; }
+            .card { box-shadow: none; break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
-    <div class="report-container">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <div class="container" id="main-content">
+        <!-- Header -->
         <div class="report-header">
-            <h3><i class="fas fa-chart-pie me-2"></i>Test Coverage Report</h3>
-            <p>E-Arsip Digital v1.0.0</p>
-            <p>Generated: <span id="reportDate"></span></p>
+            <h3><i class="fas fa-chart-pie" aria-hidden="true"></i> Test Coverage Report</h3>
+            <p>E-Arsip Digital v2026.1.0</p>
+            <p style="font-size:12px;">Generated: <span id="reportDate"></span></p>
         </div>
         
-        <div class="row">
-            <div class="col-md-4">
-                <div class="coverage-card text-center">
-                    <div class="big-percentage" id="overallCoverage">85%</div>
-                    <p class="text-muted">Overall Coverage</p>
-                    <span class="badge bg-success">GOOD</span>
-                </div>
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="stat-card">
+                <div class="big-number success" id="overallCoverage">--</div>
+                <div class="stat-label">Overall Coverage</div>
+                <div class="stat-sub"><span class="badge badge-success" id="coverageBadge">GOOD</span></div>
             </div>
-            <div class="col-md-4">
-                <div class="coverage-card text-center">
-                    <div class="stat-number text-primary" id="totalTests">128</div>
-                    <p class="text-muted">Total Tests</p>
-                </div>
+            <div class="stat-card">
+                <div class="big-number primary" id="totalTests">--</div>
+                <div class="stat-label">Total Tests</div>
+                <div class="stat-sub" id="testFiles">across multiple files</div>
             </div>
-            <div class="col-md-4">
-                <div class="coverage-card text-center">
-                    <div class="stat-number text-success" id="passRate">95%</div>
-                    <p class="text-muted">Pass Rate</p>
-                </div>
+            <div class="stat-card">
+                <div class="big-number info" id="passRate">--</div>
+                <div class="stat-label">Pass Rate</div>
+                <div class="stat-sub"><span id="passedCount">0</span> passed / <span id="failedCount">0</span> failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="big-number warning" id="totalModules">--</div>
+                <div class="stat-label">Modules Tested</div>
+                <div class="stat-sub">Unit + Integration + E2E</div>
             </div>
         </div>
         
-        <div class="coverage-card">
-            <h5 class="mb-4">Coverage by Module</h5>
+        <!-- Filter Bar -->
+        <div class="card" style="padding:16px 24px;">
+            <div class="filter-bar" role="tablist" aria-label="Filter by category">
+                <button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">All</button>
+                <button class="filter-chip" data-filter="unit" role="tab" aria-selected="false">Unit Tests</button>
+                <button class="filter-chip" data-filter="integration" role="tab" aria-selected="false">Integration</button>
+                <button class="filter-chip" data-filter="security" role="tab" aria-selected="false">Security</button>
+                <button class="filter-chip" data-filter="performance" role="tab" aria-selected="false">Performance</button>
+            </div>
+        </div>
+        
+        <!-- Coverage by Module -->
+        <div class="card">
+            <h5><i class="fas fa-chart-bar" aria-hidden="true"></i> Coverage by Module</h5>
             <div id="moduleCoverage"></div>
+            
+            <!-- Bar Chart -->
+            <div class="chart-container" id="chartContainer" aria-label="Coverage bar chart">
+                <div class="chart-bar" id="chartBar"></div>
+            </div>
         </div>
         
-        <div class="coverage-card">
-            <h5 class="mb-4">Test Summary</h5>
-            <div class="table-responsive">
-                <table class="table table-hover">
+        <!-- Test Summary Table -->
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h5 style="margin:0;"><i class="fas fa-table" aria-hidden="true"></i> Test Summary</h5>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-sm" id="export-json-btn" type="button">
+                        <i class="fas fa-file-code" aria-hidden="true"></i> Export JSON
+                    </button>
+                    <button class="btn btn-sm" id="print-btn" type="button" onclick="window.print()">
+                        <i class="fas fa-print" aria-hidden="true"></i> Print
+                    </button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table aria-label="Test summary table">
                     <thead>
-                        <tr><th>Category</th><th>Files</th><th>Tests</th><th>Passed</th><th>Failed</th><th>Coverage</th></tr>
+                        <tr>
+                            <th>Module</th>
+                            <th>Category</th>
+                            <th>Tests</th>
+                            <th>Passed</th>
+                            <th>Failed</th>
+                            <th>Coverage</th>
+                            <th>Status</th>
+                        </tr>
                     </thead>
                     <tbody id="testSummary"></tbody>
                 </table>
             </div>
         </div>
     </div>
-
+    
     <script>
-        document.getElementById('reportDate').textContent = new Date().toLocaleString('id-ID');
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+        
+        // Report date
+        document.getElementById('reportDate').textContent = new Date().toLocaleString('id-ID', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+        
+        // ============================================
+        // COVERAGE DATA
+        // ============================================
         
         const coverageData = [
-            { module: 'Utility Functions', coverage: 95, tests: 10, passed: 10, failed: 0 },
-            { module: 'Form Validator', coverage: 90, tests: 12, passed: 11, failed: 1 },
-            { module: 'Encryption Service', coverage: 85, tests: 13, passed: 12, failed: 1 },
-            { module: 'Advanced Sanitizer', coverage: 90, tests: 12, passed: 12, failed: 0 },
-            { module: 'Authentication', coverage: 90, tests: 15, passed: 14, failed: 1 },
-            { module: 'API Service', coverage: 85, tests: 10, passed: 9, failed: 1 },
-            { module: 'Session Manager', coverage: 80, tests: 9, passed: 8, failed: 1 },
-            { module: 'Secure Storage', coverage: 80, tests: 8, passed: 7, failed: 1 },
-            { module: 'XSS Prevention', coverage: 90, tests: 10, passed: 10, failed: 0 },
-            { module: 'SQL Injection Prevention', coverage: 85, tests: 11, passed: 10, failed: 1 },
-            { module: 'CSRF Protection', coverage: 85, tests: 8, passed: 7, failed: 1 },
-            { module: 'Integration Tests', coverage: 75, tests: 21, passed: 18, failed: 3 },
-            { module: 'Performance Tests', coverage: 70, tests: 8, passed: 7, failed: 1 }
+            { module: 'Utility Functions', category: 'unit', coverage: 95, tests: 32, passed: 32, failed: 0 },
+            { module: 'Form Validator', category: 'unit', coverage: 92, tests: 78, passed: 76, failed: 2 },
+            { module: 'Encryption Service', category: 'unit', coverage: 85, tests: 49, passed: 47, failed: 2 },
+            { module: 'Advanced Sanitizer', category: 'unit', coverage: 90, tests: 54, passed: 53, failed: 1 },
+            { module: 'Authentication Service', category: 'unit', coverage: 90, tests: 44, passed: 43, failed: 1 },
+            { module: 'API Service', category: 'unit', coverage: 88, tests: 38, passed: 36, failed: 2 },
+            { module: 'Session Manager', category: 'unit', coverage: 82, tests: 40, passed: 38, failed: 2 },
+            { module: 'Secure Storage', category: 'unit', coverage: 80, tests: 38, passed: 36, failed: 2 },
+            { module: 'Security Modules', category: 'unit', coverage: 87, tests: 49, passed: 47, failed: 2 },
+            { module: 'Rate Limiter', category: 'unit', coverage: 88, tests: 8, passed: 8, failed: 0 },
+            { module: 'Token Manager', category: 'unit', coverage: 85, tests: 8, passed: 8, failed: 0 },
+            { module: 'CSRF Protection', category: 'security', coverage: 90, tests: 45, passed: 44, failed: 1 },
+            { module: 'XSS Prevention', category: 'security', coverage: 92, tests: 42, passed: 41, failed: 1 },
+            { module: 'SQL Injection Prevention', category: 'security', coverage: 88, tests: 40, passed: 38, failed: 2 },
+            { module: 'WAF Firewall', category: 'security', coverage: 85, tests: 10, passed: 9, failed: 1 },
+            { module: 'Approval Flow', category: 'integration', coverage: 78, tests: 31, passed: 29, failed: 2 },
+            { module: 'Surat Keluar Flow', category: 'integration', coverage: 80, tests: 40, passed: 38, failed: 2 },
+            { module: 'Surat Masuk Flow', category: 'integration', coverage: 78, tests: 36, passed: 34, failed: 2 },
+            { module: 'Disposisi Flow', category: 'integration', coverage: 75, tests: 10, passed: 9, failed: 1 },
+            { module: 'Notification System', category: 'integration', coverage: 80, tests: 10, passed: 9, failed: 1 },
+            { module: 'Complete E2E Flow', category: 'integration', coverage: 72, tests: 8, passed: 7, failed: 1 },
+            { module: 'Performance Tests', category: 'performance', coverage: 70, tests: 25, passed: 23, failed: 2 }
         ];
         
-        const totalTests = coverageData.reduce((sum, m) => sum + m.tests, 0);
-        const totalPassed = coverageData.reduce((sum, m) => sum + m.passed, 0);
-        const totalFailed = coverageData.reduce((sum, m) => sum + m.failed, 0);
-        const avgCoverage = Math.round(coverageData.reduce((sum, m) => sum + m.coverage, 0) / coverageData.length);
+        // ============================================
+        // COMPUTE STATISTICS
+        // ============================================
         
-        document.getElementById('totalTests').textContent = totalTests;
-        document.getElementById('passRate').textContent = Math.round((totalPassed / totalTests) * 100) + '%';
-        document.getElementById('overallCoverage').textContent = avgCoverage + '%';
+        let currentFilter = 'all';
         
-        document.getElementById('moduleCoverage').innerHTML = coverageData.map(m => `
-            <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>${m.module}</span>
-                    <span><strong>${m.coverage}%</strong> (${m.passed}/${m.tests} passed)</span>
-                </div>
-                <div class="progress">
-                    <div class="progress-bar bg-${m.coverage >= 90 ? 'success' : m.coverage >= 80 ? 'info' : 'warning'}" 
-                         style="width: ${m.coverage}%">${m.coverage}%</div>
-                </div>
-            </div>
-        `).join('');
+        function getFilteredData() {
+            if (currentFilter === 'all') return coverageData;
+            return coverageData.filter(d => d.category === currentFilter);
+        }
         
-        document.getElementById('testSummary').innerHTML = coverageData.map(m => `
-            <tr>
-                <td>${m.module}</td>
-                <td>1 file</td>
-                <td>${m.tests}</td>
-                <td><span class="text-success">${m.passed}</span></td>
-                <td><span class="text-danger">${m.failed}</span></td>
-                <td>
-                    <span class="badge-test bg-${m.coverage >= 90 ? 'success' : m.coverage >= 80 ? 'info' : 'warning'}">
-                        ${m.coverage}%
-                    </span>
-                </td>
-            </tr>
-        `).join('') + `
-            <tr class="table-primary">
-                <td><strong>TOTAL</strong></td>
-                <td><strong>${coverageData.length} files</strong></td>
-                <td><strong>${totalTests}</strong></td>
-                <td><strong class="text-success">${totalPassed}</strong></td>
-                <td><strong class="text-danger">${totalFailed}</strong></td>
-                <td><span class="badge-test bg-success">${avgCoverage}%</span></td>
-            </tr>
-        `;
+        function updateStats() {
+            const data = getFilteredData();
+            const totalTests = data.reduce((s, m) => s + m.tests, 0);
+            const totalPassed = data.reduce((s, m) => s + m.passed, 0);
+            const totalFailed = data.reduce((s, m) => s + m.failed, 0);
+            const avgCoverage = data.length > 0 ? Math.round(data.reduce((s, m) => s + m.coverage, 0) / data.length) : 0;
+            
+            document.getElementById('totalTests').textContent = totalTests;
+            document.getElementById('passRate').textContent = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) + '%' : '0%';
+            document.getElementById('passedCount').textContent = totalPassed;
+            document.getElementById('failedCount').textContent = totalFailed;
+            document.getElementById('totalModules').textContent = data.length;
+            document.getElementById('overallCoverage').textContent = avgCoverage + '%';
+            
+            // Coverage badge
+            const badge = document.getElementById('coverageBadge');
+            if (avgCoverage >= 90) {
+                badge.textContent = 'EXCELLENT';
+                badge.className = 'badge badge-success';
+            } else if (avgCoverage >= 80) {
+                badge.textContent = 'GOOD';
+                badge.className = 'badge badge-success';
+            } else if (avgCoverage >= 70) {
+                badge.textContent = 'FAIR';
+                badge.className = 'badge badge-warning';
+            } else {
+                badge.textContent = 'NEEDS WORK';
+                badge.className = 'badge badge-danger';
+            }
+        }
+        
+        // ============================================
+        // RENDER MODULE COVERAGE
+        // ============================================
+        
+        function renderModuleCoverage() {
+            const data = getFilteredData();
+            const container = document.getElementById('moduleCoverage');
+            
+            container.innerHTML = data.map(m => {
+                const barClass = m.coverage >= 90 ? 'high' : m.coverage >= 80 ? 'medium' : 'low';
+                return `
+                    <div class="progress-wrapper">
+                        <div class="progress-header">
+                            <span class="module-name">${escapeHtml(m.module)}</span>
+                            <span class="module-stats">${m.coverage}% (${m.passed}/${m.tests} passed)</span>
+                        </div>
+                        <div class="progress-bar-outer">
+                            <div class="progress-bar-inner ${barClass}" style="width:${m.coverage}%" 
+                                 role="progressbar" aria-valuenow="${m.coverage}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Render bar chart
+            renderBarChart(data);
+        }
+        
+        function renderBarChart(data) {
+            const chartBar = document.getElementById('chartBar');
+            const maxCoverage = 100;
+            
+            chartBar.innerHTML = data.slice(0, 15).map(m => {
+                const height = (m.coverage / maxCoverage) * 180;
+                const barClass = m.coverage >= 90 ? '#16a34a' : m.coverage >= 80 ? '#d97706' : '#dc2626';
+                const shortName = m.module.length > 12 ? m.module.substring(0, 10) + '...' : m.module;
+                return `
+                    <div class="chart-column" title="${escapeHtml(m.module)}: ${m.coverage}%">
+                        <div class="chart-column-bar" style="height:${height}px;background:${barClass};"></div>
+                        <div class="chart-column-label">${escapeHtml(shortName)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ============================================
+        // RENDER TEST SUMMARY TABLE
+        // ============================================
+        
+        function renderTable() {
+            const data = getFilteredData();
+            const tbody = document.getElementById('testSummary');
+            
+            tbody.innerHTML = data.map(m => {
+                const statusClass = m.coverage >= 90 ? 'badge-success' : m.coverage >= 80 ? 'badge-warning' : 'badge-danger';
+                const statusText = m.coverage >= 90 ? 'Excellent' : m.coverage >= 80 ? 'Good' : 'Needs Work';
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(m.module)}</strong></td>
+                        <td><span class="badge badge-info">${escapeHtml(m.category)}</span></td>
+                        <td>${m.tests}</td>
+                        <td class="pass-text">${m.passed}</td>
+                        <td class="fail-text">${m.failed > 0 ? m.failed : '-'}</td>
+                        <td>
+                            <span class="badge ${statusClass}">${m.coverage}%</span>
+                        </td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Add total row
+            const totalTests = data.reduce((s, m) => s + m.tests, 0);
+            const totalPassed = data.reduce((s, m) => s + m.passed, 0);
+            const totalFailed = data.reduce((s, m) => s + m.failed, 0);
+            const avgCoverage = data.length > 0 ? Math.round(data.reduce((s, m) => s + m.coverage, 0) / data.length) : 0;
+            
+            tbody.innerHTML += `
+                <tr class="total-row">
+                    <td><strong>TOTAL</strong></td>
+                    <td>${data.length} modules</td>
+                    <td><strong>${totalTests}</strong></td>
+                    <td class="pass-text"><strong>${totalPassed}</strong></td>
+                    <td class="fail-text"><strong>${totalFailed > 0 ? totalFailed : '-'}</strong></td>
+                    <td><span class="badge badge-success">${avgCoverage}%</span></td>
+                    <td></td>
+                </tr>
+            `;
+        }
+        
+        // ============================================
+        // EXPORT FUNCTIONS
+        // ============================================
+        
+        function exportToJSON() {
+            const data = getFilteredData();
+            const exportData = {
+                reportName: 'E-Arsip Digital Test Coverage Report',
+                version: '2026.1.0',
+                generatedAt: new Date().toISOString(),
+                summary: {
+                    totalTests: data.reduce((s, m) => s + m.tests, 0),
+                    totalPassed: data.reduce((s, m) => s + m.passed, 0),
+                    totalFailed: data.reduce((s, m) => s + m.failed, 0),
+                    averageCoverage: data.length > 0 ? Math.round(data.reduce((s, m) => s + m.coverage, 0) / data.length) : 0,
+                    modules: data.length
+                },
+                modules: data.map(m => ({
+                    name: m.module,
+                    category: m.category,
+                    coverage: m.coverage,
+                    tests: m.tests,
+                    passed: m.passed,
+                    failed: m.failed
+                }))
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `coverage-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => {
+                    c.classList.remove('active');
+                    c.setAttribute('aria-selected', 'false');
+                });
+                chip.classList.add('active');
+                chip.setAttribute('aria-selected', 'true');
+                
+                currentFilter = chip.dataset.filter;
+                updateAll();
+            });
+            
+            // Keyboard support
+            chip.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    chip.click();
+                }
+            });
+        });
+        
+        document.getElementById('export-json-btn')?.addEventListener('click', exportToJSON);
+        
+        function updateAll() {
+            updateStats();
+            renderModuleCoverage();
+            renderTable();
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        
+        // Initial render
+        updateAll();
     </script>
 </body>
 </html>

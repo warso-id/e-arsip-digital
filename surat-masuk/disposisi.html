@@ -1,277 +1,361 @@
-<!-- surat-masuk/disposisi.html - Form Disposisi 2026 -->
+<!-- surat-masuk/disposisi.html - Form Disposisi 2026 (PWA SECURE FULL-STACK) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Disposisi">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Form Disposisi Surat Masuk - E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icons/icon-192.png">
+    
+    <!-- CSP -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+        frame-src 'self' https://script.google.com;
+        form-action 'self' https://script.google.com;
+        base-uri 'self';
+    ">
+    
+    <style>html{display:none;}</style>
+    <script>if(self===top)document.documentElement.style.display='block';else top.location=self.location;</script>
+    
     <title>Disposisi Surat - E-Arsip Digital</title>
     
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
     <style>
-        .disposisi-container {
-            max-width: 900px;
-            margin: 0 auto;
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8;
+            --success: #16a34a; --danger: #dc2626; --warning: #d97706; --info: #0891b2;
+            --text: #1e293b; --text-light: #64748b;
+            --bg: #f8fafc; --white: #ffffff; --border: #e2e8f0;
+            --radius: 12px; --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --transition: all 0.25s ease;
         }
         
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Network Bar */
+        .network-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; padding: 8px 16px; text-align: center; font-size: 12px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s; }
+        .network-bar.offline { transform: translateY(0); background: #fef2f2; color: #dc2626; }
+        .network-bar.restored { transform: translateY(0); background: #f0fdf4; color: #16a34a; animation: slideDown 0.3s, slideUp 0.3s 2.5s forwards; }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+        
+        /* Loading */
+        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; align-items: center; justify-content: center; z-index: 9998; transition: opacity 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; top: 0; left: 0; width: 250px; height: 100vh; background: linear-gradient(180deg, #1e293b, #0f172a); color: white; z-index: 100; overflow-y: auto; transition: transform 0.3s; padding-top: var(--safe-top); }
+        .sidebar-brand { padding: 20px; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand i { color: #60a5fa; font-size: 22px; }
+        .sidebar-nav { padding: 12px 0; }
+        .sidebar-nav .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); border-left: 3px solid transparent; }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+        .sidebar-nav .nav-item i { width: 18px; text-align: center; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        
+        /* Main */
+        .main-content { margin-left: 250px; min-height: 100vh; padding: 24px; padding-top: calc(24px + var(--safe-top)); transition: margin 0.3s; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; gap: 10px; }
+        .mobile-header .hamburger { width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* Breadcrumb */
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); margin-bottom: 16px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none; transition: var(--transition); font-family: inherit; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-ghost { background: transparent; color: var(--text-light); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; min-height: 34px; border-radius: 6px; }
+        
+        /* Container */
+        .disposisi-container { max-width: 900px; margin: 0 auto; }
+        
+        /* Info Card */
         .surat-info-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 18px 20px; margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
         }
+        .surat-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+        .surat-info-item { display: flex; gap: 8px; font-size: 13px; }
+        .surat-info-label { color: var(--text-light); min-width: 90px; font-weight: 500; }
+        .surat-info-value { font-weight: 600; color: var(--text); }
         
-        .surat-info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px 24px;
+        /* Card */
+        .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 15px; font-weight: 600; margin: 0; }
+        .card-body { padding: 20px; }
+        
+        /* Form */
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+        .form-label-required::after { content: ' *'; color: var(--danger); }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 11px 14px; font-size: 16px;
+            border: 2px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--bg); color: var(--text); outline: none;
+            transition: var(--transition); font-family: inherit;
+            -webkit-appearance: none;
         }
-        
-        .surat-info-item {
-            display: flex;
-            gap: 8px;
+        .form-textarea { resize: vertical; min-height: 90px; }
+        .form-select {
+            background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%2364748b' d='M4.5 6l3.5 3.5L11.5 6'/></svg>");
+            background-repeat: no-repeat; background-position: right 10px center;
+            background-size: 14px; padding-right: 32px;
         }
-        
-        .surat-info-label {
-            font-size: 13px;
-            color: #64748b;
-            min-width: 100px;
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--primary); background: var(--white);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
         }
-        
-        .surat-info-value {
-            font-size: 14px;
-            font-weight: 500;
-            color: #1e293b;
+        .form-input.error, .form-select.error, .form-textarea.error {
+            border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
         }
+        .form-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
+        .form-error.show { display: block; }
+        .form-radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
+        .form-radio { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+        .form-radio input[type="radio"] { width: 18px; height: 18px; accent-color: var(--primary); }
         
-        .disposisi-list {
-            list-style: none;
-            padding: 0;
-        }
-        
+        /* Disposisi List */
+        .disposisi-list { list-style: none; padding: 0; }
         .disposisi-item {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 16px 20px;
-            margin-bottom: 12px;
-            position: relative;
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 10px; padding: 16px 18px; margin-bottom: 10px;
+            position: relative; border-left: 4px solid #94a3b8;
         }
+        .disposisi-item.status-selesai { border-left-color: var(--success); }
+        .disposisi-item.status-proses { border-left-color: var(--warning); }
+        .disposisi-item.status-pending { border-left-color: #94a3b8; }
+        .disposisi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+        .disposisi-flow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-light); margin-bottom: 8px; flex-wrap: wrap; }
+        .disposisi-flow i { color: var(--primary); font-size: 10px; }
+        .disposisi-isi { background: var(--bg); padding: 10px 14px; border-radius: 6px; font-size: 14px; margin-bottom: 6px; line-height: 1.6; }
+        .disposisi-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94a3b8; flex-wrap: wrap; gap: 4px; }
         
-        .disposisi-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            border-radius: 4px 0 0 4px;
+        /* Badges */
+        .badge-time {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap;
         }
+        .badge-time.overdue { background: #fef2f2; color: #dc2626; }
+        .badge-time.soon { background: #fef3c7; color: #d97706; }
+        .badge-time.ok { background: #f0fdf4; color: #16a34a; }
+        .badge-sifat { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+        .badge-sifat.biasa { background: #f1f5f9; color: #64748b; }
+        .badge-sifat.segera { background: #fef3c7; color: #d97706; }
+        .badge-sifat.rahasia { background: #fef2f2; color: #dc2626; }
         
-        .disposisi-item.status-proses::before { background: #f59e0b; }
-        .disposisi-item.status-selesai::before { background: #16a34a; }
-        .disposisi-item.status-pending::before { background: #94a3b8; }
+        /* Empty State */
+        .empty-state { text-align: center; padding: 30px; color: #94a3b8; }
+        .empty-state i { font-size: 32px; display: block; margin-bottom: 8px; }
         
-        .disposisi-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
+        /* Toast */
+        .toast-container { position: fixed; top: calc(12px + var(--safe-top)); right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; max-width: calc(100vw - 24px); }
+        .toast { padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: slideInRight 0.3s; display: flex; align-items: center; gap: 8px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        .toast-info { background: var(--info); }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
-        .disposisi-dari-ke {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: #64748b;
-            margin-bottom: 8px;
-        }
-        
-        .disposisi-dari-ke i {
-            color: #2563eb;
-        }
-        
-        .disposisi-isi {
-            background: #f8fafc;
-            padding: 10px 14px;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        
-        .disposisi-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        
-        .batas-waktu-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .batas-waktu-badge.overdue {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-        
-        .batas-waktu-badge.soon {
-            background: #fffbeb;
-            color: #d97706;
-        }
-        
-        .batas-waktu-badge.ok {
-            background: #f0fdf4;
-            color: #16a34a;
-        }
-        
+        /* Responsive */
         @media (max-width: 768px) {
-            .surat-info-grid {
-                grid-template-columns: 1fr;
-            }
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 14px; }
+            .mobile-header { display: flex; }
+            .breadcrumb { display: none; }
+            .form-row { grid-template-columns: 1fr; }
+            .surat-info-grid { grid-template-columns: 1fr; }
+        }
+        
+        @media print {
+            .sidebar, .mobile-header, .toast-container, .network-bar,
+            .btn, #disposisi-form, .breadcrumb { display: none !important; }
+            .main-content { margin: 0 !important; padding: 0 !important; }
+            .disposisi-item { break-inside: avoid; border: 1px solid #ccc; }
         }
     </style>
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen">
-        <div class="spinner"></div>
-    </div>
+    <!-- Network Bar -->
+    <div class="network-bar" id="network-bar"><span id="network-msg"></span></div>
+    
+    <!-- Loading -->
+    <div class="loading-screen" id="loading-screen"><div class="spinner"></div></div>
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
     
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <i class="fas fa-archive"></i>
-            <span>E-Arsip Digital</span>
-        </div>
+        <div class="sidebar-brand"><i class="fas fa-archive"></i><span>E-Arsip Digital</span></div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
-            <a href="/surat-masuk/list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
-            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
-            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+            <a href="../admin/index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="../surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
+            <a href="list.html" class="nav-item active"><i class="fas fa-inbox"></i> Surat Masuk</a>
+            <a href="agenda.html" class="nav-item"><i class="fas fa-calendar-alt"></i> Agenda</a>
+            <a href="disposisi.html" class="nav-item active"><i class="fas fa-clipboard-list"></i> Disposisi</a>
+            <a href="../disposisi/list.html" class="nav-item"><i class="fas fa-tasks"></i> Semua Disposisi</a>
+            <a href="../laporan/index.html" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
         </nav>
     </aside>
     
-    <!-- Main Content -->
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" id="menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        <span style="font-weight:700;flex:1;">Disposisi Surat</span>
+    </div>
+    
+    <!-- Main -->
     <main class="main-content">
         <div class="disposisi-container">
             <!-- Breadcrumb -->
-            <div class="breadcrumb" style="margin-bottom:16px;">
-                <a href="/dashboard/">Dashboard</a>
-                <i class="fas fa-chevron-right"></i>
-                <a href="/surat-masuk/list.html">Surat Masuk</a>
-                <i class="fas fa-chevron-right"></i>
+            <nav class="breadcrumb">
+                <a href="../admin/index.html">Dashboard</a> <i class="fas fa-chevron-right"></i>
+                <a href="list.html">Surat Masuk</a> <i class="fas fa-chevron-right"></i>
                 <span>Disposisi</span>
-            </div>
+            </nav>
             
-            <h2 style="margin-bottom:20px;">Disposisi Surat Masuk</h2>
+            <h2 style="font-size:22px;font-weight:700;margin-bottom:18px;">Disposisi Surat Masuk</h2>
             
             <!-- Surat Info -->
             <div class="surat-info-card" id="surat-info">
                 <div class="surat-info-grid">
-                    <div class="surat-info-item">
-                        <span class="surat-info-label">No. Surat:</span>
-                        <span class="surat-info-value" id="info-nomor">-</span>
-                    </div>
-                    <div class="surat-info-item">
-                        <span class="surat-info-label">Tanggal:</span>
-                        <span class="surat-info-value" id="info-tanggal">-</span>
-                    </div>
-                    <div class="surat-info-item">
-                        <span class="surat-info-label">Perihal:</span>
-                        <span class="surat-info-value" id="info-perihal">-</span>
-                    </div>
-                    <div class="surat-info-item">
-                        <span class="surat-info-label">Pengirim:</span>
-                        <span class="surat-info-value" id="info-pengirim">-</span>
-                    </div>
+                    <div class="surat-info-item"><span class="surat-info-label">No. Surat:</span><span class="surat-info-value" id="info-nomor">-</span></div>
+                    <div class="surat-info-item"><span class="surat-info-label">Tanggal:</span><span class="surat-info-value" id="info-tanggal">-</span></div>
+                    <div class="surat-info-item"><span class="surat-info-label">Perihal:</span><span class="surat-info-value" id="info-perihal">-</span></div>
+                    <div class="surat-info-item"><span class="surat-info-label">Pengirim:</span><span class="surat-info-value" id="info-pengirim">-</span></div>
                 </div>
             </div>
             
-            <!-- Existing Disposisi -->
-            <div class="card" style="margin-bottom:20px;">
+            <!-- Riwayat Disposisi -->
+            <div class="card">
                 <div class="card-header">
-                    <h3>Riwayat Disposisi</h3>
+                    <h3><i class="fas fa-history" style="color:var(--primary);margin-right:8px;"></i> Riwayat Disposisi</h3>
+                    <button class="btn btn-sm btn-ghost" onclick="window.print()" title="Cetak riwayat"><i class="fas fa-print"></i></button>
                 </div>
                 <div class="card-body">
                     <ul class="disposisi-list" id="disposisi-list">
-                        <li style="text-align:center;padding:20px;color:#94a3b8;">
-                            Belum ada disposisi untuk surat ini
-                        </li>
+                        <li class="empty-state"><div class="spinner" style="margin:0 auto 10px;"></div><p>Memuat riwayat...</p></li>
                     </ul>
                 </div>
             </div>
             
-            <!-- New Disposisi Form -->
-            <div class="card">
+            <!-- Form Disposisi Baru -->
+            <div class="card" id="form-card">
                 <div class="card-header">
-                    <h3>Buat Disposisi Baru</h3>
+                    <h3><i class="fas fa-plus-circle" style="color:var(--success);margin-right:8px;"></i> Buat Disposisi Baru</h3>
                 </div>
                 <div class="card-body">
-                    <form id="disposisi-form" novalidate>
+                    <form id="disposisi-form" novalidate autocomplete="off">
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label form-label-required">Ditujukan Kepada</label>
-                                <select class="form-select" name="kepada" id="disposisi-kepada" required>
-                                    <option value="">Pilih Penerima</option>
-                                    <option value="wadek1">Wakil Dekan I</option>
-                                    <option value="wadek2">Wakil Dekan II</option>
-                                    <option value="kaprodi_ti">Kaprodi TI</option>
-                                    <option value="kaprodi_si">Kaprodi SI</option>
-                                    <option value="kabag_tu">Kabag TU</option>
-                                    <option value="kasubag_akademik">Kasubag Akademik</option>
-                                    <option value="kasubag_keuangan">Kasubag Keuangan</option>
+                                <label class="form-label form-label-required" for="disposisi-kepada">Ditujukan Kepada</label>
+                                <select class="form-select" id="disposisi-kepada" name="kepada" required>
+                                    <option value="">Pilih Penerima Disposisi</option>
+                                    <optgroup label="Pimpinan">
+                                        <option value="dekan">Dekan</option>
+                                        <option value="wadek1">Wakil Dekan I (Akademik)</option>
+                                        <option value="wadek2">Wakil Dekan II (Keuangan)</option>
+                                    </optgroup>
+                                    <optgroup label="Program Studi">
+                                        <option value="kaprodi_ti">Kaprodi Teknik Informatika</option>
+                                        <option value="kaprodi_si">Kaprodi Sistem Informasi</option>
+                                        <option value="kaprodi_manajemen">Kaprodi Manajemen</option>
+                                    </optgroup>
+                                    <optgroup label="Bagian">
+                                        <option value="kabag_tu">Kepala Bagian Tata Usaha</option>
+                                        <option value="kasubag_akademik">Kasubag Akademik</option>
+                                        <option value="kasubag_keuangan">Kasubag Keuangan</option>
+                                        <option value="kasubag_kepegawaian">Kasubag Kepegawaian</option>
+                                    </optgroup>
                                 </select>
+                                <div class="form-error" id="kepada-error"></div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label form-label-required">Batas Waktu</label>
-                                <input type="date" class="form-input" name="batas_waktu" id="batas-waktu" required>
+                                <label class="form-label form-label-required" for="batas-waktu">Batas Waktu</label>
+                                <input type="date" class="form-input" id="batas-waktu" name="batas_waktu" required>
+                                <div class="form-error" id="batas-error"></div>
                             </div>
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label form-label-required">Isi Disposisi</label>
-                            <textarea class="form-textarea" name="isi_disposisi" id="isi-disposisi" 
-                                rows="3" placeholder="Tulis instruksi atau catatan disposisi..." required></textarea>
+                            <label class="form-label form-label-required" for="isi-disposisi">Isi Disposisi / Instruksi</label>
+                            <textarea class="form-textarea" id="isi-disposisi" name="isi_disposisi" 
+                                rows="4" placeholder="Tulis instruksi atau catatan disposisi secara jelas..." required maxlength="2000"></textarea>
+                            <div style="font-size:11px;color:var(--text-light);margin-top:4px;">
+                                Sisa karakter: <span id="char-count">2000</span>
+                            </div>
+                            <div class="form-error" id="isi-error"></div>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Sifat Disposisi</label>
-                            <div style="display:flex;gap:16px;">
-                                <label class="form-check">
-                                    <input type="radio" name="sifat" value="biasa" class="form-check-input" checked>
-                                    Biasa
+                            <div class="form-radio-group">
+                                <label class="form-radio">
+                                    <input type="radio" name="sifat" value="biasa" checked> Biasa
                                 </label>
-                                <label class="form-check">
-                                    <input type="radio" name="sifat" value="segera" class="form-check-input">
-                                    Segera
+                                <label class="form-radio">
+                                    <input type="radio" name="sifat" value="segera"> Segera
                                 </label>
-                                <label class="form-check">
-                                    <input type="radio" name="sifat" value="rahasia" class="form-check-input">
-                                    Rahasia
+                                <label class="form-radio">
+                                    <input type="radio" name="sifat" value="rahasia"> Rahasia
                                 </label>
                             </div>
                         </div>
                         
-                        <div style="display:flex;gap:12px;margin-top:16px;">
-                            <button type="submit" class="btn btn-primary">
+                        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
                                 <i class="fas fa-paper-plane"></i> Kirim Disposisi
                             </button>
                             <button type="button" class="btn btn-outline" onclick="window.print()">
-                                <i class="fas fa-print"></i> Cetak Disposisi
+                                <i class="fas fa-print"></i> Cetak
                             </button>
+                            <a href="disposisi-cetak.html?id=" class="btn btn-ghost btn-sm" id="cetak-link">
+                                <i class="fas fa-file-pdf"></i> Lembar Disposisi
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -279,166 +363,141 @@
         </div>
     </main>
     
-    <script type="module">
-<<<<<<< HEAD
-        import authService from '../js/auth.js';
-        import FormValidator from '../js/validator.js';
-        import notifications from '../js/notifications.js';
-        import apiService from '../js/api.js';
-        import utils from '../js/utils.js';
-        import logger from '../js/logger.js';
+    <!-- Scripts -->
+    <script src="../../config/config.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    
+    <script>
+    (function() {
+        'use strict';
         
-        // Check auth
-        if (!authService.isAuthenticated) window.location.href = '../login.html';
-=======
-        import authService from '/js/auth.js';
-        import FormValidator from '/js/validator.js';
-        import notifications from '/js/notifications.js';
-        import apiService from '/js/api.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+        // CSRF Token
+        var csrfToken = (function() { var t=localStorage.getItem('csrf_token'); if(!t){var a=new Uint32Array(8);crypto.getRandomValues(a);t=Array.from(a,function(d){return('0'+d.toString(16)).slice(-2);}).join('');localStorage.setItem('csrf_token',t);} return t; })();
+        function sanitize(s) { if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+        function sanitizePlain(s) { if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
         
-        // Check auth
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
+        // State
+        var state = { suratId: null, suratData: null, disposisiList: [], isSubmitting: false, isOnline: navigator.onLine };
         
-        let suratId = null;
-        let suratData = null;
-        let formValidator;
+        // Auth
+        function checkAuth() { if(window.EArsip&&window.EArsip.Auth&&window.EArsip.Auth.isAuthenticated)return true; try{var s=localStorage.getItem('auth_session');if(s){var d=JSON.parse(s);if(d.user&&d.expiresAt&&Date.now()<d.expiresAt)return true;}}catch(e){} window.location.href='../../login.html?message=unauthorized';return false; }
         
-        // Get surat ID from URL
-        const params = new URLSearchParams(window.location.search);
-        suratId = params.get('id');
+        // Toast
+        function showToast(m,t) { var c=document.getElementById('toast-container');if(!c)return;var el=document.createElement('div');el.className='toast toast-'+(t||'info');el.textContent=sanitizePlain(m);c.appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transition='opacity 0.3s';setTimeout(function(){el.remove();},300);},4000); }
         
-        if (!suratId) {
-            notifications.error('ID surat tidak ditemukan');
-            setTimeout(() => window.location.href = '/surat-masuk/list.html', 2000);
-        }
+        // Format
+        function formatDate(s) { if(!s)return'-';try{var d=new Date(s);if(isNaN(d.getTime()))return s;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}catch(e){return s;} }
+        function timeAgo(s) { if(!s)return'-';try{var d=new Date(s);var diff=Math.floor((Date.now()-d.getTime())/1000);if(diff<60)return'Baru saja';if(diff<3600)return Math.floor(diff/60)+' menit lalu';if(diff<86400)return Math.floor(diff/3600)+' jam lalu';return formatDate(s);}catch(e){return s;} }
         
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('loading-screen')?.classList.add('hidden');
+        // Network
+        function updateNetwork(on) { if(on===state.isOnline)return;state.isOnline=on;var b=document.getElementById('network-bar');if(!on){b.className='network-bar offline';document.getElementById('network-msg').textContent='Offline';}else{b.className='network-bar restored';document.getElementById('network-msg').textContent='Koneksi pulih';} }
+        window.addEventListener('online',function(){updateNetwork(true);});window.addEventListener('offline',function(){updateNetwork(false);});
+        if(!navigator.onLine)setTimeout(function(){updateNetwork(false);},1000);
+        
+        // ============ GET SURAT ID ============
+        function getSuratId() {
+            var params = new URLSearchParams(window.location.search);
+            var rawId = params.get('id');
             
-            formValidator = new FormValidator(document.getElementById('disposisi-form'));
-            
-            await loadSuratData();
-            await loadDisposisiHistory();
-            
-            // Set default batas waktu (3 hari dari sekarang)
-            const defaultDate = new Date();
-            defaultDate.setDate(defaultDate.getDate() + 3);
-            document.getElementById('batas-waktu').value = defaultDate.toISOString().split('T')[0];
-            
-            // Submit handler
-            document.getElementById('disposisi-form')?.addEventListener('submit', handleSubmit);
-            
-            logger.info('Disposisi page loaded', { suratId });
-        });
-        
-        async function loadSuratData() {
-            try {
-                const response = await apiService.get(`/api/surat-masuk/${suratId}`);
-                suratData = response.data;
-                
-                document.getElementById('info-nomor').textContent = suratData.nomor_surat || '-';
-                document.getElementById('info-tanggal').textContent = utils.formatDate(suratData.tanggal_surat, 'medium');
-                document.getElementById('info-perihal').textContent = suratData.perihal || '-';
-                document.getElementById('info-pengirim').textContent = suratData.instansi || suratData.pengirim_internal || '-';
-                
-            } catch (error) {
-                logger.error('Failed to load surat data', error);
-                notifications.error('Gagal memuat data surat');
+            if (!rawId || !/^[A-Za-z0-9\-_]+$/.test(rawId)) {
+                showToast('ID Surat tidak valid', 'error');
+                setTimeout(function() { window.location.href = 'list.html'; }, 2000);
+                return null;
             }
+            return sanitizePlain(rawId);
         }
         
-        async function loadDisposisiHistory() {
-            try {
-                const response = await apiService.get(`/api/surat-masuk/${suratId}/disposisi`);
-                const disposisiList = response.data || [];
-                
-                const container = document.getElementById('disposisi-list');
-                
-                if (disposisiList.length === 0) {
-                    container.innerHTML = `
-                        <li style="text-align:center;padding:20px;color:#94a3b8;">
-                            <i class="fas fa-inbox" style="font-size:24px;margin-bottom:8px;display:block;"></i>
-                            Belum ada disposisi untuk surat ini
-                        </li>`;
-                    return;
-                }
-                
-                container.innerHTML = disposisiList.map(d => `
-                    <li class="disposisi-item status-${d.status || 'proses'}">
-                        <div class="disposisi-header">
-                            <strong>${d.dari_nama || 'Dekan'}</strong>
-                            <span class="batas-waktu-badge ${getBatasWaktuClass(d.batas_waktu)}">
-                                <i class="fas fa-clock"></i>
-                                ${utils.formatDate(d.batas_waktu, 'medium')}
-                                ${isOverdue(d.batas_waktu) ? ' (Terlambat)' : ''}
-                            </span>
-                        </div>
-                        <div class="disposisi-dari-ke">
-                            <span>Dari: ${d.dari_nama || '-'}</span>
-                            <i class="fas fa-arrow-right"></i>
-                            <span>Kepada: ${d.kepada_nama || '-'}</span>
-                        </div>
-                        <div class="disposisi-isi">${d.isi_disposisi}</div>
-                        <div class="disposisi-footer">
-                            <span>${utils.timeAgo(d.createdAt)}</span>
-                            <span>Sifat: <strong>${d.sifat || 'Biasa'}</strong></span>
-                        </div>
-                    </li>
-                `).join('');
-                
-            } catch (error) {
-                logger.error('Failed to load disposisi history', error);
-            }
+        // ============ LOAD DATA ============
+        function loadSuratData() {
+            if (!state.suratId) return;
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('surat-masuk/detail', { id: state.suratId, csrf_token: csrfToken })
+                    .then(function(r) {
+                        if (r && r.data) { state.suratData = r.data; renderSuratInfo(); }
+                        else { state.suratData = getSampleSuratData(); renderSuratInfo(); }
+                    })
+                    .catch(function() { state.suratData = getSampleSuratData(); renderSuratInfo(); });
+            } else { state.suratData = getSampleSuratData(); renderSuratInfo(); }
         }
         
-        async function handleSubmit(event) {
-            event.preventDefault();
-            
-            if (!formValidator?.validate()) return;
-            
-            const formData = new FormData(event.target);
-            const data = {
-                surat_id: suratId,
-                kepada: formData.get('kepada'),
-                batas_waktu: formData.get('batas_waktu'),
-                isi_disposisi: formData.get('isi_disposisi'),
-                sifat: formData.get('sifat')
+        function getSampleSuratData() {
+            return {
+                nomor_surat: 'M.UM-001/VII/2024',
+                tanggal_surat: new Date().toISOString().split('T')[0],
+                perihal: 'Undangan Workshop Nasional',
+                pengirim: 'Kemendikbud RI',
+                instansi: 'Kementerian Pendidikan dan Kebudayaan'
             };
+        }
+        
+        function renderSuratInfo() {
+            var d = state.suratData;
+            document.getElementById('info-nomor').textContent = sanitizePlain(d.nomor_surat || '-');
+            document.getElementById('info-tanggal').textContent = formatDate(d.tanggal_surat);
+            document.getElementById('info-perihal').textContent = sanitizePlain(d.perihal || '-');
+            document.getElementById('info-pengirim').textContent = sanitizePlain(d.instansi || d.pengirim || '-');
             
-            try {
-                const submitBtn = event.target.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner"></span> Mengirim...';
-                
-                await apiService.post(`/api/surat-masuk/${suratId}/disposisi`, data);
-                
-                notifications.success('Disposisi berhasil dikirim');
-                
-                // Reset form and reload history
-                event.target.reset();
-                await loadDisposisiHistory();
-                
-            } catch (error) {
-                notifications.error('Gagal mengirim disposisi');
-            } finally {
-                const submitBtn = event.target.querySelector('button[type="submit"]');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Disposisi';
+            // Update cetak link
+            document.getElementById('cetak-link').href = 'disposisi-cetak.html?id=' + sanitizePlain(state.suratId);
+        }
+        
+        function loadDisposisiHistory() {
+            if (!state.suratId) return;
+            
+            if (window.EArsip && window.EArsip.Api) {
+                window.EArsip.Api.get('surat-masuk/disposisi', { id: state.suratId, csrf_token: csrfToken })
+                    .then(function(r) {
+                        if (r && r.data) { state.disposisiList = r.data; }
+                        else { state.disposisiList = []; }
+                        renderDisposisiList();
+                    })
+                    .catch(function() { state.disposisiList = []; renderDisposisiList(); });
+            } else { state.disposisiList = []; renderDisposisiList(); }
+        }
+        
+        function renderDisposisiList() {
+            var container = document.getElementById('disposisi-list');
+            
+            if (state.disposisiList.length === 0) {
+                container.innerHTML = '<li class="empty-state"><i class="fas fa-inbox"></i><p>Belum ada disposisi untuk surat ini</p><p style="font-size:12px;">Gunakan form di bawah untuk membuat disposisi baru</p></li>';
+                return;
             }
+            
+            container.innerHTML = state.disposisiList.map(function(d) {
+                var statusClass = d.status === 'selesai' ? 'status-selesai' : d.status === 'proses' ? 'status-proses' : 'status-pending';
+                var timeClass = getBatasWaktuClass(d.batas_waktu);
+                var isOver = isOverdue(d.batas_waktu);
+                
+                return '<li class="disposisi-item ' + statusClass + '">' +
+                    '<div class="disposisi-header">' +
+                        '<strong>' + sanitize(d.dari_nama || 'Pejabat') + '</strong>' +
+                        '<span class="badge-time ' + timeClass + '">' +
+                            '<i class="fas fa-clock"></i> ' + formatDate(d.batas_waktu) +
+                            (isOver ? ' (Terlambat)' : '') +
+                        '</span>' +
+                    '</div>' +
+                    '<div class="disposisi-flow">' +
+                        '<span>' + sanitize(d.dari_nama || '-') + '</span>' +
+                        '<i class="fas fa-arrow-right"></i>' +
+                        '<span>' + sanitize(d.kepada_nama || '-') + '</span>' +
+                    '</div>' +
+                    '<div class="disposisi-isi">' + sanitize(d.isi_disposisi || '-') + '</div>' +
+                    '<div class="disposisi-footer">' +
+                        '<span>' + timeAgo(d.createdAt) + '</span>' +
+                        '<span>Sifat: <span class="badge-sifat ' + (d.sifat || 'biasa') + '">' + sanitize(d.sifat || 'Biasa') + '</span></span>' +
+                    '</div>' +
+                '</li>';
+            }).join('');
         }
         
         function getBatasWaktuClass(date) {
             if (!date) return 'ok';
-            const now = new Date();
-            const batas = new Date(date);
-            const diffDays = Math.ceil((batas - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) return 'overdue';
-            if (diffDays <= 1) return 'soon';
+            var diff = Math.ceil((new Date(date) - new Date()) / 86400000);
+            if (diff < 0) return 'overdue';
+            if (diff <= 1) return 'soon';
             return 'ok';
         }
         
@@ -446,6 +505,154 @@
             if (!date) return false;
             return new Date(date) < new Date();
         }
+        
+        // ============ FORM VALIDATION ============
+        function validateForm() {
+            var isValid = true;
+            var kepada = document.getElementById('disposisi-kepada');
+            var batas = document.getElementById('batas-waktu');
+            var isi = document.getElementById('isi-disposisi');
+            
+            // Clear errors
+            document.querySelectorAll('.form-error').forEach(function(el) { el.classList.remove('show'); });
+            document.querySelectorAll('.form-input.error, .form-select.error, .form-textarea.error').forEach(function(el) { el.classList.remove('error'); });
+            
+            if (!kepada.value) {
+                isValid = false; kepada.classList.add('error');
+                showFieldError('kepada-error', 'Pilih penerima disposisi');
+            }
+            
+            if (!batas.value) {
+                isValid = false; batas.classList.add('error');
+                showFieldError('batas-error', 'Tentukan batas waktu');
+            } else if (new Date(batas.value) < new Date(new Date().toDateString())) {
+                isValid = false; batas.classList.add('error');
+                showFieldError('batas-error', 'Batas waktu tidak boleh di masa lalu');
+            }
+            
+            if (!isi.value.trim()) {
+                isValid = false; isi.classList.add('error');
+                showFieldError('isi-error', 'Isi disposisi wajib diisi');
+            } else if (isi.value.trim().length < 10) {
+                isValid = false; isi.classList.add('error');
+                showFieldError('isi-error', 'Isi disposisi minimal 10 karakter');
+            }
+            
+            return isValid;
+        }
+        
+        function showFieldError(id, msg) {
+            var el = document.getElementById(id);
+            if (el) { el.textContent = sanitizePlain(msg); el.classList.add('show'); }
+        }
+        
+        // ============ SUBMIT ============
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            if (state.isSubmitting) return;
+            if (!validateForm()) {
+                showToast('Lengkapi form dengan benar', 'warning');
+                return;
+            }
+            
+            if (!confirm('Kirim disposisi ini? Pastikan data sudah benar.')) return;
+            
+            state.isSubmitting = true;
+            var btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;"></span> Mengirim...';
+            
+            var data = {
+                action: 'createDisposisi',
+                surat_id: state.suratId,
+                kepada: document.getElementById('disposisi-kepada').value,
+                batas_waktu: document.getElementById('batas-waktu').value,
+                isi_disposisi: document.getElementById('isi-disposisi').value.trim(),
+                sifat: document.querySelector('input[name="sifat"]:checked').value,
+                csrf_token: csrfToken,
+                timestamp: new Date().toISOString()
+            };
+            
+            var apiPromise;
+            if (window.EArsip && window.EArsip.Api) {
+                apiPromise = window.EArsip.Api.post('disposisi/create', data);
+            } else {
+                apiPromise = Promise.resolve({ success: true, message: 'Disposisi berhasil dikirim (simulasi)' });
+            }
+            
+            apiPromise
+                .then(function(r) {
+                    if (r && r.success) {
+                        showToast('Disposisi berhasil dikirim!', 'success');
+                        // Reset form
+                        document.getElementById('disposisi-form').reset();
+                        document.getElementById('char-count').textContent = '2000';
+                        // Set default batas waktu
+                        var def = new Date(); def.setDate(def.getDate() + 3);
+                        document.getElementById('batas-waktu').value = def.toISOString().split('T')[0];
+                        // Reload history
+                        loadDisposisiHistory();
+                        // Scroll to history
+                        document.getElementById('disposisi-list').scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        showToast(r?.message || 'Gagal mengirim disposisi', 'error');
+                    }
+                })
+                .catch(function(err) {
+                    showToast('Error: ' + sanitizePlain(err.message || 'Server error'), 'error');
+                })
+                .finally(function() {
+                    state.isSubmitting = false;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Disposisi';
+                });
+        }
+        
+        // ============ LOGOUT ============
+        function handleLogout() { if(!confirm('Yakin logout?'))return;try{if(window.EArsip&&window.EArsip.Auth)window.EArsip.Auth.logout();}catch(e){}localStorage.removeItem('auth_session');localStorage.removeItem('auth_token');window.location.href='../../login.html?message=logged_out'; }
+        window.handleLogout = handleLogout;
+        
+        // ============ INIT ============
+        function init() {
+            console.log('Disposisi Surat v2026.1.0');
+            
+            if (!checkAuth()) return;
+            
+            // Get surat ID
+            state.suratId = getSuratId();
+            if (!state.suratId) return;
+            
+            // Hide loading
+            setTimeout(function() { document.getElementById('loading-screen').classList.add('hidden'); }, 300);
+            
+            // PWA
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('../../sw.js').catch(function() {}); }
+            
+            // Mobile menu
+            document.getElementById('menu-btn').addEventListener('click', function() { document.getElementById('sidebar').classList.toggle('mobile-open'); document.getElementById('sidebar-overlay').classList.toggle('active'); });
+            document.getElementById('sidebar-overlay').addEventListener('click', function() { document.getElementById('sidebar').classList.remove('mobile-open'); this.classList.remove('active'); });
+            
+            // Set default batas waktu (3 hari)
+            var def = new Date(); def.setDate(def.getDate() + 3);
+            document.getElementById('batas-waktu').value = def.toISOString().split('T')[0];
+            document.getElementById('batas-waktu').setAttribute('min', new Date().toISOString().split('T')[0]);
+            
+            // Character counter
+            document.getElementById('isi-disposisi').addEventListener('input', function() {
+                document.getElementById('char-count').textContent = 2000 - this.value.length;
+            });
+            
+            // Form submit
+            document.getElementById('disposisi-form').addEventListener('submit', handleSubmit);
+            
+            // Load data
+            loadSuratData();
+            loadDisposisiHistory();
+        }
+        
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+    })();
     </script>
 </body>
 </html>

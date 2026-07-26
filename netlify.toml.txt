@@ -1,25 +1,63 @@
 # netlify.toml - E-Arsip Digital 2026
-# Netlify deployment configuration
+# Enterprise Netlify Deployment Configuration
+# Documentation: https://docs.netlify.com/configure-builds/file-based-configuration/
 
+# ============================================
+# BUILD SETTINGS
+# ============================================
 [build]
-  command = "npm run build"
+  command = """
+    if grep -q '"build"' package.json; then 
+      npm run build; 
+    else 
+      echo "No build script, using files directly";
+      mkdir -p dist && cp -r *.html css/ js/ config/ components/ icons/ screenshots/ dashboard/ surat-keluar/ surat-masuk/ profile/ pengaturan/ manajemen-user/ notifikasi/ laporan/ log-aktivitas/ help/ sw.js manifest.json robots.txt dist/ 2>/dev/null || true;
+    fi
+  """
   publish = "dist"
   functions = "netlify/functions"
+  edge_functions = "netlify/edge-functions"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_VERSION = "9"
+  NPM_VERSION = "10"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
 
 # ============================================
 # REDIRECTS & REWRITES
 # ============================================
+
+# API Proxy to Google Apps Script
 [[redirects]]
   from = "/api/*"
-  to = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec/:splat"
+  to = "https://script.google.com/macros/s/:scriptId/:splat"
   status = 200
   force = true
-  headers = { X-Forwarded-Host = "$host" }
+  signed = "API_PROXY"
+  headers = {
+    X-Forwarded-Host = "$host",
+    X-Forwarded-For = "$remote_addr",
+    X-Forwarded-Proto = "$scheme"
+  }
 
+# Block access to sensitive paths
 [[redirects]]
   from = "/config/*"
   to = "/403.html"
@@ -28,6 +66,12 @@
 
 [[redirects]]
   from = "/.env"
+  to = "/403.html"
+  status = 403
+  force = true
+
+[[redirects]]
+  from = "/.env.*"
   to = "/403.html"
   status = 403
   force = true
@@ -45,62 +89,245 @@
   force = true
 
 [[redirects]]
+  from = "/node_modules/*"
+  to = "/403.html"
+  status = 403
+  force = true
+
+[[redirects]]
+  from = "/tests/*"
+  to = "/403.html"
+  status = 403
+  force = true
+
+[[redirects]]
+  from = "/.git/*"
+  to = "/403.html"
+  status = 403
+  force = true
+
+# Custom error pages
+[[redirects]]
+  from = "/404"
+  to = "/404.html"
+  status = 404
+
+[[redirects]]
+  from = "/403"
+  to = "/403.html"
+  status = 403
+
+# SPA Fallback (for client-side routing)
+# Only for paths that are NOT API, assets, or existing files
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
+  conditions = { Language = [] }
+
+# Force HTTPS
+[[redirects]]
+  from = "http://*"
+  to = "https://:splat"
+  status = 301
+  force = true
+
+# Force www (or non-www)
+# [[redirects]]
+#   from = "https://e-arsip.example.com/*"
+#   to = "https://www.e-arsip.example.com/:splat"
+#   status = 301
+#   force = true
 
 # ============================================
 # HEADERS
 # ============================================
+
+# Global Security Headers
 [[headers]]
   for = "/*"
   [headers.values]
+    # Security
     X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+    Cross-Origin-Resource-Policy = "same-origin"
+    
+    # Content Security Policy
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://script.google.com;
+      style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      manifest-src 'self';
+      worker-src 'self' blob:;
+    """
+    
+    # Permissions Policy
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 
+# Static Assets (Long cache)
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Fonts
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Images
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# HTML Pages (Short cache for content freshness)
+[[headers]]
   for = "/*.html"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-    Pragma = "no-cache"
-    Expires = "0"
+    Cache-Control = "public, max-age=3600, must-revalidate"
 
+# Service Worker (Never cached)
 [[headers]]
   for = "/sw.js"
   [headers.values]
-    Cache-Control = "no-cache"
+    Cache-Control = "no-cache, no-store, must-revalidate"
     Service-Worker-Allowed = "/"
+
+# Web App Manifest (Short cache)
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# API Responses
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Access-Control-Allow-Origin = "*"
 
 # ============================================
 # PLUGINS
 # ============================================
+
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
+  [plugins.inputs]
+    output_path = "reports/lighthouse.html"
+    failing_performance = 0.8
+    failing_accessibility = 0.9
 
 [[plugins]]
   package = "@netlify/plugin-sitemap"
+  [plugins.inputs]
+    baseUrl = "https://e-arsip.example.com"
+    exclude = ["/403.html", "/404.html", "/500.html", "/tests/*", "/add-feature.html", "/fix-all.html"]
 
 [[plugins]]
   package = "netlify-plugin-security-headers"
 
+[[plugins]]
+  package = "netlify-plugin-csp-generator"
+  [plugins.inputs]
+    buildDir = "dist"
+    reportOnly = false
+
+[[plugins]]
+  package = "netlify-plugin-inline-critical-css"
+
 # ============================================
 # CONTEXT-SPECIFIC SETTINGS
 # ============================================
+
 [context.production]
-  command = "npm run build && npm run optimize"
+  command = """
+    if grep -q '"build"' package.json; then 
+      npm run build && npm run optimize 2>/dev/null || npm run build; 
+    else 
+      echo "Using files directly for production";
+      mkdir -p dist && cp -r *.html css/ js/ config/ components/ icons/ screenshots/ dashboard/ surat-keluar/ surat-masuk/ profile/ pengaturan/ manajemen-user/ notifikasi/ laporan/ log-aktivitas/ help/ sw.js manifest.json robots.txt dist/ 2>/dev/null || true;
+    fi
+  """
+
+[context.production.environment]
+  NODE_ENV = "production"
+  APP_ENV = "production"
+  ENABLE_ANALYTICS = "true"
 
 [context.deploy-preview]
-  command = "npm run build"
+  command = """
+    if grep -q '"build"' package.json; then 
+      npm run build; 
+    else 
+      mkdir -p dist && cp -r *.html css/ js/ config/ components/ icons/ dist/ 2>/dev/null || true;
+    fi
+  """
+
+[context.deploy-preview.environment]
+  NODE_ENV = "preview"
+  APP_ENV = "staging"
 
 [context.branch-deploy]
-  command = "npm run build"
+  command = """
+    if grep -q '"build"' package.json; then 
+      npm run build; 
+    else 
+      mkdir -p dist && cp -r *.html css/ js/ config/ components/ icons/ dist/ 2>/dev/null || true;
+    fi
+  """
+
+[context.branch-deploy.environment]
+  NODE_ENV = "development"
+  APP_ENV = "development"
+
+# ============================================
+# ENVIRONMENT VARIABLES (Set in Netlify UI)
+# ============================================
+# GOOGLE_SCRIPT_ID - Your Google Apps Script deployment ID
+# GOOGLE_API_KEY - Google API key
+# GOOGLE_DRIVE_FOLDER_ID - Google Drive folder ID
+# ENCRYPTION_KEY - AES-256 encryption key
+# SESSION_SECRET - Session secret key

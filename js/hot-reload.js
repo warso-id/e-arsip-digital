@@ -1,113 +1,112 @@
-// js/hot-reload.js - Hot Reload Development Tool 2026
+// js/hot-reload.js - Hot Reload Development Tool 2026 (DISABLED BY DEFAULT)
 /**
- * E-Arsip Digital - Hot Reload
+ * E-Arsip Digital - Hot Reload (DEVELOPMENT ONLY)
  * Version: 2026.1.0
- * Features: Live CSS reload, JS module replacement, 
- *           state preservation, WebSocket connection
+ * 
+ * ⚠️  HANYA UNTUK DEVELOPMENT!
+ * ⚠️  JANGAN deploy ke production!
+ * ⚠️  Matikan dengan config.enabled = false
+ * 
+ * Fitur:
+ * - WebSocket connection ke dev server
+ * - CSS hot reload (tanpa full refresh)
+ * - State preservation (scroll, form data)
+ * - Auto-reconnect
  */
 
-import { Logger } from './logger.js';
-import APP_CONFIG from '../config/config.js';
-
-class HotReload {
-    constructor() {
-        this.logger = new Logger('HotReload');
-        
-        this.config = {
-            enabled: APP_CONFIG.app?.environment === 'development',
-            wsUrl: 'ws://localhost:35729',
-            reloadCSS: true,
-            reloadJS: true,
-            reloadHTML: false,
-            preserveState: true,
-            ...APP_CONFIG.hotReload || {}
-        };
-        
-        this.ws = null;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 10;
-        this.reconnectDelay = 2000;
-        
-        this.stateToPreserve = {};
-        
-        if (this.config.enabled) {
-            this.init();
-        }
-    }
+var HotReload = (function() {
+    'use strict';
     
-    init() {
-        this.connect();
-        this.setupStatePreservation();
-        
-        this.logger.info('Hot reload initialized');
-        
-        // Expose API globally
-        window.__hotReload = {
-            preserveState: (key, value) => this.preserveState(key, value),
-            getState: (key) => this.getState(key),
-            reload: () => this.triggerReload()
-        };
-    }
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        enabled: false,              // DISABLED by default!
+        wsUrl: 'ws://localhost:35729',
+        reloadCSS: true,
+        reloadJS: true,
+        reloadHTML: false,
+        preserveState: true,
+        maxReconnectAttempts: 10,
+        reconnectDelay: 2000
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _ws = null;
+    var _reconnectAttempts = 0;
+    var _reconnectTimer = null;
+    var _preservedState = {};
     
     // ============================================
     // WEBSOCKET CONNECTION
     // ============================================
     
-    connect() {
-        if (this.ws) {
-            this.ws.close();
+    function connect() {
+        if (!config.enabled) return;
+        
+        // Close existing connection
+        if (_ws) {
+            try { _ws.close(); } catch(e) {}
+            _ws = null;
         }
         
         try {
-            this.ws = new WebSocket(this.config.wsUrl);
+            _ws = new WebSocket(config.wsUrl);
             
-            this.ws.onopen = () => {
-                this.logger.info('Hot reload connected');
-                this.reconnectAttempts = 0;
+            _ws.onopen = function() {
+                console.info('[HotReload] Connected');
+                _reconnectAttempts = 0;
                 
-                // Send client info
-                this.ws.send(JSON.stringify({
-                    type: 'hello',
-                    url: window.location.href,
-                    title: document.title
-                }));
+                // Send hello
+                try {
+                    _ws.send(JSON.stringify({
+                        type: 'hello',
+                        url: window.location.pathname
+                    }));
+                } catch(e) {}
             };
             
-            this.ws.onmessage = (event) => {
+            _ws.onmessage = function(event) {
                 try {
-                    const message = JSON.parse(event.data);
-                    this.handleMessage(message);
-                } catch (error) {
-                    this.logger.warn('Failed to parse message', error);
+                    var message = JSON.parse(event.data);
+                    handleMessage(message);
+                } catch(e) {
+                    console.warn('[HotReload] Invalid message');
                 }
             };
             
-            this.ws.onclose = () => {
-                this.logger.warn('Hot reload disconnected');
-                this.scheduleReconnect();
+            _ws.onclose = function() {
+                console.warn('[HotReload] Disconnected');
+                scheduleReconnect();
             };
             
-            this.ws.onerror = () => {
-                this.logger.warn('Hot reload connection error');
+            _ws.onerror = function() {
+                // Error handling di onclose
             };
-        } catch (error) {
-            this.logger.warn('Failed to connect hot reload', error);
-            this.scheduleReconnect();
+        } catch(e) {
+            console.warn('[HotReload] Connection failed');
+            scheduleReconnect();
         }
     }
     
-    scheduleReconnect() {
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            this.logger.warn('Max reconnect attempts reached');
+    function scheduleReconnect() {
+        if (_reconnectAttempts >= config.maxReconnectAttempts) {
+            console.warn('[HotReload] Max reconnect attempts reached');
             return;
         }
         
-        this.reconnectAttempts++;
-        const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
+        _reconnectAttempts++;
         
-        setTimeout(() => {
-            this.logger.info('Reconnecting...', { attempt: this.reconnectAttempts });
-            this.connect();
+        // Exponential backoff: 2s, 3s, 4.5s, 6.75s, ...
+        var delay = config.reconnectDelay * Math.pow(1.5, _reconnectAttempts - 1);
+        
+        if (_reconnectTimer) clearTimeout(_reconnectTimer);
+        
+        _reconnectTimer = setTimeout(function() {
+            console.info('[HotReload] Reconnecting (attempt ' + _reconnectAttempts + '/' + config.maxReconnectAttempts + ')');
+            connect();
         }, delay);
     }
     
@@ -115,50 +114,55 @@ class HotReload {
     // MESSAGE HANDLING
     // ============================================
     
-    handleMessage(message) {
+    function handleMessage(message) {
         switch (message.type) {
             case 'reload':
-                this.fullReload();
+                fullReload();
                 break;
                 
             case 'reloadCSS':
-                this.reloadCSSFiles(message.files);
+                reloadCSSFiles(message.files);
                 break;
                 
             case 'reloadJS':
-                this.reloadJSFiles(message.files);
+                // Full reload untuk JS changes
+                if (config.reloadJS) fullReload();
                 break;
                 
             case 'reloadHTML':
-                if (this.config.reloadHTML) {
-                    this.fullReload();
-                }
+                if (config.reloadHTML) fullReload();
                 break;
                 
             case 'fileChanged':
-                this.handleFileChange(message);
+                handleFileChange(message);
                 break;
                 
             case 'ping':
-                this.ws.send(JSON.stringify({ type: 'pong' }));
+                try {
+                    if (_ws && _ws.readyState === WebSocket.OPEN) {
+                        _ws.send(JSON.stringify({ type: 'pong' }));
+                    }
+                } catch(e) {}
                 break;
-                
-            default:
-                this.logger.debug('Unknown message type', { type: message.type });
         }
     }
     
-    handleFileChange(message) {
-        const ext = message.file?.split('.').pop()?.toLowerCase();
+    function handleFileChange(message) {
+        var file = message.file || '';
+        var ext = '';
         
-        if (ext === 'css' && this.config.reloadCSS) {
-            this.reloadCSSFile(message.file);
-        } else if (ext === 'js' && this.config.reloadJS) {
-            this.reloadJSFile(message.file);
-        } else if (ext === 'html') {
-            if (this.config.reloadHTML) {
-                this.fullReload();
-            }
+        // Get extension
+        var dotIndex = file.lastIndexOf('.');
+        if (dotIndex !== -1) {
+            ext = file.substring(dotIndex + 1).toLowerCase();
+        }
+        
+        if (ext === 'css' && config.reloadCSS) {
+            reloadCSSFile(file);
+        } else if (ext === 'js' && config.reloadJS) {
+            fullReload();
+        } else if (ext === 'html' && config.reloadHTML) {
+            fullReload();
         }
     }
     
@@ -166,200 +170,243 @@ class HotReload {
     // RELOAD STRATEGIES
     // ============================================
     
-    fullReload() {
-        this.saveState();
-        
-        this.logger.info('Performing full reload');
+    function fullReload() {
+        saveState();
+        console.info('[HotReload] Full reload');
         window.location.reload();
     }
     
-    triggerReload() {
-        this.fullReload();
-    }
-    
-    reloadCSSFiles(files) {
+    function reloadCSSFiles(files) {
         if (!files || files.length === 0) {
-            this.reloadAllCSS();
-        } else {
-            files.forEach(file => this.reloadCSSFile(file));
-        }
-    }
-    
-    reloadCSSFile(file) {
-        const links = document.querySelectorAll('link[rel="stylesheet"]');
-        
-        links.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href && (href.includes(file) || file === '*')) {
-                const newHref = href.replace(/\?.*|$/, `?v=${Date.now()}`);
-                link.setAttribute('href', newHref);
-                
-                this.logger.debug('CSS reloaded', { file });
-            }
-        });
-        
-        // Also reload inline styles
-        if (file === '*' || file.endsWith('.css')) {
-            document.querySelectorAll('style').forEach(style => {
-                const text = style.textContent;
-                style.textContent = '';
-                style.textContent = text;
-            });
-        }
-    }
-    
-    reloadAllCSS() {
-        this.reloadCSSFile('*');
-    }
-    
-    reloadJSFiles(files) {
-        if (!files || files.length === 0) {
-            this.fullReload();
+            reloadAllCSS();
             return;
         }
         
-        // For JS changes, full reload is safer
-        this.fullReload();
+        for (var i = 0; i < files.length; i++) {
+            reloadCSSFile(files[i]);
+        }
     }
     
-    reloadJSFile(file) {
-        // For individual JS file changes, full reload
-        this.fullReload();
+    function reloadCSSFile(file) {
+        var links = document.getElementsByTagName('link');
+        
+        for (var i = 0; i < links.length; i++) {
+            var link = links[i];
+            var href = link.getAttribute('href');
+            
+            if (href && link.getAttribute('rel') === 'stylesheet') {
+                if (file === '*' || href.indexOf(file) !== -1) {
+                    // Cache bust
+                    var separator = href.indexOf('?') !== -1 ? '&' : '?';
+                    var newHref = href.replace(/(\?|&)v=\d+/, '') + separator + 'v=' + Date.now();
+                    link.setAttribute('href', newHref);
+                    
+                    console.debug('[HotReload] CSS reloaded: ' + file);
+                }
+            }
+        }
+        
+        // Reload inline styles
+        if (file === '*') {
+            var styles = document.getElementsByTagName('style');
+            for (var j = 0; j < styles.length; j++) {
+                var text = styles[j].textContent;
+                styles[j].textContent = '';
+                // Force reflow
+                styles[j].offsetHeight;
+                styles[j].textContent = text;
+            }
+        }
+    }
+    
+    function reloadAllCSS() {
+        reloadCSSFile('*');
     }
     
     // ============================================
     // STATE PRESERVATION
     // ============================================
     
-    setupStatePreservation() {
-        if (!this.config.preserveState) return;
+    function saveState() {
+        if (!config.preserveState) return;
         
-        // Save state before unload
-        window.addEventListener('beforeunload', () => {
-            this.saveState();
-        });
+        // Scroll position
+        _preservedState.scrollX = window.scrollX || window.pageXOffset;
+        _preservedState.scrollY = window.scrollY || window.pageYOffset;
         
-        // Restore state on load
-        window.addEventListener('load', () => {
-            this.restoreState();
-        });
-    }
-    
-    preserveState(key, value) {
-        this.stateToPreserve[key] = value;
-        
+        // Save to sessionStorage
         try {
-            sessionStorage.setItem(
-                `hotreload_${key}`,
-                JSON.stringify(value)
-            );
-        } catch {
-            // Ignore
-        }
-    }
-    
-    getState(key) {
-        if (this.stateToPreserve[key] !== undefined) {
-            return this.stateToPreserve[key];
-        }
-        
-        try {
-            const stored = sessionStorage.getItem(`hotreload_${key}`);
-            if (stored) {
-                const value = JSON.parse(stored);
-                this.stateToPreserve[key] = value;
-                return value;
-            }
-        } catch {
-            // Ignore
-        }
-        
-        return null;
-    }
-    
-    saveState() {
-        // Save scroll position
-        this.preserveState('scrollX', window.scrollX);
-        this.preserveState('scrollY', window.scrollY);
+            sessionStorage.setItem('hotreload_state', JSON.stringify(_preservedState));
+        } catch(e) {}
         
         // Save form data
-        document.querySelectorAll('form').forEach((form, index) => {
-            const formData = new FormData(form);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
-            this.preserveState(`form_${index}_${form.id || 'unnamed'}`, data);
-        });
-        
-        // Save active tab
-        const activeTab = document.querySelector('.profile-tab.active, .tab.active');
-        if (activeTab) {
-            this.preserveState('activeTab', activeTab.dataset?.tab || activeTab.textContent);
+        var forms = document.getElementsByTagName('form');
+        for (var i = 0; i < forms.length; i++) {
+            var form = forms[i];
+            var formData = {};
+            var inputs = form.querySelectorAll('input, select, textarea');
+            
+            for (var j = 0; j < inputs.length; j++) {
+                var input = inputs[j];
+                if (input.name) {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        formData[input.name] = input.checked;
+                    } else {
+                        formData[input.name] = input.value;
+                    }
+                }
+            }
+            
+            var formKey = 'form_' + (form.id || form.name || i);
+            _preservedState[formKey] = formData;
         }
     }
     
-    restoreState() {
-        // Restore scroll position
-        const scrollX = this.getState('scrollX');
-        const scrollY = this.getState('scrollY');
+    function restoreState() {
+        if (!config.preserveState) return;
         
-        if (scrollX !== null && scrollY !== null) {
-            setTimeout(() => {
-                window.scrollTo(scrollX, scrollY);
-            }, 100);
+        // Load from sessionStorage
+        try {
+            var stored = sessionStorage.getItem('hotreload_state');
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                for (var key in parsed) {
+                    if (parsed.hasOwnProperty(key)) {
+                        _preservedState[key] = parsed[key];
+                    }
+                }
+            }
+        } catch(e) {}
+        
+        // Restore scroll
+        if (_preservedState.scrollX !== undefined && _preservedState.scrollY !== undefined) {
+            setTimeout(function() {
+                window.scrollTo(_preservedState.scrollX, _preservedState.scrollY);
+            }, 200);
         }
         
         // Restore form data
-        document.querySelectorAll('form').forEach((form, index) => {
-            const data = this.getState(`form_${index}_${form.id || 'unnamed'}`);
-            if (data) {
-                Object.entries(data).forEach(([key, value]) => {
-                    const input = form.querySelector(`[name="${key}"]`);
-                    if (input) {
-                        if (input.type === 'checkbox') {
-                            input.checked = value === 'on' || value === true;
+        var forms = document.getElementsByTagName('form');
+        for (var i = 0; i < forms.length; i++) {
+            var form = forms[i];
+            var formKey = 'form_' + (form.id || form.name || i);
+            var formData = _preservedState[formKey];
+            
+            if (formData) {
+                var inputs = form.querySelectorAll('input, select, textarea');
+                for (var j = 0; j < inputs.length; j++) {
+                    var input = inputs[j];
+                    if (input.name && formData[input.name] !== undefined) {
+                        if (input.type === 'checkbox' || input.type === 'radio') {
+                            input.checked = formData[input.name];
                         } else {
-                            input.value = value;
+                            input.value = formData[input.name];
                         }
                     }
-                });
+                }
             }
-        });
+        }
     }
     
     // ============================================
-    // UTILITY METHODS
+    // PUBLIC API
     // ============================================
     
-    isEnabled() {
-        return this.config.enabled && this.ws?.readyState === WebSocket.OPEN;
-    }
-    
-    getStatus() {
-        return {
-            enabled: this.config.enabled,
-            connected: this.ws?.readyState === WebSocket.OPEN,
-            reconnectAttempts: this.reconnectAttempts
-        };
-    }
-    
-    // ============================================
-    // CLEANUP
-    // ============================================
-    
-    destroy() {
-        if (this.ws) {
-            this.ws.close();
-            this.ws = null;
+    function init(customConfig) {
+        if (customConfig) {
+            for (var key in customConfig) {
+                if (customConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                    config[key] = customConfig[key];
+                }
+            }
         }
         
-        this.logger.info('Hot reload destroyed');
+        if (!config.enabled) {
+            console.info('[HotReload] Disabled');
+            return;
+        }
+        
+        // Setup state preservation
+        if (config.preserveState) {
+            window.addEventListener('beforeunload', saveState);
+            window.addEventListener('load', restoreState);
+        }
+        
+        // Connect
+        connect();
+        
+        console.info('[HotReload] Initialized');
     }
-}
+    
+    // Auto-init hanya jika URL mengandung ?hotreload=1
+    if (window.location.search.indexOf('hotreload=1') !== -1) {
+        config.enabled = true;
+        setTimeout(function() { init(); }, 500);
+    }
+    
+    return {
+        init: init,
+        
+        /**
+         * Check if connected
+         */
+        isConnected: function() {
+            return _ws && _ws.readyState === WebSocket.OPEN;
+        },
+        
+        /**
+         * Get status
+         */
+        getStatus: function() {
+            return {
+                enabled: config.enabled,
+                connected: _ws ? _ws.readyState === WebSocket.OPEN : false,
+                reconnectAttempts: _reconnectAttempts
+            };
+        },
+        
+        /**
+         * Manual reload
+         */
+        reload: function() {
+            fullReload();
+        },
+        
+        /**
+         * Enable
+         */
+        enable: function() {
+            config.enabled = true;
+            connect();
+        },
+        
+        /**
+         * Disable
+         */
+        disable: function() {
+            config.enabled = false;
+            if (_ws) {
+                try { _ws.close(); } catch(e) {}
+                _ws = null;
+            }
+            if (_reconnectTimer) {
+                clearTimeout(_reconnectTimer);
+                _reconnectTimer = null;
+            }
+        }
+    };
+})();
 
-// Create singleton
-const hotReload = new HotReload();
-
-export default hotReload;
-export { HotReload };
+// ============================================
+// USAGE (Development only):
+// ============================================
+// // Enable via URL: ?hotreload=1
+// // Or programmatically:
+// HotReload.init({ enabled: true, wsUrl: 'ws://localhost:35729' });
+// 
+// // Check status
+// HotReload.getStatus();
+// 
+// // Manual reload
+// HotReload.reload();
+// ============================================

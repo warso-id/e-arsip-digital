@@ -1,113 +1,508 @@
-/* css/themes/custom.css - Custom Theme Template 2026 */
-/**
+/* ============================================
+ * css/themes/custom.css - Custom Theme System 2026
  * E-Arsip Digital - Custom Theme Template
  * Version: 2026.1.0
- * Use this file as a template to create your own theme
- * Copy desired variables from style.css and modify them here
- */
+ * 
+ * TEMPLATE untuk membuat tema kustom.
+ * 
+ * CARA MENGGUNAKAN:
+ * 1. Copy file ini ke css/themes/my-theme.css
+ * 2. Ganti [data-theme="custom"] dengan nama tema Anda
+ * 3. Modifikasi variabel sesuai keinginan
+ * 4. Import di index.html: <link rel="stylesheet" href="css/themes/my-theme.css">
+ * 5. Aktifkan: document.documentElement.setAttribute('data-theme', 'my-theme');
+ * 
+ * TIPS WARNA:
+ * - Gunakan color palette generator: https://coolors.co
+ * - Pastikan kontras teks-background minimal 4.5:1 (WCAG AA)
+ * - Gunakan https://contrastchecker.com untuk cek kontras
+ * ============================================ */
 
-[data-theme="custom"] {
-    /* ============================================ */
-    /* PRIMARY COLORS                               */
-    /* ============================================ */
-    --color-primary-50: #eff6ff;
-    --color-primary-100: #dbeafe;
-    --color-primary-200: #bfdbfe;
-    --color-primary-300: #93c5fd;
-    --color-primary-400: #60a5fa;
-    --color-primary-500: #3b82f6;
-    --color-primary-600: #2563eb;
-    --color-primary-700: #1d4ed8;
-    --color-primary-800: #1e40af;
-    --color-primary-900: #1e3a8a;
+/* ============================================
+ * 1. CUSTOM THEME - LIGHT VARIANT
+ * ============================================ */
+[data-theme="custom"],
+[data-theme="custom-light"] {
+    /* ==========================================
+     * PRIMARY COLOR PALETTE
+     * 50: paling terang, 900: paling gelap
+     * ========================================== */
+    --color-primary-50: #eff6ff;    /* Background sangat terang */
+    --color-primary-100: #dbeafe;   /* Background terang */
+    --color-primary-200: #bfdbfe;   /* Border terang */
+    --color-primary-300: #93c5fd;   /* Border */
+    --color-primary-400: #60a5fa;   /* Hover state */
+    --color-primary-500: #3b82f6;   /* Warna utama */
+    --color-primary-600: #2563eb;   /* Warna utama hover */
+    --color-primary-700: #1d4ed8;   /* Warna utama active */
+    --color-primary-800: #1e40af;   /* Teks di atas primary */
+    --color-primary-900: #1e3a8a;   /* Teks gelap */
     
-    /* ============================================ */
-    /* BACKGROUND COLORS                            */
-    /* ============================================ */
-    --color-bg-primary: #ffffff;
-    --color-bg-secondary: #f8fafc;
-    --color-bg-tertiary: #f1f5f9;
+    /* ==========================================
+     * SEMANTIC COLORS (Success, Danger, Warning, Info)
+     * ========================================== */
+    /* Success - Hijau */
+    --color-success-50: #f0fdf4;
+    --color-success-100: #dcfce7;
+    --color-success-500: #22c55e;
+    --color-success-600: #16a34a;
+    --color-success-700: #15803d;
     
-    /* ============================================ */
-    /* TEXT COLORS                                  */
-    /* ============================================ */
-    --color-text-primary: #1e293b;
-    --color-text-secondary: #64748b;
-    --color-text-muted: #94a3b8;
+    /* Danger - Merah */
+    --color-danger-50: #fef2f2;
+    --color-danger-100: #fee2e2;
+    --color-danger-500: #ef4444;
+    --color-danger-600: #dc2626;
+    --color-danger-700: #b91c1c;
     
-    /* ============================================ */
-    /* BORDER COLORS                                */
-    /* ============================================ */
-    --color-border: #e2e8f0;
-    --color-border-light: #f1f5f9;
+    /* Warning - Kuning/Orange */
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
     
-    /* ============================================ */
-    /* SHADOW                                       */
-    /* ============================================ */
-    --color-shadow: rgba(0, 0, 0, 0.1);
+    /* Info - Biru Muda */
+    --color-info-50: #f0f9ff;
+    --color-info-100: #e0f2fe;
+    --color-info-500: #0ea5e9;
+    --color-info-600: #0284c7;
+    --color-info-700: #0369a1;
     
-    /* ============================================ */
-    /* COMPONENT SPECIFIC                           */
-    /* ============================================ */
-    --color-sidebar-bg: #ffffff;
-    --color-sidebar-text: #64748b;
-    --color-sidebar-hover: #f8fafc;
-    --color-sidebar-active: #2563eb;
-    --color-sidebar-active-bg: rgba(37, 99, 235, 0.08);
+    /* Gold (untuk aksen) */
+    --color-gold: #ffd700;
     
+    /* ==========================================
+     * BACKGROUND COLORS
+     * ========================================== */
+    --color-bg-primary: #f8fafc;      /* Background halaman */
+    --color-bg-secondary: #f1f5f9;    /* Background section */
+    --color-bg-tertiary: #e2e8f0;     /* Background hover */
+    --color-bg-white: #ffffff;         /* Background card/modal */
+    
+    /* ==========================================
+     * TEXT COLORS
+     * ========================================== */
+    --color-text-primary: #1e293b;     /* Teks utama */
+    --color-text-secondary: #475569;   /* Teks sekunder */
+    --color-text-muted: #64748b;       /* Teks muted/placeholder */
+    --color-text-white: #ffffff;        /* Teks di atas background gelap */
+    --color-text-link: #2563eb;         /* Link */
+    --color-text-link-hover: #1d4ed8;   /* Link hover */
+    
+    /* ==========================================
+     * BORDER COLORS
+     * ========================================== */
+    --color-border: #e2e8f0;           /* Border standar */
+    --color-border-light: #f1f5f9;     /* Border terang */
+    --color-border-focus: #2563eb;      /* Border saat fokus */
+    
+    /* ==========================================
+     * SHADOW
+     * ========================================== */
+    --color-shadow-sm: rgba(0, 0, 0, 0.05);
+    --color-shadow-md: rgba(0, 0, 0, 0.08);
+    --color-shadow-lg: rgba(0, 0, 0, 0.12);
+    
+    /* ==========================================
+     * SIDEBAR
+     * ========================================== */
+    --color-sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    --color-sidebar-bg-solid: #1e293b;
+    --color-sidebar-text: rgba(255, 255, 255, 0.75);
+    --color-sidebar-text-active: #ffffff;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+    --color-sidebar-active: #60a5fa;
+    --color-sidebar-active-bg: rgba(37, 99, 235, 0.2);
+    --color-sidebar-divider: rgba(255, 255, 255, 0.1);
+    
+    /* ==========================================
+     * CARD
+     * ========================================== */
     --color-card-bg: #ffffff;
     --color-card-border: #e2e8f0;
     --color-card-header-bg: #f8fafc;
     
-    --color-input-bg: #ffffff;
+    /* ==========================================
+     * INPUT / FORM
+     * ========================================== */
+    --color-input-bg: #f8fafc;
+    --color-input-bg-focus: #ffffff;
     --color-input-border: #e2e8f0;
-    --color-input-focus: #3b82f6;
+    --color-input-focus: #2563eb;
+    --color-input-focus-ring: rgba(37, 99, 235, 0.1);
     --color-input-disabled: #f1f5f9;
+    --color-input-placeholder: #94a3b8;
+    --color-input-error: #dc2626;
+    --color-input-error-ring: rgba(220, 38, 38, 0.1);
+    --color-input-success: #16a34a;
     
+    /* ==========================================
+     * TABLE
+     * ========================================== */
     --color-table-header: #f8fafc;
+    --color-table-header-text: #64748b;
     --color-table-hover: #f1f5f9;
-    --color-table-stripe: #fafafa;
+    --color-table-stripe: #fafbfc;
     --color-table-border: #e2e8f0;
     
+    /* ==========================================
+     * BUTTON
+     * ========================================== */
+    --color-btn-primary-bg: #2563eb;
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-hover: #1d4ed8;
+    --color-btn-primary-active: #1e40af;
+    --color-btn-success-bg: #16a34a;
+    --color-btn-success-text: #ffffff;
+    --color-btn-success-hover: #15803d;
+    --color-btn-danger-bg: #dc2626;
+    --color-btn-danger-text: #ffffff;
+    --color-btn-danger-hover: #b91c1c;
+    --color-btn-outline-border: #2563eb;
+    --color-btn-outline-text: #2563eb;
+    --color-btn-outline-hover-bg: #2563eb;
+    --color-btn-outline-hover-text: #ffffff;
+    --color-btn-disabled-bg: #e2e8f0;
+    --color-btn-disabled-text: #94a3b8;
+    
+    /* ==========================================
+     * BADGE / LABEL
+     * ========================================== */
+    --color-badge-success-bg: #dcfce7;
+    --color-badge-success-text: #15803d;
+    --color-badge-danger-bg: #fef2f2;
+    --color-badge-danger-text: #b91c1c;
+    --color-badge-warning-bg: #fef3c7;
+    --color-badge-warning-text: #b45309;
+    --color-badge-info-bg: #dbeafe;
+    --color-badge-info-text: #1d4ed8;
+    --color-badge-default-bg: #f1f5f9;
+    --color-badge-default-text: #64748b;
+    
+    /* ==========================================
+     * MODAL / DIALOG
+     * ========================================== */
     --color-modal-overlay: rgba(0, 0, 0, 0.5);
     --color-modal-bg: #ffffff;
+    --color-modal-border: #e2e8f0;
+    --color-modal-header-bg: #f8fafc;
     
-    --color-toast-bg: #ffffff;
-    --color-toast-border: #e2e8f0;
+    /* ==========================================
+     * TOAST / NOTIFICATION
+     * ========================================== */
+    --color-toast-success-bg: #16a34a;
+    --color-toast-success-text: #ffffff;
+    --color-toast-error-bg: #dc2626;
+    --color-toast-error-text: #ffffff;
+    --color-toast-warning-bg: #f59e0b;
+    --color-toast-warning-text: #1e293b;
+    --color-toast-info-bg: #2563eb;
+    --color-toast-info-text: #ffffff;
     
-    --color-badge-bg: #f1f5f9;
-    --color-badge-text: #64748b;
+    /* ==========================================
+     * TOOLTIP
+     * ========================================== */
+    --color-tooltip-bg: #1e293b;
+    --color-tooltip-text: #ffffff;
     
-    /* ============================================ */
-    /* SEMANTIC COLORS                              */
-    /* ============================================ */
-    --color-success-bg: #f0fdf4;
-    --color-success-text: #16a34a;
-    --color-success-border: #bbf7d0;
+    /* ==========================================
+     * PROGRESS BAR
+     * ========================================== */
+    --color-progress-bg: #e2e8f0;
+    --color-progress-fill: #2563eb;
+    --color-progress-success: #16a34a;
+    --color-progress-warning: #f59e0b;
+    --color-progress-danger: #dc2626;
     
-    --color-warning-bg: #fffbeb;
-    --color-warning-text: #d97706;
-    --color-warning-border: #fde68a;
+    /* ==========================================
+     * SCROLLBAR (Cross-browser)
+     * ========================================== */
+    --color-scrollbar-track: #f1f5f9;
+    --color-scrollbar-thumb: #c1c1c1;
+    --color-scrollbar-thumb-hover: #a1a1a1;
     
-    --color-error-bg: #fef2f2;
-    --color-error-text: #dc2626;
-    --color-error-border: #fecaca;
+    /* ==========================================
+     * TYPOGRAPHY
+     * ========================================== */
+    --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
     
-    --color-info-bg: #eff6ff;
-    --color-info-text: #2563eb;
-    --color-info-border: #bfdbfe;
+    /* ==========================================
+     * SPACING
+     * ========================================== */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-12: 3rem;
+    --spacing-16: 4rem;
+    
+    /* ==========================================
+     * BORDER RADIUS
+     * ========================================== */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+    
+    /* ==========================================
+     * SIDEBAR DIMENSIONS
+     * ========================================== */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 64px;
+    
+    /* ==========================================
+     * TRANSITIONS
+     * ========================================== */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+    
+    /* ==========================================
+     * Z-INDEX LAYERS
+     * ========================================== */
+    --z-sidebar: 100;
+    --z-overlay: 99;
+    --z-modal: 1000;
+    --z-toast: 9999;
+    --z-tooltip: 9998;
+    
+    /* ==========================================
+     * PWA SAFE AREAS
+     * ========================================== */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* Custom theme scrollbar */
-[data-theme="custom"] ::-webkit-scrollbar-track {
-    background: var(--color-bg-secondary);
+/* ============================================
+ * 2. CUSTOM THEME - DARK VARIANT
+ * ============================================ */
+[data-theme="custom-dark"] {
+    /* Background */
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-bg-white: #1e293b;
+    
+    /* Text */
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #94a3b8;
+    --color-text-link: #60a5fa;
+    --color-text-link-hover: #93c5fd;
+    
+    /* Border */
+    --color-border: #334155;
+    --color-border-light: #1e293b;
+    --color-border-focus: #3b82f6;
+    
+    /* Shadow */
+    --color-shadow-sm: rgba(0, 0, 0, 0.3);
+    --color-shadow-md: rgba(0, 0, 0, 0.4);
+    --color-shadow-lg: rgba(0, 0, 0, 0.5);
+    
+    /* Card */
+    --color-card-bg: #1e293b;
+    --color-card-border: #334155;
+    --color-card-header-bg: #1e293b;
+    
+    /* Input */
+    --color-input-bg: #1e293b;
+    --color-input-bg-focus: #1e293b;
+    --color-input-border: #334155;
+    --color-input-disabled: #0f172a;
+    --color-input-placeholder: #64748b;
+    
+    /* Table */
+    --color-table-header: #1e293b;
+    --color-table-header-text: #94a3b8;
+    --color-table-hover: #334155;
+    --color-table-stripe: #1a2332;
+    --color-table-border: #334155;
+    
+    /* Modal */
+    --color-modal-bg: #1e293b;
+    --color-modal-border: #334155;
+    --color-modal-header-bg: #1e293b;
+    --color-modal-overlay: rgba(0, 0, 0, 0.7);
+    
+    /* Badge */
+    --color-badge-success-bg: rgba(22, 163, 74, 0.2);
+    --color-badge-success-text: #4ade80;
+    --color-badge-danger-bg: rgba(220, 38, 38, 0.2);
+    --color-badge-danger-text: #f87171;
+    --color-badge-warning-bg: rgba(217, 119, 6, 0.2);
+    --color-badge-warning-text: #fbbf24;
+    --color-badge-info-bg: rgba(37, 99, 235, 0.2);
+    --color-badge-info-text: #60a5fa;
+    --color-badge-default-bg: #334155;
+    --color-badge-default-text: #94a3b8;
+    
+    /* Progress */
+    --color-progress-bg: #334155;
+    
+    /* Scrollbar */
+    --color-scrollbar-track: #1e293b;
+    --color-scrollbar-thumb: #475569;
+    --color-scrollbar-thumb-hover: #64748b;
+    
+    /* Button */
+    --color-btn-outline-border: #475569;
+    --color-btn-outline-text: #cbd5e1;
+    --color-btn-disabled-bg: #334155;
+    --color-btn-disabled-text: #64748b;
+    
+    /* Tooltip */
+    --color-tooltip-bg: #f1f5f9;
+    --color-tooltip-text: #1e293b;
 }
 
-[data-theme="custom"] ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 4px;
+/* ============================================
+ * 3. CUSTOM THEME - SCROLLBAR STYLES
+ * ============================================ */
+[data-theme="custom"] ::-webkit-scrollbar,
+[data-theme="custom-light"] ::-webkit-scrollbar,
+[data-theme="custom-dark"] ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
 
-[data-theme="custom"] ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
+[data-theme="custom"] ::-webkit-scrollbar-track,
+[data-theme="custom-light"] ::-webkit-scrollbar-track,
+[data-theme="custom-dark"] ::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
 }
+
+[data-theme="custom"] ::-webkit-scrollbar-thumb,
+[data-theme="custom-light"] ::-webkit-scrollbar-thumb,
+[data-theme="custom-dark"] ::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 3px;
+}
+
+[data-theme="custom"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="custom-light"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="custom-dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-thumb-hover);
+}
+
+/* Firefox scrollbar */
+[data-theme="custom"],
+[data-theme="custom-light"],
+[data-theme="custom-dark"] {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
+
+/* ============================================
+ * 4. CUSTOM THEME - TRANSITIONS
+ * ============================================ */
+[data-theme="custom"] body,
+[data-theme="custom-light"] body,
+[data-theme="custom-dark"] body {
+    transition: background-color var(--transition-normal),
+                color var(--transition-normal);
+}
+
+[data-theme="custom"] .sidebar,
+[data-theme="custom"] .card,
+[data-theme="custom"] .stat-card,
+[data-theme="custom"] input,
+[data-theme="custom"] select,
+[data-theme="custom"] textarea,
+[data-theme="custom"] button,
+[data-theme="custom"] table,
+[data-theme="custom-light"] .sidebar,
+[data-theme="custom-light"] .card,
+[data-theme="custom-light"] input,
+[data-theme="custom-light"] button,
+[data-theme="custom-dark"] .sidebar,
+[data-theme="custom-dark"] .card,
+[data-theme="custom-dark"] input,
+[data-theme="custom-dark"] button {
+    transition: background-color var(--transition-normal),
+                border-color var(--transition-normal),
+                color var(--transition-normal),
+                box-shadow var(--transition-normal);
+}
+
+/* ============================================
+ * 5. ACCESSIBILITY - REDUCED MOTION
+ * ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    [data-theme="custom"] *,
+    [data-theme="custom-light"] *,
+    [data-theme="custom-dark"] * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ============================================
+ * 6. PWA STANDALONE MODE
+ * ============================================ */
+@media (display-mode: standalone) {
+    [data-theme="custom"] body,
+    [data-theme="custom-light"] body,
+    [data-theme="custom-dark"] body {
+        padding-top: var(--safe-area-top);
+        padding-bottom: var(--safe-area-bottom);
+    }
+    
+    [data-theme="custom"] .sidebar,
+    [data-theme="custom-light"] .sidebar,
+    [data-theme="custom-dark"] .sidebar {
+        padding-top: var(--safe-area-top);
+    }
+}
+
+/* ============================================
+ * 7. RECOMMENDED COLOR COMBINATIONS
+ * ============================================
+ * 
+ * CORPORATE BLUE:
+ *   --color-primary-500: #1a73e8;
+ *   --color-primary-600: #1557b0;
+ *   --color-sidebar-bg-solid: #1a56db;
+ * 
+ * TEAL GREEN:
+ *   --color-primary-500: #0d9488;
+ *   --color-primary-600: #0f766e;
+ *   --color-sidebar-bg-solid: #134e4a;
+ * 
+ * ROSE PINK:
+ *   --color-primary-500: #e11d48;
+ *   --color-primary-600: #be123c;
+ *   --color-sidebar-bg-solid: #881337;
+ * 
+ * AMBER GOLD:
+ *   --color-primary-500: #d97706;
+ *   --color-primary-600: #b45309;
+ *   --color-sidebar-bg-solid: #78350f;
+ * 
+ * INDIGO:
+ *   --color-primary-500: #6366f1;
+ *   --color-primary-600: #4f46e5;
+ *   --color-sidebar-bg-solid: #3730a3;
+ * 
+ * ============================================ */

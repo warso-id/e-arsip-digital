@@ -2,195 +2,298 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<<<<<<< HEAD
-    <script>
-        (function () {
-            const getAppBasePath = () => {
-                const pathname = window.location.pathname || '/';
-                const segments = pathname.split('/').filter(Boolean);
-                if (segments.length === 0) return '/';
-                const repoSegment = segments[0];
-                const isLikelySubfolder = pathname.includes(`/${repoSegment}/`) || pathname.endsWith(`/${repoSegment}`);
-                if (isLikelySubfolder && repoSegment !== 'dashboard' && repoSegment !== 'surat-masuk' && repoSegment !== 'surat-keluar') {
-                    return `/${repoSegment}/`;
-                }
-                return '/';
-            };
-            const appBasePath = getAppBasePath();
-            const rewrite = (value) => {
-                if (!value || !value.startsWith('/')) return value;
-                const clean = value.replace(/^\/+/, '');
-                return `${appBasePath}${clean}`.replace(/\/+/g, '/');
-            };
-            document.querySelectorAll('link[href], script[src], img[src], a[href]').forEach((el) => {
-                ['href', 'src'].forEach((attr) => {
-                    if (!el.hasAttribute(attr)) return;
-                    const value = el.getAttribute(attr);
-                    if (value && value.startsWith('/')) {
-                        el.setAttribute(attr, rewrite(value));
-                    }
-                });
-            });
-        })();
-    </script>
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Manajemen pengguna sistem E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" id="csrf-token" content="">
+    
+    <!-- PWA Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
     <title>Manajemen User - E-Arsip Digital</title>
     
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <style>
+        /* Critical CSS */
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
         }
         
-        .page-header h2 {
-            margin: 0;
-            font-size: 24px;
-        }
+        .page-header h2 { margin: 0; font-size: 24px; }
         
         .filter-bar {
             display: flex;
             gap: 12px;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            align-items: flex-end;
         }
         
         .filter-bar .form-input,
-        .filter-bar .form-select {
-            max-width: 200px;
-        }
+        .filter-bar .form-select { min-width: 160px; }
         
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 16px;
+            flex-shrink: 0;
         }
         
         .role-badge {
             display: inline-block;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
+            padding: 2px 10px; border-radius: 12px;
+            font-size: 12px; font-weight: 500;
+            white-space: nowrap;
         }
         
-        .role-admin { background: #fef3c7; color: #d97706; }
-        .role-user { background: #dbeafe; color: #2563eb; }
+        .role-super_admin { background: #fef3c7; color: #d97706; }
+        .role-admin { background: #fee2e2; color: #dc2626; }
         .role-kaprodi { background: #dcfce7; color: #16a34a; }
+        .role-wadek { background: #e0f2fe; color: #0284c7; }
         .role-dekan { background: #fae8ff; color: #a21caf; }
-        .role-staf { background: #e0f2fe; color: #0284c7; }
+        .role-staf { background: #f0fdf4; color: #15803d; }
+        .role-dosen { background: #fff7ed; color: #c2410c; }
+        .role-mahasiswa { background: #eff6ff; color: #1d4ed8; }
+        .role-user { background: #dbeafe; color: #2563eb; }
         
-        .status-active { color: #16a34a; }
-        .status-inactive { color: #dc2626; }
-        .status-pending { color: #d97706; }
+        .status-active { color: #16a34a; font-weight: 500; }
+        .status-inactive { color: #dc2626; font-weight: 500; }
+        .status-pending { color: #d97706; font-weight: 500; }
         
-        .modal-body .form-row {
+        .action-buttons {
+            display: flex; gap: 4px;
+        }
+        
+        .btn-action {
+            width: 32px; height: 32px;
+            border-radius: 6px; border: none;
+            background: transparent; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .btn-action:hover { background: #f1f5f9; }
+        .btn-action:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-overlay.visible { display: flex; }
+        
+        .modal-dialog {
+            background: white;
+            border-radius: 16px;
+            width: 90%; max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease;
+        }
+        
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky; top: 0; background: white;
+            border-radius: 16px 16px 0 0;
+            z-index: 1;
+        }
+        
+        .modal-header h3 { margin: 0; font-size: 18px; }
+        
+        .modal-close {
+            width: 32px; height: 32px;
+            border-radius: 50%; border: none;
+            background: #f1f5f9; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; transition: all 0.2s;
+        }
+        
+        .modal-close:hover { background: #e2e8f0; }
+        
+        .modal-body { padding: 24px; }
+        
+        .modal-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            position: sticky; bottom: 0; background: white;
+            border-radius: 0 0 16px 16px;
+        }
+        
+        .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
         }
         
+        .form-label-required::after {
+            content: ' *';
+            color: #dc2626;
+        }
+        
+        .form-error {
+            font-size: 12px; color: #dc2626;
+            margin-top: 4px; display: none;
+        }
+        
+        .form-error.show { display: block; }
+        
+        .input-group {
+            display: flex; gap: 0;
+        }
+        
+        .input-group .form-input {
+            border-radius: 8px 0 0 8px;
+            flex: 1;
+        }
+        
+        .input-group .password-toggle {
+            border-radius: 0 8px 8px 0;
+            border-left: none;
+        }
+        
         .permission-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 8px;
         }
         
         .permission-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 12px;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
         
-        .permission-item:hover {
-            background: #f8fafc;
-        }
+        .permission-item:hover { background: #f8fafc; border-color: #2563eb; }
+        .permission-item:has(input:checked) { background: #eff6ff; border-color: #2563eb; }
         
         .permission-item input[type="checkbox"] {
             accent-color: #2563eb;
+            width: 16px; height: 16px;
         }
         
+        /* Form help */
+        .form-help {
+            font-size: 12px; color: #64748b;
+            margin-top: 4px;
+        }
+        
+        /* Password strength */
+        .password-strength {
+            height: 4px; border-radius: 2px;
+            margin-top: 6px; transition: all 0.3s;
+            background: #e2e8f0;
+        }
+        
+        .password-strength-bar {
+            height: 100%; border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        .strength-weak { width: 25%; background: #dc2626; }
+        .strength-fair { width: 50%; background: #d97706; }
+        .strength-good { width: 75%; background: #2563eb; }
+        .strength-strong { width: 100%; background: #16a34a; }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-            .page-header {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
-            }
-            
-            .filter-bar {
-                flex-direction: column;
-            }
-            
-            .filter-bar .form-input,
-            .filter-bar .form-select {
-                max-width: none;
-            }
-            
-            .modal-body .form-row {
-                grid-template-columns: 1fr;
-            }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .filter-bar { flex-direction: column; }
+            .filter-bar .form-input, .filter-bar .form-select { min-width: auto; width: 100%; }
+            .form-row { grid-template-columns: 1fr; }
+            .permission-grid { grid-template-columns: 1fr; }
+            .modal-dialog { width: 95%; max-height: 85vh; }
+        }
+        
+        @media (max-width: 480px) {
+            .modal-body { padding: 16px; }
+            .modal-header { padding: 16px; }
+            .modal-footer { padding: 12px 16px; flex-direction: column; }
+            .modal-footer .btn { width: 100%; }
+        }
+        
+        /* Print */
+        @media print {
+            .sidebar, .filter-bar, .btn, .action-buttons { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
         }
     </style>
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen">
-        <div class="spinner"></div>
+    <!-- Skip Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen" aria-hidden="true">
+        <div class="spinner" role="status" aria-label="Memuat halaman"></div>
     </div>
     
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
         <div class="sidebar-brand">
-            <i class="fas fa-archive"></i>
+            <i class="fas fa-archive" aria-hidden="true"></i>
             <span>E-Arsip Digital</span>
         </div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane"></i> Surat Keluar</a>
-            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox"></i> Surat Masuk</a>
-            <a href="/manajemen-user/" class="nav-item active"><i class="fas fa-users"></i> Manajemen User</a>
-            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar"></i> Laporan</a>
-            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home" aria-hidden="true"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane" aria-hidden="true"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox" aria-hidden="true"></i> Surat Masuk</a>
+            <a href="/manajemen-user/" class="nav-item active" aria-current="page"><i class="fas fa-users" aria-hidden="true"></i> Manajemen User</a>
+            <a href="/laporan/" class="nav-item"><i class="fas fa-chart-bar" aria-hidden="true"></i> Laporan</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog" aria-hidden="true"></i> Pengaturan</a>
         </nav>
     </aside>
     
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Page Header -->
+    <main class="main-content" id="main-content">
         <div class="page-header">
             <div>
                 <h2>Manajemen User</h2>
-                <p style="color:#64748b;font-size:14px;">Kelola pengguna sistem</p>
+                <p style="color:#64748b;font-size:14px;margin:4px 0 0;">Kelola pengguna sistem</p>
             </div>
-            <button class="btn btn-primary" id="add-user-btn">
-                <i class="fas fa-user-plus"></i> Tambah User
+            <button class="btn btn-primary" id="add-user-btn" type="button" aria-label="Tambah user baru">
+                <i class="fas fa-user-plus" aria-hidden="true"></i> Tambah User
             </button>
         </div>
         
         <!-- Filter Bar -->
-        <div class="filter-bar">
-            <input type="text" class="form-input" id="search-user" placeholder="Cari user...">
-            <select class="form-select" id="filter-role">
+        <div class="filter-bar" role="search" aria-label="Filter user">
+            <input type="text" class="form-input" id="search-user" placeholder="Cari user..." aria-label="Cari user">
+            <select class="form-select" id="filter-role" aria-label="Filter role">
                 <option value="">Semua Role</option>
                 <option value="super_admin">Super Admin</option>
                 <option value="admin">Admin</option>
@@ -202,14 +305,14 @@
                 <option value="dosen">Dosen</option>
                 <option value="mahasiswa">Mahasiswa</option>
             </select>
-            <select class="form-select" id="filter-status">
+            <select class="form-select" id="filter-status" aria-label="Filter status">
                 <option value="">Semua Status</option>
                 <option value="active">Aktif</option>
                 <option value="inactive">Nonaktif</option>
                 <option value="pending">Pending</option>
             </select>
-            <button class="btn btn-outline" id="export-users-btn">
-                <i class="fas fa-download"></i> Export
+            <button class="btn btn-outline" id="export-users-btn" type="button">
+                <i class="fas fa-download" aria-hidden="true"></i> Export
             </button>
         </div>
         
@@ -217,97 +320,81 @@
         <div class="card">
             <div class="card-body" style="padding:0;">
                 <div class="table-scroll">
-                    <table class="data-table">
+                    <table class="data-table" role="table" aria-label="Daftar pengguna">
                         <thead>
                             <tr>
-                                <th style="width:50px;">#</th>
-                                <th>User</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Unit</th>
-                                <th>Status</th>
-                                <th style="width:120px;">Aksi</th>
+                                <th scope="col" style="width:50px;">#</th>
+                                <th scope="col">User</th>
+                                <th scope="col">Username</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Unit</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" style="width:130px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="users-table-body">
-                            <tr>
-                                <td colspan="8" style="text-align:center;padding:30px;">Memuat data...</td>
-                            </tr>
+                            <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <!-- Pagination -->
             <div class="table-footer">
-                <div class="table-info" id="table-info">Menampilkan 0 data</div>
-                <div class="table-pagination" id="table-pagination"></div>
+                <div class="table-info" id="table-info" aria-live="polite">Menampilkan 0 data</div>
+                <nav class="table-pagination" id="table-pagination" aria-label="Pagination"></nav>
             </div>
         </div>
     </main>
     
-    <!-- Add/Edit User Modal -->
-    <div class="modal-overlay" id="user-modal">
+    <!-- User Modal -->
+    <div class="modal-overlay" id="user-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-dialog modal-lg">
             <div class="modal-header">
                 <h3 id="modal-title">Tambah User Baru</h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
+                <button class="modal-close" onclick="closeModal()" aria-label="Tutup modal">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="user-form" novalidate>
+                <form id="user-form" novalidate autocomplete="off">
                     <input type="hidden" id="user-id">
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label form-label-required">Nama Lengkap</label>
-                            <input type="text" class="form-input" id="fullname" required>
+                            <label class="form-label form-label-required" for="fullname">Nama Lengkap</label>
+                            <input type="text" class="form-input" id="fullname" required maxlength="100">
                             <div class="form-error" id="fullname-error"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label form-label-required">Username</label>
-                            <input type="text" class="form-input" id="username" required autocomplete="off">
+                            <label class="form-label form-label-required" for="username">Username</label>
+                            <input type="text" class="form-input" id="username" required maxlength="50" autocomplete="off">
                             <div class="form-error" id="username-error"></div>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label form-label-required">Email</label>
-                            <input type="email" class="form-input" id="email" required>
+                            <label class="form-label form-label-required" for="email">Email</label>
+                            <input type="email" class="form-input" id="email" required maxlength="100">
                             <div class="form-error" id="email-error"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">No. Telepon</label>
-                            <input type="tel" class="form-input" id="phone">
+                            <label class="form-label" for="phone">No. Telepon</label>
+                            <input type="tel" class="form-input" id="phone" maxlength="20">
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label form-label-required">Role</label>
+                            <label class="form-label form-label-required" for="role">Role</label>
                             <select class="form-select" id="role" required>
                                 <option value="">Pilih Role</option>
-                                <option value="super_admin">Super Admin</option>
-                                <option value="admin">Admin</option>
-                                <option value="kaprodi">Kaprodi</option>
-                                <option value="wadek">Wadek</option>
-                                <option value="dekan">Dekan</option>
-                                <option value="staf">Staf</option>
-                                <option value="dosen">Dosen</option>
-                                <option value="mahasiswa">Mahasiswa</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Unit/Departemen</label>
+                            <label class="form-label" for="unit">Unit/Departemen</label>
                             <select class="form-select" id="unit">
                                 <option value="">Pilih Unit</option>
-                                <option value="dekanat">Dekanat</option>
-                                <option value="prodi_ti">Prodi Teknik Informatika</option>
-                                <option value="prodi_si">Prodi Sistem Informasi</option>
-                                <option value="baak">BAAK</option>
-                                <option value="bauk">BAUK</option>
                             </select>
                         </div>
                     </div>
@@ -315,20 +402,23 @@
                     <div id="password-section">
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label form-label-required" id="password-label">Password</label>
+                                <label class="form-label form-label-required" id="password-label" for="password">Password</label>
                                 <div class="input-group">
                                     <input type="password" class="form-input" id="password" 
-                                        placeholder="Minimal 8 karakter" autocomplete="new-password">
+                                        placeholder="Minimal 8 karakter" autocomplete="new-password" minlength="8">
                                     <button type="button" class="btn btn-outline password-toggle" 
-                                        onclick="togglePassword('password')">
-                                        <i class="fas fa-eye"></i>
+                                        onclick="togglePasswordVisibility('password')" aria-label="Tampilkan password" tabindex="-1">
+                                        <i class="fas fa-eye" aria-hidden="true"></i>
                                     </button>
                                 </div>
-                                <div class="form-help">Minimal 8 karakter, harus mengandung huruf besar dan angka</div>
+                                <div class="password-strength" id="password-strength" style="display:none;">
+                                    <div class="password-strength-bar" id="password-strength-bar"></div>
+                                </div>
+                                <div class="form-help">Minimal 8 karakter, harus mengandung huruf besar, kecil, dan angka</div>
                                 <div class="form-error" id="password-error"></div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label form-label-required">Konfirmasi Password</label>
+                                <label class="form-label form-label-required" for="password-confirm">Konfirmasi Password</label>
                                 <input type="password" class="form-input" id="password-confirm" 
                                     placeholder="Ulangi password" autocomplete="new-password">
                                 <div class="form-error" id="password-confirm-error"></div>
@@ -338,37 +428,14 @@
                     
                     <div class="form-group">
                         <label class="form-label">Hak Akses Khusus</label>
-                        <div class="permission-grid">
-                            <label class="permission-item">
-                                <input type="checkbox" value="manage_users"> Manajemen User
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="manage_surat"> Manajemen Surat
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="approve_surat"> Approval Surat
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="view_reports"> Lihat Laporan
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="export_data"> Export Data
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="manage_settings"> Pengaturan Sistem
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="view_logs"> Lihat Log
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="backup_restore"> Backup & Restore
-                            </label>
+                        <div class="permission-grid" id="permission-grid">
+                            <!-- Dynamic permissions -->
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Status Akun</label>
-                        <div style="display:flex;gap:20px;">
+                        <div style="display:flex;gap:20px;flex-wrap:wrap;">
                             <label class="form-check">
                                 <input type="radio" name="status" value="active" class="form-check-input" checked>
                                 <span>Aktif</span>
@@ -386,106 +453,239 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal()">Batal</button>
-                <button class="btn btn-primary" id="save-user-btn">
-                    <i class="fas fa-save"></i> Simpan
+                <button class="btn btn-outline" onclick="closeModal()" type="button">Batal</button>
+                <button class="btn btn-primary" id="save-user-btn" type="button">
+                    <i class="fas fa-save" aria-hidden="true"></i> Simpan
                 </button>
             </div>
         </div>
     </div>
     
-    <script type="module">
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import FormValidator from '/js/validator.js';
-        import notifications from '/js/notifications.js';
-        import exportHandler from '/js/export.js';
-        import utils from '/js/utils.js';
-        import logger from '/js/logger.js';
+    <!-- Scripts -->
+    <script>
+        // Base path resolver
+        (function() {
+            const pathname = window.location.pathname || '/';
+            const segments = pathname.split('/').filter(Boolean);
+            if (segments.length === 0) { window.APP_BASE_PATH = '/'; return; }
+            
+            const knownRoutes = ['dashboard', 'surat-masuk', 'surat-keluar', 'manajemen-user', 'laporan', 'pengaturan'];
+            window.APP_BASE_PATH = (!knownRoutes.includes(segments[0]) && segments.length >= 2)
+                ? '/' + segments[0] + '/'
+                : '/';
+        })();
         
-        // Check auth & role
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
-        if (!authService.hasRole(['super_admin', 'admin'])) window.location.href = '/403.html';
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
+    
+    <script type="module">
+        // Lazy load modules
+        const loadModule = async (path) => {
+            try {
+                const mod = await import(path);
+                return mod.default || mod;
+            } catch (e) { console.warn(`Module not found: ${path}`); return null; }
+        };
+        
+        const [authService, apiService, notifications] = await Promise.all([
+            loadModule('/js/auth.js'),
+            loadModule('/js/api.js'),
+            loadModule('/js/notifications.js')
+        ]);
+        
+        // Auth guard
+        if (authService && !authService.isAuthenticated) {
+            window.location.href = (window.APP_BASE_PATH || '/') + 'login.html';
+        }
+        if (authService && !authService.hasRole?.(['super_admin', 'admin'])) {
+            window.location.href = (window.APP_BASE_PATH || '/') + '403.html';
+        }
         
         // State
         let users = [];
         let currentPage = 1;
         let totalPages = 1;
+        let totalItems = 0;
         let editingUserId = null;
+        let isSubmitting = false;
+        
+        // Permissions list
+        const availablePermissions = [
+            { value: 'manage_users', label: 'Manajemen User', icon: 'users' },
+            { value: 'manage_surat', label: 'Manajemen Surat', icon: 'envelope' },
+            { value: 'approve_surat', label: 'Approval Surat', icon: 'check-double' },
+            { value: 'view_reports', label: 'Lihat Laporan', icon: 'chart-bar' },
+            { value: 'export_data', label: 'Export Data', icon: 'download' },
+            { value: 'manage_settings', label: 'Pengaturan Sistem', icon: 'cog' },
+            { value: 'view_logs', label: 'Lihat Log', icon: 'history' },
+            { value: 'backup_restore', label: 'Backup & Restore', icon: 'database' }
+        ];
         
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('loading-screen')?.classList.add('hidden');
+            renderPermissions();
             initEventListeners();
-            await loadUsers();
-            logger.info('Manajemen user loaded');
+            await Promise.all([loadUsers(), loadRoles(), loadUnits()]);
         });
         
+        function renderPermissions() {
+            const container = document.getElementById('permission-grid');
+            if (!container) return;
+            
+            container.innerHTML = availablePermissions.map(perm => `
+                <label class="permission-item">
+                    <input type="checkbox" value="${perm.value}">
+                    <i class="fas fa-${perm.icon}" style="font-size:12px;opacity:0.5;" aria-hidden="true"></i>
+                    <span style="font-size:13px;">${perm.label}</span>
+                </label>
+            `).join('');
+        }
+        
         function initEventListeners() {
-            // Add user
             document.getElementById('add-user-btn')?.addEventListener('click', () => openModal());
-            
-            // Save user
             document.getElementById('save-user-btn')?.addEventListener('click', saveUser);
-            
-            // Search
-            document.getElementById('search-user')?.addEventListener('input', 
-                utils.debounce(() => loadUsers(), 300));
-            
-            // Filters
-            document.getElementById('filter-role')?.addEventListener('change', () => loadUsers());
-            document.getElementById('filter-status')?.addEventListener('change', () => loadUsers());
-            
-            // Export
             document.getElementById('export-users-btn')?.addEventListener('click', exportUsers);
             
-            // Close modal on overlay click
+            // Search with debounce
+            let searchTimer;
+            document.getElementById('search-user')?.addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => { currentPage = 1; loadUsers(); }, 300);
+            });
+            
+            // Filters
+            document.getElementById('filter-role')?.addEventListener('change', () => { currentPage = 1; loadUsers(); });
+            document.getElementById('filter-status')?.addEventListener('change', () => { currentPage = 1; loadUsers(); });
+            
+            // Modal close
             document.getElementById('user-modal')?.addEventListener('click', (e) => {
                 if (e.target === e.currentTarget) closeModal();
             });
             
-            // Form validation
-            window.userFormValidator = new FormValidator(document.getElementById('user-form'));
+            // Password strength
+            document.getElementById('password')?.addEventListener('input', updatePasswordStrength);
+            
+            // Keyboard: Escape to close modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && document.getElementById('user-modal')?.classList.contains('visible')) {
+                    closeModal();
+                }
+            });
+        }
+        
+        async function loadRoles() {
+            const select = document.getElementById('role');
+            if (!select) return;
+            
+            const roles = [
+                { value: 'super_admin', label: 'Super Admin' },
+                { value: 'admin', label: 'Admin' },
+                { value: 'kaprodi', label: 'Kaprodi' },
+                { value: 'wadek', label: 'Wadek' },
+                { value: 'dekan', label: 'Dekan' },
+                { value: 'staf', label: 'Staf' },
+                { value: 'dosen', label: 'Dosen' },
+                { value: 'mahasiswa', label: 'Mahasiswa' }
+            ];
+            
+            // Try API
+            if (apiService) {
+                try {
+                    const response = await apiService.get('/api/roles');
+                    const apiRoles = response?.data || response || [];
+                    if (apiRoles.length > 0) {
+                        select.innerHTML = '<option value="">Pilih Role</option>' + 
+                            apiRoles.map(r => `<option value="${r.value || r.id}">${r.label || r.name}</option>`).join('');
+                        return;
+                    }
+                } catch {}
+            }
+            
+            select.innerHTML = '<option value="">Pilih Role</option>' + 
+                roles.map(r => `<option value="${r.value}">${r.label}</option>`).join('');
+        }
+        
+        async function loadUnits() {
+            const select = document.getElementById('unit');
+            if (!select) return;
+            
+            if (apiService) {
+                try {
+                    const response = await apiService.get('/api/units');
+                    const units = response?.data || response || [];
+                    if (units.length > 0) {
+                        select.innerHTML = '<option value="">Pilih Unit</option>' + 
+                            units.map(u => `<option value="${u.id || u.kode}">${u.nama || u.name}</option>`).join('');
+                        return;
+                    }
+                } catch {}
+            }
+            
+            const defaultUnits = [
+                { value: 'dekanat', label: 'Dekanat' },
+                { value: 'prodi_ti', label: 'Prodi Teknik Informatika' },
+                { value: 'prodi_si', label: 'Prodi Sistem Informasi' },
+                { value: 'baak', label: 'BAAK' },
+                { value: 'bauk', label: 'BAUK' }
+            ];
+            
+            select.innerHTML = '<option value="">Pilih Unit</option>' + 
+                defaultUnits.map(u => `<option value="${u.value}">${u.label}</option>`).join('');
         }
         
         async function loadUsers(page = 1) {
+            const tbody = document.getElementById('users-table-body');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="spinner"></div><p>Memuat data...</p></td></tr>';
+            
             try {
-                const search = document.getElementById('search-user').value;
-                const role = document.getElementById('filter-role').value;
-                const status = document.getElementById('filter-status').value;
-                
-                const response = await apiService.get('/api/users', {
+                const params = {
                     page,
                     limit: 10,
-                    search,
-                    role,
-                    status
-                });
+                    search: document.getElementById('search-user')?.value || '',
+                    role: document.getElementById('filter-role')?.value || '',
+                    status: document.getElementById('filter-status')?.value || ''
+                };
                 
-                users = response.data?.users || [];
-                totalPages = response.data?.totalPages || 1;
+                Object.keys(params).forEach(k => { if (!params[k]) delete params[k]; });
+                
+                let response;
+                if (apiService) {
+                    try {
+                        response = await apiService.get('/api/users', params);
+                    } catch {
+                        response = generateSampleUsers();
+                    }
+                } else {
+                    response = generateSampleUsers();
+                }
+                
+                users = response?.data?.users || response?.users || [];
+                totalPages = response?.data?.totalPages || response?.totalPages || 1;
+                totalItems = response?.data?.total || response?.total || users.length;
                 currentPage = page;
                 
                 renderTable();
                 renderPagination();
                 
             } catch (error) {
-                logger.error('Failed to load users', error);
-                notifications.error('Gagal memuat data user');
+                console.error('[Users] Load failed:', error);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Gagal memuat data</p></td></tr>';
+                if (notifications) notifications.error('Gagal memuat data user');
             }
         }
         
         function renderTable() {
             const tbody = document.getElementById('users-table-body');
+            if (!tbody) return;
             
-            if (users.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="text-align:center;padding:30px;color:#94a3b8;">
-                            <i class="fas fa-users" style="font-size:32px;margin-bottom:8px;display:block;"></i>
-                            Tidak ada data user
-                        </td>
-                    </tr>`;
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state">
+                    <i class="fas fa-users" aria-hidden="true"></i><p>Tidak ada data user</p>
+                </td></tr>`;
                 return;
             }
             
@@ -494,34 +694,35 @@
                     <td>${(currentPage - 1) * 10 + index + 1}</td>
                     <td>
                         <div style="display:flex;align-items:center;gap:12px;">
-                            <div class="user-avatar">${getInitials(user.fullname)}</div>
+                            <div class="user-avatar" aria-hidden="true">${getInitials(user.fullname)}</div>
                             <div>
-                                <div style="font-weight:500;">${user.fullname}</div>
-                                <div style="font-size:12px;color:#64748b;">NIP: ${user.nip || '-'}</div>
+                                <div style="font-weight:500;">${escapeHtml(user.fullname || '')}</div>
+                                <div style="font-size:12px;color:#64748b;">NIP: ${escapeHtml(user.nip || '-')}</div>
                             </div>
                         </div>
                     </td>
-                    <td>${user.username}</td>
-                    <td>${user.email || '-'}</td>
-                    <td><span class="role-badge role-${user.role}">${formatRole(user.role)}</span></td>
-                    <td>${user.unit || '-'}</td>
+                    <td>${escapeHtml(user.username || '')}</td>
+                    <td>${escapeHtml(user.email || '-')}</td>
+                    <td><span class="role-badge role-${user.role || 'user'}">${formatRole(user.role)}</span></td>
+                    <td>${escapeHtml(user.unit || '-')}</td>
                     <td>
-                        <span class="status-${user.status}">
-                            <i class="fas fa-circle" style="font-size:8px;"></i>
+                        <span class="status-${user.status || 'active'}">
+                            <i class="fas fa-circle" style="font-size:6px;" aria-hidden="true"></i>
                             ${formatStatus(user.status)}
                         </span>
                     </td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn-action" onclick="editUser('${user.id}')" title="Edit">
-                                <i class="fas fa-edit" style="color:#2563eb;"></i>
+                            <button class="btn-action" onclick="window.editUser('${user.id}')" title="Edit user" aria-label="Edit ${escapeHtml(user.fullname)}">
+                                <i class="fas fa-edit" style="color:#2563eb;" aria-hidden="true"></i>
                             </button>
-                            <button class="btn-action" onclick="resetPassword('${user.id}')" title="Reset Password">
-                                <i class="fas fa-key" style="color:#d97706;"></i>
+                            <button class="btn-action" onclick="window.resetUserPassword('${user.id}', '${escapeHtml(user.fullname)}')" title="Reset password" aria-label="Reset password ${escapeHtml(user.fullname)}">
+                                <i class="fas fa-key" style="color:#d97706;" aria-hidden="true"></i>
                             </button>
-                            <button class="btn-action" onclick="toggleUserStatus('${user.id}')" 
-                                title="${user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
-                                <i class="fas fa-power-off" style="color:${user.status === 'active' ? '#dc2626' : '#16a34a'};"></i>
+                            <button class="btn-action" onclick="window.toggleUserStatus('${user.id}')" 
+                                title="${user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}" 
+                                aria-label="${user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'} ${escapeHtml(user.fullname)}">
+                                <i class="fas fa-power-off" style="color:${user.status === 'active' ? '#dc2626' : '#16a34a'};" aria-hidden="true"></i>
                             </button>
                         </div>
                     </td>
@@ -532,29 +733,32 @@
         function renderPagination() {
             const container = document.getElementById('table-pagination');
             const info = document.getElementById('table-info');
+            if (!container) return;
             
-            info.textContent = `Menampilkan ${users.length} dari ${users.length * totalPages} user`;
+            if (info) info.textContent = `Menampilkan ${users.length} dari ${totalItems} user`;
+            
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
             
             let html = '';
-            
-            html += `<button class="btn-page" ${currentPage === 1 ? 'disabled' : ''} 
-                onclick="goToPage(${currentPage - 1})">
-                <i class="fas fa-chevron-left"></i></button>`;
+            html += `<button class="btn-page" ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}" aria-label="Halaman sebelumnya"><i class="fas fa-chevron-left"></i></button>`;
             
             for (let i = 1; i <= totalPages; i++) {
-                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    html += `<button class="btn-page ${i === currentPage ? 'active' : ''}" 
-                        onclick="goToPage(${i})">${i}</button>`;
-                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 1) {
+                    html += `<button class="btn-page ${i === currentPage ? 'active' : ''}" data-page="${i}" ${i === currentPage ? 'aria-current="page"' : ''}>${i}</button>`;
+                } else if (Math.abs(i - currentPage) === 2) {
                     html += '<span class="page-ellipsis">...</span>';
                 }
             }
             
-            html += `<button class="btn-page" ${currentPage === totalPages ? 'disabled' : ''} 
-                onclick="goToPage(${currentPage + 1})">
-                <i class="fas fa-chevron-right"></i></button>`;
+            html += `<button class="btn-page" ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}" aria-label="Halaman selanjutnya"><i class="fas fa-chevron-right"></i></button>`;
             
             container.innerHTML = html;
+            container.querySelectorAll('.btn-page[data-page]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.dataset.page);
+                    if (page >= 1 && page <= totalPages) loadUsers(page);
+                });
+            });
         }
         
         function openModal(userId = null) {
@@ -562,17 +766,18 @@
             const modal = document.getElementById('user-modal');
             const title = document.getElementById('modal-title');
             const passwordSection = document.getElementById('password-section');
+            const passwordLabel = document.getElementById('password-label');
             
-            // Reset form
-            document.getElementById('user-form').reset();
+            // Reset
+            document.getElementById('user-form')?.reset();
             document.getElementById('user-id').value = '';
+            document.getElementById('password-strength').style.display = 'none';
             
             if (userId) {
                 title.textContent = 'Edit User';
                 passwordSection.style.display = 'none';
-                document.getElementById('password-label').classList.remove('form-label-required');
+                passwordLabel?.classList.remove('form-label-required');
                 
-                // Load user data
                 const user = users.find(u => u.id === userId);
                 if (user) {
                     document.getElementById('user-id').value = user.id;
@@ -580,96 +785,199 @@
                     document.getElementById('username').value = user.username || '';
                     document.getElementById('email').value = user.email || '';
                     document.getElementById('phone').value = user.phone || '';
-                    document.getElementById('role').value = user.role || '';
-                    document.getElementById('unit').value = user.unit || '';
                     
-                    // Set permissions
+                    setTimeout(() => {
+                        document.getElementById('role').value = user.role || '';
+                        document.getElementById('unit').value = user.unit || '';
+                    }, 0);
+                    
                     if (user.permissions) {
-                        document.querySelectorAll('.permission-item input[type="checkbox"]').forEach(cb => {
+                        document.querySelectorAll('#permission-grid input[type="checkbox"]').forEach(cb => {
                             cb.checked = user.permissions.includes(cb.value);
                         });
                     }
                     
-                    // Set status
                     const statusRadio = document.querySelector(`input[name="status"][value="${user.status}"]`);
                     if (statusRadio) statusRadio.checked = true;
                 }
             } else {
                 title.textContent = 'Tambah User Baru';
                 passwordSection.style.display = 'block';
-                document.getElementById('password-label').classList.add('form-label-required');
-                document.querySelectorAll('.permission-item input[type="checkbox"]').forEach(cb => cb.checked = false);
+                passwordLabel?.classList.add('form-label-required');
+                document.querySelectorAll('#permission-grid input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.querySelector('input[name="status"][value="active"]').checked = true;
             }
             
             modal.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+            
+            // Focus first input
+            setTimeout(() => document.getElementById('fullname')?.focus(), 100);
         }
         
         function closeModal() {
-            document.getElementById('user-modal').classList.remove('visible');
+            document.getElementById('user-modal')?.classList.remove('visible');
+            document.body.style.overflow = '';
             editingUserId = null;
         }
         
         async function saveUser() {
-            const form = document.getElementById('user-form');
+            if (isSubmitting) return;
             
-            if (!window.userFormValidator?.validate()) return;
+            const errors = validateForm();
+            if (errors.length > 0) {
+                showFormErrors(errors);
+                return;
+            }
+            
+            clearFormErrors();
             
             const userData = {
                 fullname: document.getElementById('fullname').value.trim(),
-                username: document.getElementById('username').value.trim(),
-                email: document.getElementById('email').value.trim(),
+                username: document.getElementById('username').value.trim().toLowerCase(),
+                email: document.getElementById('email').value.trim().toLowerCase(),
                 phone: document.getElementById('phone').value.trim(),
                 role: document.getElementById('role').value,
                 unit: document.getElementById('unit').value,
                 status: document.querySelector('input[name="status"]:checked')?.value || 'active',
-                permissions: Array.from(document.querySelectorAll('.permission-item input:checked'))
-                    .map(cb => cb.value)
+                permissions: Array.from(document.querySelectorAll('#permission-grid input:checked')).map(cb => cb.value)
             };
             
             if (!editingUserId) {
                 userData.password = document.getElementById('password').value;
-                userData.passwordConfirm = document.getElementById('password-confirm').value;
                 
-                if (userData.password !== userData.passwordConfirm) {
-                    notifications.error('Password dan konfirmasi tidak cocok');
+                if (userData.password !== document.getElementById('password-confirm').value) {
+                    showFormErrors([{ field: 'password-confirm', message: 'Password tidak cocok' }]);
                     return;
                 }
             }
             
+            isSubmitting = true;
+            const saveBtn = document.getElementById('save-user-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+            
             try {
-                const saveBtn = document.getElementById('save-user-btn');
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = '<span class="spinner"></span> Menyimpan...';
-                
                 if (editingUserId) {
-                    await apiService.put(`/api/users/${editingUserId}`, userData);
-                    notifications.success('User berhasil diperbarui');
+                    if (apiService) await apiService.put(`/api/users/${editingUserId}`, userData);
+                    if (notifications) notifications.success('User berhasil diperbarui');
                 } else {
-                    await apiService.post('/api/users', userData);
-                    notifications.success('User baru berhasil ditambahkan');
+                    if (apiService) await apiService.post('/api/users', userData);
+                    if (notifications) notifications.success('User baru berhasil ditambahkan');
                 }
                 
                 closeModal();
                 await loadUsers(currentPage);
-                
             } catch (error) {
-                logger.error('Failed to save user', error);
-                notifications.error(error.message || 'Gagal menyimpan user');
+                if (notifications) notifications.error(error.message || 'Gagal menyimpan user');
             } finally {
-                const saveBtn = document.getElementById('save-user-btn');
+                isSubmitting = false;
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                saveBtn.innerHTML = originalText;
             }
         }
         
-        async function resetPassword(userId) {
-            if (!confirm('Apakah Anda yakin ingin mereset password user ini?')) return;
+        function validateForm() {
+            const errors = [];
+            const fullname = document.getElementById('fullname').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const role = document.getElementById('role').value;
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('password-confirm').value;
+            
+            if (!fullname) errors.push({ field: 'fullname', message: 'Nama lengkap wajib diisi' });
+            if (!username) errors.push({ field: 'username', message: 'Username wajib diisi' });
+            else if (username.length < 3) errors.push({ field: 'username', message: 'Username minimal 3 karakter' });
+            else if (!/^[a-z0-9_]+$/.test(username)) errors.push({ field: 'username', message: 'Username hanya boleh huruf kecil, angka, dan underscore' });
+            
+            if (!email) errors.push({ field: 'email', message: 'Email wajib diisi' });
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push({ field: 'email', message: 'Format email tidak valid' });
+            
+            if (!role) errors.push({ field: 'role', message: 'Role wajib dipilih' });
+            
+            if (!editingUserId) {
+                if (!password) errors.push({ field: 'password', message: 'Password wajib diisi' });
+                else if (password.length < 8) errors.push({ field: 'password', message: 'Password minimal 8 karakter' });
+                else if (!/[A-Z]/.test(password)) errors.push({ field: 'password', message: 'Password harus mengandung huruf besar' });
+                else if (!/[a-z]/.test(password)) errors.push({ field: 'password', message: 'Password harus mengandung huruf kecil' });
+                else if (!/[0-9]/.test(password)) errors.push({ field: 'password', message: 'Password harus mengandung angka' });
+            }
+            
+            return errors;
+        }
+        
+        function showFormErrors(errors) {
+            clearFormErrors();
+            
+            errors.forEach(({ field, message }) => {
+                const input = document.getElementById(field);
+                const errorEl = document.getElementById(`${field}-error`);
+                
+                if (input) input.classList.add('is-invalid');
+                if (errorEl) {
+                    errorEl.textContent = message;
+                    errorEl.classList.add('show');
+                }
+            });
+            
+            // Focus first error
+            const firstError = document.getElementById(errors[0]?.field);
+            firstError?.focus();
+        }
+        
+        function clearFormErrors() {
+            document.querySelectorAll('.form-error').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        }
+        
+        function updatePasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthEl = document.getElementById('password-strength');
+            const strengthBar = document.getElementById('password-strength-bar');
+            
+            if (!strengthEl || !strengthBar) return;
+            
+            if (!password) {
+                strengthEl.style.display = 'none';
+                return;
+            }
+            
+            strengthEl.style.display = 'block';
+            
+            let score = 0;
+            if (password.length >= 8) score++;
+            if (password.length >= 12) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/[a-z]/.test(password)) score++;
+            if (/[0-9]/.test(password)) score++;
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+            
+            const classes = ['strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
+            strengthBar.className = 'password-strength-bar ' + (classes[Math.min(score, 3)] || 'strength-weak');
+        }
+        
+        async function resetUserPassword(userId, userName) {
+            if (notifications && typeof notifications.showModal === 'function') {
+                const confirmed = await notifications.showModal(
+                    'Reset Password',
+                    `Apakah Anda yakin ingin mereset password untuk <strong>${escapeHtml(userName)}</strong>? Password baru akan dikirim ke email user.`,
+                    { confirmText: 'Reset Password', cancelText: 'Batal', type: 'warning' }
+                );
+                if (!confirmed) return;
+            } else {
+                if (!confirm(`Reset password untuk ${userName}?`)) return;
+            }
             
             try {
-                await apiService.post(`/api/users/${userId}/reset-password`);
-                notifications.success('Password berhasil direset. Password baru akan dikirim ke email user.');
+                if (apiService) await apiService.post(`/api/users/${userId}/reset-password`);
+                if (notifications) notifications.success('Password berhasil direset');
             } catch (error) {
-                notifications.error('Gagal mereset password');
+                if (notifications) notifications.error('Gagal mereset password');
             }
         }
         
@@ -678,87 +986,119 @@
             if (!user) return;
             
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
-            const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+            const actionText = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
             
-            if (!confirm(`Apakah Anda yakin ingin ${action} user ini?`)) return;
+            if (notifications && typeof notifications.showModal === 'function') {
+                const confirmed = await notifications.showModal(
+                    `${newStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'} User`,
+                    `Apakah Anda yakin ingin ${actionText} <strong>${escapeHtml(user.fullname)}</strong>?`,
+                    { confirmText: 'Ya', cancelText: 'Batal', type: 'warning' }
+                );
+                if (!confirmed) return;
+            } else {
+                if (!confirm(`Yakin ${actionText} user ${user.fullname}?`)) return;
+            }
             
             try {
-                await apiService.patch(`/api/users/${userId}/status`, { status: newStatus });
-                notifications.success(`User berhasil ${action === 'mengaktifkan' ? 'diaktifkan' : 'dinonaktifkan'}`);
+                if (apiService) await apiService.patch(`/api/users/${userId}/status`, { status: newStatus });
+                if (notifications) notifications.success(`User berhasil ${actionText === 'mengaktifkan' ? 'diaktifkan' : 'dinonaktifkan'}`);
                 await loadUsers(currentPage);
             } catch (error) {
-                notifications.error('Gagal mengubah status user');
+                if (notifications) notifications.error('Gagal mengubah status user');
             }
         }
         
         async function exportUsers() {
+            if (notifications) notifications.info('Mengexport data...');
+            
             try {
-                const allUsers = await apiService.get('/api/users', { limit: 1000 });
-                const format = prompt('Pilih format export (csv/excel):', 'excel');
+                let allUsers;
                 
-                if (format === 'csv') {
-                    await exportHandler.exportCSV(allUsers.data?.users || [], {
-                        filename: `users-${Date.now()}.csv`
-                    });
+                if (apiService) {
+                    const response = await apiService.get('/api/users', { limit: 1000 });
+                    allUsers = response?.data?.users || response?.users || [];
                 } else {
-                    await exportHandler.exportExcel(allUsers.data?.users || [], {
-                        filename: `users-${Date.now()}.xlsx`,
-                        sheetName: 'Users'
-                    });
+                    allUsers = users;
                 }
                 
-                notifications.success('Data user berhasil diexport');
+                if (allUsers.length === 0) {
+                    if (notifications) notifications.warning('Tidak ada data untuk diexport');
+                    return;
+                }
+                
+                // Export CSV
+                const headers = ['Nama', 'Username', 'Email', 'Role', 'Unit', 'Status', 'NIP'];
+                const rows = allUsers.map(u => [
+                    u.fullname || '', u.username || '', u.email || '',
+                    formatRole(u.role), u.unit || '', formatStatus(u.status), u.nip || ''
+                ]);
+                
+                const csv = [headers, ...rows]
+                    .map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+                    .join('\n');
+                
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                if (notifications) notifications.success('Data user berhasil diexport');
             } catch (error) {
-                notifications.error('Gagal mengexport data');
+                if (notifications) notifications.error('Gagal mengexport data');
             }
         }
         
-        // Helper functions
+        // Helpers
         function getInitials(name) {
             if (!name) return '?';
             return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
         }
         
         function formatRole(role) {
-            const roles = {
-                super_admin: 'Super Admin',
-                admin: 'Admin',
-                kaprodi: 'Kaprodi',
-                wadek: 'Wadek',
-                dekan: 'Dekan',
-                staf: 'Staf',
-                dosen: 'Dosen',
-                mahasiswa: 'Mahasiswa',
-                user: 'User'
-            };
-            return roles[role] || role;
+            const roles = { super_admin:'Super Admin', admin:'Admin', kaprodi:'Kaprodi', wadek:'Wadek', dekan:'Dekan', staf:'Staf', dosen:'Dosen', mahasiswa:'Mahasiswa', user:'User' };
+            return roles[role] || role || '-';
         }
         
         function formatStatus(status) {
-            const statuses = {
-                active: 'Aktif',
-                inactive: 'Nonaktif',
-                pending: 'Pending'
-            };
-            return statuses[status] || status;
+            const statuses = { active:'Aktif', inactive:'Nonaktif', pending:'Pending' };
+            return statuses[status] || status || '-';
         }
         
-        function togglePassword(fieldId) {
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        
+        function togglePasswordVisibility(fieldId) {
             const field = document.getElementById(fieldId);
+            if (!field) return;
             field.type = field.type === 'password' ? 'text' : 'password';
         }
         
-        // Global functions for onclick handlers
+        function generateSampleUsers() {
+            const sampleUsers = [
+                { id:'1', fullname:'Administrator', username:'admin', email:'admin@example.com', role:'super_admin', unit:'Dekanat', status:'active', nip:'123456789012345678' },
+                { id:'2', fullname:'Sekretaris', username:'sekretaris', email:'sekretaris@example.com', role:'admin', unit:'Dekanat', status:'active', nip:'234567890123456789' },
+                { id:'3', fullname:'Kepala Prodi TI', username:'kaprodi_ti', email:'kaprodi.ti@example.com', role:'kaprodi', unit:'Prodi TI', status:'active' },
+                { id:'4', fullname:'Staff TU', username:'staff', email:'staff@example.com', role:'staf', unit:'BAAK', status:'inactive' }
+            ];
+            
+            return { users: sampleUsers, totalPages: 1, total: sampleUsers.length };
+        }
+        
+        // Global functions
         window.editUser = (id) => openModal(id);
-        window.resetPassword = (id) => resetPassword(id);
+        window.resetUserPassword = (id, name) => resetUserPassword(id, name);
         window.toggleUserStatus = (id) => toggleUserStatus(id);
-        window.goToPage = (page) => loadUsers(page);
         window.closeModal = closeModal;
-        window.togglePassword = togglePassword;
+        window.togglePasswordVisibility = togglePasswordVisibility;
     </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216

@@ -1,20 +1,36 @@
 {
   "version": 2,
   "name": "e-arsip-digital",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm ci",
   "framework": null,
+  
+  "buildCommand": "if grep -q '\"build\"' package.json; then npm run build; else mkdir -p dist && cp -r *.html css/ js/ config/ components/ icons/ screenshots/ dashboard/ surat-keluar/ surat-masuk/ profile/ pengaturan/ manajemen-user/ notifikasi/ laporan/ log-aktivitas/ help/ sw.js manifest.json robots.txt dist/ 2>/dev/null || true; fi",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci --legacy-peer-deps",
+
+  "trailingSlash": false,
+  "cleanUrls": true,
+  
+  "github": {
+    "enabled": true,
+    "autoAlias": true,
+    "silent": false
+  },
+
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec/:path*"
+      "destination": "https://script.google.com/macros/s/${GOOGLE_SCRIPT_ID}/:path*",
+      "headers": {
+        "X-Forwarded-Host": "$host",
+        "X-Forwarded-For": "$remote_addr"
+      }
     },
     {
-      "source": "/((?!api|_next|_vercel|.*\\..*).*)",
+      "source": "/((?!api|_next|_vercel|assets|icons|screenshots|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],
+
   "redirects": [
     {
       "source": "/config/:path*",
@@ -27,6 +43,11 @@
       "permanent": false
     },
     {
+      "source": "/.env.:path*",
+      "destination": "/403.html",
+      "permanent": false
+    },
+    {
       "source": "/backups/:path*",
       "destination": "/403.html",
       "permanent": false
@@ -35,37 +56,173 @@
       "source": "/Google-Apps-Script/:path*",
       "destination": "/403.html",
       "permanent": false
+    },
+    {
+      "source": "/node_modules/:path*",
+      "destination": "/403.html",
+      "permanent": false
+    },
+    {
+      "source": "/tests/:path*",
+      "destination": "/403.html",
+      "permanent": false
+    },
+    {
+      "source": "/.git/:path*",
+      "destination": "/403.html",
+      "permanent": false
+    },
+    {
+      "source": "/(.*)//(.*)",
+      "destination": "/$1/$2",
+      "permanent": true
     }
   ],
+
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self' blob:;"
+        }
       ]
     },
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     },
     {
-      "source": "/(.*).html",
+      "source": "/(.*)\\.(js|css)$",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(woff|woff2|ttf|eot|otf)$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(png|jpg|jpeg|gif|webp|avif|svg|ico)$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.html$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-CSRF-Token, X-Requested-With"
+        }
       ]
     }
   ],
+
   "functions": {
     "api/**/*.js": {
       "memory": 256,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "runtime": "nodejs20.x"
     }
-  }
+  },
+
+  "crons": [
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/backup",
+      "schedule": "0 2 * * 0"
+    }
+  ]
 }

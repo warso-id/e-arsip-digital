@@ -1,418 +1,544 @@
-// js/security/secure-storage.js - Secure Browser Storage 2026
+// js/security/secure-storage.js - Secure Storage 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Secure Browser Storage
  * Version: 2026.1.0
- * Features: Encrypted localStorage/sessionStorage wrapper, TTL support,
- *           quota management, cross-tab sync
+ * 
+ * Features:
+ * - TTL support (auto-expiry)
+ * - Prefix isolation
+ * - Quota monitoring
+ * - Optional encryption (lightweight)
+ * - Cross-tab sync (storage event)
+ * - No external dependencies
  */
 
-import { Logger } from '../logger.js';
-import { EncryptionService } from './encryption.js';
-
-class SecureStorage {
-    constructor(options = {}) {
-        this.logger = new Logger('SecureStorage');
-        this.encryption = new EncryptionService();
-        
-        this.config = {
-            prefix: 'secure_',
-            encryptByDefault: true,
-            defaultTTL: 3600000, // 1 hour
-            quotaLimit: 5242880, // 5MB
-            ...options
-        };
-        
-        // Storage event listeners for cross-tab sync
-        this.listeners = new Map();
-        
-        this.init();
+var SecureStorage = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        prefix: 'earsip_',          // Prefix untuk semua key
+        defaultTTL: 3600000,        // 1 jam
+        quotaLimit: 5242880,        // 5MB
+        encryptByDefault: false     // FALSE - encryption optional
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _listeners = {};           // { key: [callback, ...] }
+    var _channel = null;           // BroadcastChannel (jika didukung)
+    
+    // ============================================
+    // SIMPLE OBFUSCATION (bukan encryption penuh)
+    // ============================================
+    
+    /**
+     * Simple obfuscate (bukan encryption aman!)
+     * Untuk menyembunyikan data dari casual inspection.
+     * Untuk keamanan penuh, gunakan EncryptionService terpisah.
+     */
+    function obfuscate(str) {
+        if (!str) return '';
+        var result = '';
+        for (var i = 0; i < str.length; i++) {
+            result += String.fromCharCode(str.charCodeAt(i) ^ 42);
+        }
+        return btoa(result);
     }
     
-    init() {
-        this.setupCrossTabSync();
-        this.logger.info('Secure storage initialized');
+    function deobfuscate(str) {
+        if (!str) return '';
+        try {
+            var decoded = atob(str);
+            var result = '';
+            for (var i = 0; i < decoded.length; i++) {
+                result += String.fromCharCode(decoded.charCodeAt(i) ^ 42);
+            }
+            return result;
+        } catch(e) {
+            return '';
+        }
+    }
+    
+    // ============================================
+    // KEY MANAGEMENT
+    // ============================================
+    
+    function prefixKey(key) {
+        return config.prefix + key;
+    }
+    
+    function unprefixKey(key) {
+        if (key.indexOf(config.prefix) === 0) {
+            return key.substring(config.prefix.length);
+        }
+        return key;
+    }
+    
+    function isOurKey(key) {
+        return key && key.indexOf(config.prefix) === 0;
     }
     
     // ============================================
     // CORE STORAGE METHODS
     // ============================================
     
-    async set(key, value, options = {}) {
-        const config = {
-            encrypt: this.config.encryptByDefault,
-            ttl: this.config.defaultTTL,
-            storage: 'localStorage',
-            ...options
-        };
+    /**
+     * Set value ke storage
+     */
+    function setItem(key, value, options) {
+        if (!key) return false;
+        
+        var opts = options || {};
+        var ttl = opts.ttl || config.defaultTTL;
+        var encrypt = opts.encrypt !== undefined ? opts.encrypt : config.encryptByDefault;
+        var storageType = opts.storage || 'localStorage';
         
         try {
-            const prefixedKey = this.prefixKey(key);
+            var storage = storageType === 'sessionStorage' ? sessionStorage : localStorage;
+            var prefixedKey = prefixKey(key);
             
-            // Prepare storage data
-            let storageData = {
-                value,
-                timestamp: Date.now(),
-                ttl: config.ttl
+            // Build storage object
+            var data = {
+                v: value,
+                t: Date.now(),
+                e: ttl
             };
             
-            // Encrypt if needed
-            if (config.encrypt) {
-                const jsonData = JSON.stringify(storageData);
-                storageData = {
-                    _encrypted: true,
-                    data: await this.encryption.encrypt(jsonData)
-                };
+            // Convert to string
+            var dataStr = JSON.stringify(data);
+            
+            // Optional obfuscation
+            if (encrypt) {
+                dataStr = obfuscate(dataStr);
             }
             
-            // Check quota before storing
-            if (!this.hasQuota(JSON.stringify(storageData).length)) {
-                throw new Error('Storage quota exceeded');
+            // Cek quota
+            var dataSize = (prefixedKey.length + dataStr.length) * 2; // UTF-16 bytes
+            if (dataSize > config.quotaLimit * 0.9) {
+                console.warn('[SecureStorage] Data too large: ' + dataSize + ' bytes');
+                return false;
             }
             
             // Store
-            const storage = config.storage === 'sessionStorage' ? sessionStorage : localStorage;
-            storage.setItem(prefixedKey, JSON.stringify(storageData));
+            storage.setItem(prefixedKey, dataStr);
             
-            // Broadcast to other tabs
-            this.broadcast('set', { key: prefixedKey });
+            // Cleanup old items periodically (1% chance)
+            if (Math.random() < 0.01) {
+                cleanup();
+            }
             
             return true;
-        } catch (error) {
-            this.logger.error('Failed to set secure storage', error);
+        } catch(e) {
+            // Storage full atau error lain
+            if (e.name === 'QuotaExceededError') {
+                console.warn('[SecureStorage] Quota exceeded, cleaning up...');
+                cleanup();
+                // Retry once
+                try {
+                    var storage2 = (options && options.storage === 'sessionStorage') ? sessionStorage : localStorage;
+                    storage2.setItem(prefixKey(key), JSON.stringify({ v: value, t: Date.now(), e: (options && options.ttl) || config.defaultTTL }));
+                    return true;
+                } catch(e2) {
+                    console.error('[SecureStorage] Storage full');
+                    return false;
+                }
+            }
+            console.error('[SecureStorage] Error:', e.message);
             return false;
         }
     }
     
-    async get(key, options = {}) {
-        const config = {
-            storage: 'localStorage',
-            ...options
-        };
+    /**
+     * Get value dari storage
+     */
+    function getItem(key, options) {
+        if (!key) return null;
+        
+        var opts = options || {};
+        var storageType = opts.storage || 'localStorage';
         
         try {
-            const prefixedKey = this.prefixKey(key);
-            const storage = config.storage === 'sessionStorage' ? sessionStorage : localStorage;
-            const rawData = storage.getItem(prefixedKey);
+            var storage = storageType === 'sessionStorage' ? sessionStorage : localStorage;
+            var prefixedKey = prefixKey(key);
+            var rawData = storage.getItem(prefixedKey);
             
             if (!rawData) return null;
             
-            const parsedData = JSON.parse(rawData);
-            
-            // Handle encrypted data
-            if (parsedData._encrypted) {
-                const decrypted = await this.encryption.decrypt(parsedData.data);
-                parsedData.value = JSON.parse(decrypted).value;
-            }
-            
-            // Check TTL
-            if (parsedData.ttl && parsedData.timestamp) {
-                const age = Date.now() - parsedData.timestamp;
-                if (age > parsedData.ttl) {
-                    this.remove(key, config);
+            // Parse data
+            var data;
+            try {
+                data = JSON.parse(rawData);
+            } catch(e) {
+                // Mungkin ter-obfuscate
+                var deobfuscated = deobfuscate(rawData);
+                if (deobfuscated) {
+                    try {
+                        data = JSON.parse(deobfuscated);
+                    } catch(e2) {
+                        // Data corrupted, remove
+                        storage.removeItem(prefixedKey);
+                        return null;
+                    }
+                } else {
+                    storage.removeItem(prefixedKey);
                     return null;
                 }
             }
             
-            return parsedData.value;
-        } catch (error) {
-            this.logger.error('Failed to get secure storage', error);
+            // Validasi struktur
+            if (!data || data.v === undefined) {
+                storage.removeItem(prefixedKey);
+                return null;
+            }
+            
+            // Check TTL
+            if (data.t && data.e) {
+                var age = Date.now() - data.t;
+                if (age > data.e) {
+                    storage.removeItem(prefixedKey);
+                    return null;
+                }
+            }
+            
+            return data.v;
+        } catch(e) {
+            console.error('[SecureStorage] Get error:', e.message);
             return null;
         }
     }
     
-    remove(key, options = {}) {
-        const config = {
-            storage: 'localStorage',
-            ...options
-        };
+    /**
+     * Remove value dari storage
+     */
+    function removeItem(key, options) {
+        if (!key) return;
         
-        const prefixedKey = this.prefixKey(key);
-        const storage = config.storage === 'sessionStorage' ? sessionStorage : localStorage;
-        storage.removeItem(prefixedKey);
+        var opts = options || {};
+        var storageType = opts.storage || 'localStorage';
+        var storage = storageType === 'sessionStorage' ? sessionStorage : localStorage;
         
-        this.broadcast('remove', { key: prefixedKey });
+        storage.removeItem(prefixKey(key));
     }
     
-    clear(options = {}) {
-        const config = {
-            storage: 'localStorage',
-            prefix: this.config.prefix,
-            ...options
-        };
-        
-        const storage = config.storage === 'sessionStorage' ? sessionStorage : localStorage;
-        
-        for (let i = storage.length - 1; i >= 0; i--) {
-            const key = storage.key(i);
-            if (key.startsWith(config.prefix)) {
-                storage.removeItem(key);
-            }
-        }
-        
-        this.broadcast('clear', { prefix: config.prefix });
-    }
-    
-    async keys(options = {}) {
-        const config = {
-            storage: 'localStorage',
-            ...options
-        };
-        
-        const storage = config.storage === 'sessionStorage' ? sessionStorage : localStorage;
-        const keys = [];
-        
-        for (let i = 0; i < storage.length; i++) {
-            const key = storage.key(i);
-            if (key.startsWith(this.config.prefix)) {
-                keys.push(this.unprefixKey(key));
-            }
-        }
-        
-        return keys;
-    }
-    
-    async has(key, options = {}) {
-        const value = await this.get(key, options);
-        return value !== null;
+    /**
+     * Check if key exists
+     */
+    function hasItem(key, options) {
+        return getItem(key, options) !== null;
     }
     
     // ============================================
     // BULK OPERATIONS
     // ============================================
     
-    async setMany(entries, options = {}) {
-        const results = [];
+    /**
+     * Get all keys with our prefix
+     */
+    function getKeys(options) {
+        var opts = options || {};
+        var storageType = opts.storage || 'localStorage';
+        var storage = storageType === 'sessionStorage' ? sessionStorage : localStorage;
         
-        for (const [key, value] of Object.entries(entries)) {
-            const result = await this.set(key, value, options);
-            results.push({ key, success: result });
+        var keys = [];
+        for (var i = 0; i < storage.length; i++) {
+            var key = storage.key(i);
+            if (isOurKey(key)) {
+                keys.push(unprefixKey(key));
+            }
         }
         
-        return results;
+        return keys;
     }
     
-    async getMany(keys, options = {}) {
-        const results = {};
+    /**
+     * Get all values (gunakan dengan hati-hati)
+     */
+    function getAll(options) {
+        var keys = getKeys(options);
+        var result = {};
         
-        for (const key of keys) {
-            results[key] = await this.get(key, options);
+        for (var i = 0; i < keys.length; i++) {
+            result[keys[i]] = getItem(keys[i], options);
         }
         
-        return results;
+        return result;
     }
     
-    async getAll(options = {}) {
-        const allKeys = await this.keys(options);
-        return this.getMany(allKeys, options);
+    /**
+     * Clear all items with our prefix
+     */
+    function clearAll(options) {
+        var opts = options || {};
+        var storageType = opts.storage || 'localStorage';
+        var storage = storageType === 'sessionStorage' ? sessionStorage : localStorage;
+        
+        var keysToRemove = [];
+        for (var i = 0; i < storage.length; i++) {
+            var key = storage.key(i);
+            if (isOurKey(key)) {
+                keysToRemove.push(key);
+            }
+        }
+        
+        for (var j = 0; j < keysToRemove.length; j++) {
+            storage.removeItem(keysToRemove[j]);
+        }
+        
+        return keysToRemove.length;
     }
     
     // ============================================
     // QUOTA MANAGEMENT
     // ============================================
     
-    hasQuota(additionalBytes = 0) {
-        try {
-            const currentUsage = this.getStorageUsage();
-            const total = currentUsage + additionalBytes;
-            
-            return total <= this.config.quotaLimit;
-        } catch {
-            return true; // If we can't check, allow
-        }
-    }
-    
-    getStorageUsage() {
-        let total = 0;
+    function getUsage() {
+        var total = 0;
         
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith(this.config.prefix)) {
-                const value = localStorage.getItem(key);
-                total += (key.length + value.length) * 2; // UTF-16
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (isOurKey(key)) {
+                var value = localStorage.getItem(key);
+                total += (key.length + (value ? value.length : 0)) * 2;
             }
         }
         
         return total;
     }
     
-    getStorageQuota() {
-        return this.config.quotaLimit;
-    }
-    
-    getStorageInfo() {
-        const usage = this.getStorageUsage();
-        const quota = this.config.quotaLimit;
+    function getStorageInfo() {
+        var usage = getUsage();
+        var keys = getKeys();
         
         return {
-            usage,
-            quota,
-            available: quota - usage,
-            percentUsed: ((usage / quota) * 100).toFixed(1),
-            items: this.countItems()
+            usage: usage,
+            quota: config.quotaLimit,
+            available: config.quotaLimit - usage,
+            percentUsed: Math.round((usage / config.quotaLimit) * 100),
+            itemCount: keys.length
         };
     }
     
-    countItems() {
-        let count = 0;
+    /**
+     * Cleanup expired items
+     */
+    function cleanup() {
+        var now = Date.now();
+        var removed = 0;
         
-        for (let i = 0; i < localStorage.length; i++) {
-            if (localStorage.key(i).startsWith(this.config.prefix)) {
-                count++;
+        var keysToCheck = [];
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (isOurKey(key)) {
+                keysToCheck.push(key);
             }
         }
         
-        return count;
-    }
-    
-    cleanup() {
-        // Remove expired items
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-            const key = localStorage.key(i);
-            
-            if (key.startsWith(this.config.prefix)) {
-                try {
-                    const data = JSON.parse(localStorage.getItem(key));
-                    
-                    if (data.timestamp && data.ttl) {
-                        const age = Date.now() - data.timestamp;
-                        if (age > data.ttl) {
-                            localStorage.removeItem(key);
-                        }
-                    }
-                } catch {
-                    // Remove corrupted data
-                    localStorage.removeItem(key);
-                }
-            }
-        }
-        
-        this.logger.info('Storage cleanup completed');
-    }
-    
-    // ============================================
-    // CROSS-TAB SYNCHRONIZATION
-    // ============================================
-    
-    setupCrossTabSync() {
-        window.addEventListener('storage', (event) => {
-            if (event.key?.startsWith(this.config.prefix)) {
-                const unprefixedKey = this.unprefixKey(event.key);
+        for (var j = 0; j < keysToCheck.length; j++) {
+            var key = keysToCheck[j];
+            try {
+                var raw = localStorage.getItem(key);
+                if (!raw) continue;
                 
-                if (event.newValue === null) {
-                    this.notifyListeners('remove', unprefixedKey, null);
-                } else {
-                    try {
-                        const data = JSON.parse(event.newValue);
-                        this.notifyListeners('change', unprefixedKey, data);
-                    } catch {
-                        // Ignore parse errors
-                    }
+                var data = JSON.parse(raw);
+                if (data && data.t && data.e && (now - data.t > data.e)) {
+                    localStorage.removeItem(key);
+                    removed++;
                 }
+            } catch(e) {
+                // Corrupted data
+                localStorage.removeItem(key);
+                removed++;
+            }
+        }
+        
+        if (removed > 0) {
+            console.debug('[SecureStorage] Cleaned ' + removed + ' expired items');
+        }
+    }
+    
+    // ============================================
+    // CROSS-TAB SYNC
+    // ============================================
+    
+    function setupCrossTabSync() {
+        // Storage event (semua browser)
+        window.addEventListener('storage', function(event) {
+            if (isOurKey(event.key)) {
+                var unprefixed = unprefixKey(event.key);
+                notifyListeners('change', unprefixed, event.newValue);
             }
         });
         
-        // BroadcastChannel for same-origin tabs
-        if ('BroadcastChannel' in window) {
-            this.channel = new BroadcastChannel('secure-storage-sync');
-            
-            this.channel.onmessage = (event) => {
-                const { action, key } = event.data;
-                
-                if (action === 'set') {
-                    this.notifyListeners('external_set', this.unprefixKey(key), null);
-                } else if (action === 'remove') {
-                    this.notifyListeners('external_remove', this.unprefixKey(key), null);
-                } else if (action === 'clear') {
-                    this.notifyListeners('external_clear', null, null);
+        // BroadcastChannel (jika didukung)
+        try {
+            if (window.BroadcastChannel) {
+                _channel = new BroadcastChannel('earsip_storage_sync');
+                _channel.onmessage = function(event) {
+                    notifyListeners('external', event.data.key, null);
+                };
+            }
+        } catch(e) {
+            // BroadcastChannel tidak didukung
+        }
+    }
+    
+    /**
+     * Listen untuk perubahan pada key tertentu
+     */
+    function onChange(key, callback) {
+        if (!_listeners[key]) {
+            _listeners[key] = [];
+        }
+        
+        _listeners[key].push(callback);
+        
+        // Return unsubscribe function
+        return function() {
+            if (_listeners[key]) {
+                _listeners[key] = _listeners[key].filter(function(cb) {
+                    return cb !== callback;
+                });
+                if (_listeners[key].length === 0) {
+                    delete _listeners[key];
                 }
-            };
-        }
-    }
-    
-    broadcast(action, data) {
-        if (this.channel) {
-            this.channel.postMessage({ action, ...data });
-        }
-    }
-    
-    onChange(key, callback) {
-        const unprefixedKey = typeof key === 'string' ? key : '*';
-        
-        if (!this.listeners.has(unprefixedKey)) {
-            this.listeners.set(unprefixedKey, new Set());
-        }
-        
-        this.listeners.get(unprefixedKey).add(callback);
-        
-        return () => {
-            this.listeners.get(unprefixedKey)?.delete(callback);
+            }
         };
     }
     
-    notifyListeners(event, key, data) {
-        // Notify specific key listeners
-        if (key && this.listeners.has(key)) {
-            this.listeners.get(key).forEach(cb => cb(event, data));
+    function notifyListeners(event, key, data) {
+        // Notify specific key
+        if (key && _listeners[key]) {
+            for (var i = 0; i < _listeners[key].length; i++) {
+                try {
+                    _listeners[key][i](event, data);
+                } catch(e) {}
+            }
         }
         
-        // Notify wildcard listeners
-        if (this.listeners.has('*')) {
-            this.listeners.get('*').forEach(cb => cb(event, key, data));
+        // Notify wildcard
+        if (_listeners['*']) {
+            for (var j = 0; j < _listeners['*'].length; j++) {
+                try {
+                    _listeners['*'][j](event, key, data);
+                } catch(e) {}
+            }
         }
     }
     
     // ============================================
-    // UTILITY METHODS
+    // INIT
     // ============================================
+    setupCrossTabSync();
     
-    prefixKey(key) {
-        return `${this.config.prefix}${key}`;
-    }
-    
-    unprefixKey(prefixedKey) {
-        return prefixedKey.replace(this.config.prefix, '');
-    }
-    
-    async exportData(options = {}) {
-        const allData = await this.getAll(options);
-        
-        return {
-            version: '2026.1.0',
-            exportedAt: new Date().toISOString(),
-            prefix: this.config.prefix,
-            data: allData
-        };
-    }
-    
-    async importData(exportedData, options = {}) {
-        if (!exportedData?.data) {
-            throw new Error('Invalid import data');
-        }
-        
-        const results = await this.setMany(exportedData.data, options);
-        
-        return {
-            total: results.length,
-            success: results.filter(r => r.success).length,
-            failed: results.filter(r => !r.success).length
-        };
-    }
+    // Cleanup saat startup
+    setTimeout(cleanup, 1000);
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    destroy() {
-        if (this.channel) {
-            this.channel.close();
-        }
+    return {
+        /**
+         * Set value
+         */
+        set: setItem,
         
-        this.listeners.clear();
-        this.logger.info('Secure storage destroyed');
-    }
-}
+        /**
+         * Get value
+         */
+        get: getItem,
+        
+        /**
+         * Remove value
+         */
+        remove: removeItem,
+        
+        /**
+         * Check if key exists
+         */
+        has: hasItem,
+        
+        /**
+         * Get all keys
+         */
+        keys: getKeys,
+        
+        /**
+         * Get all values
+         */
+        getAll: getAll,
+        
+        /**
+         * Clear all items
+         */
+        clear: clearAll,
+        
+        /**
+         * Get storage info
+         */
+        getInfo: getStorageInfo,
+        
+        /**
+         * Get storage usage
+         */
+        getUsage: getUsage,
+        
+        /**
+         * Manual cleanup
+         */
+        cleanup: cleanup,
+        
+        /**
+         * Listen for changes
+         */
+        onChange: onChange,
+        
+        /**
+         * Update config
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+            }
+        },
+        
+        /**
+         * Destroy
+         */
+        destroy: function() {
+            if (_channel) {
+                _channel.close();
+                _channel = null;
+            }
+            _listeners = {};
+        }
+    };
+})();
 
-const secureStorage = new SecureStorage();
-
-export default secureStorage;
-export { SecureStorage };
+// ============================================
+// USAGE:
+// ============================================
+// // Basic
+// SecureStorage.set('user_prefs', { theme: 'dark' }, { ttl: 86400000 });
+// var prefs = SecureStorage.get('user_prefs');
+// 
+// // With obfuscation
+// SecureStorage.set('token', 'abc123', { encrypt: true });
+// 
+// // Listen for changes
+// var unsubscribe = SecureStorage.onChange('user_prefs', function(event, data) {
+//     console.log('Changed:', event, data);
+// });
+// 
+// // Storage info
+// var info = SecureStorage.getInfo();
+// console.log(info.percentUsed + '% used');
+// ============================================

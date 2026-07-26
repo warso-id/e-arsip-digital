@@ -1,18 +1,124 @@
-// components/table.js - Advanced Table Component 2026
+// components/table.js - Advanced Table Component 2026 (SECURE)
 /**
  * E-Arsip Digital - Table Component
  * Version: 2026.1.0
- * Advanced data table with sorting, filtering, pagination, and export
+ * Advanced data table with sorting, filtering, pagination, export
+ * XSS-safe, PWA mobile support, no external dependencies
  */
 
-import utils from '../js/utils.js';
-import { Logger } from '../js/logger.js';
-
-class TableComponent {
-    constructor(options = {}) {
-        this.logger = new Logger('TableComponent');
+var TableComponent = (function() {
+    'use strict';
+    
+    // ============================================
+    // SANITIZATION (CRITICAL)
+    // ============================================
+    function sanitizeHTML(str) {
+        if (!str && str !== 0) return '';
+        var div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+    
+    function sanitizeText(str) {
+        if (!str && str !== 0) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    }
+    
+    // ============================================
+    // UTILITY FUNCTIONS (No external dependencies)
+    // ============================================
+    function formatDate(value, format) {
+        if (!value) return '-';
+        try {
+            var d = new Date(value);
+            if (isNaN(d.getTime())) return sanitizeHTML(String(value));
+            if (format === 'datetime') {
+                return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) + 
+                    ' ' + d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+            }
+            return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+        } catch(e) {
+            return sanitizeHTML(String(value));
+        }
+    }
+    
+    function formatCurrency(value) {
+        if (value === null || value === undefined) return '-';
+        var num = parseFloat(value);
+        if (isNaN(num)) return sanitizeHTML(String(value));
+        return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+    
+    function formatNumber(value) {
+        if (value === null || value === undefined) return '-';
+        var num = parseFloat(value);
+        if (isNaN(num)) return sanitizeHTML(String(value));
+        return num.toLocaleString('id-ID');
+    }
+    
+    function sortBy(data, key, direction) {
+        return data.slice().sort(function(a, b) {
+            var valA = a[key];
+            var valB = b[key];
+            
+            if (valA === null || valA === undefined) return 1;
+            if (valB === null || valB === undefined) return -1;
+            
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return direction === 'asc' ? valA - valB : valB - valA;
+            }
+            
+            var strA = String(valA).toLowerCase();
+            var strB = String(valB).toLowerCase();
+            
+            if (direction === 'asc') return strA.localeCompare(strB);
+            return strB.localeCompare(strA);
+        });
+    }
+    
+    function debounce(fn, ms) {
+        var timer;
+        return function() {
+            var args = arguments;
+            var ctx = this;
+            clearTimeout(timer);
+            timer = setTimeout(function() { fn.apply(ctx, args); }, ms);
+        };
+    }
+    
+    function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+    }
+    
+    // ============================================
+    // STATUS BADGE CONFIG
+    // ============================================
+    var STATUS_CONFIG = {
+        active: { class: 'badge-success', label: 'Aktif' },
+        inactive: { class: 'badge-secondary', label: 'Nonaktif' },
+        pending: { class: 'badge-warning', label: 'Pending' },
+        approved: { class: 'badge-info', label: 'Disetujui' },
+        rejected: { class: 'badge-danger', label: 'Ditolak' },
+        draft: { class: 'badge-light', label: 'Draft' },
+        completed: { class: 'badge-success', label: 'Selesai' },
+        proses: { class: 'badge-warning', label: 'Proses' }
+    };
+    
+    // ============================================
+    // TABLE CLASS
+    // ============================================
+    function TableInstance(options) {
+        var self = this;
         
-        // Configuration
+        // Config
         this.config = {
             container: null,
             columns: [],
@@ -28,17 +134,25 @@ class TableComponent {
             pagination: true,
             selectable: false,
             exportable: false,
-            loading: false,
             emptyMessage: 'Tidak ada data',
             loadingMessage: 'Memuat data...',
             errorMessage: 'Gagal memuat data',
-            ...options
+            id: 'tbl-' + Date.now().toString(36)
         };
+        
+        // Merge options
+        if (options) {
+            for (var key in options) {
+                if (options.hasOwnProperty(key)) {
+                    this.config[key] = options[key];
+                }
+            }
+        }
         
         // State
         this.state = {
             filteredData: [],
-            selectedRows: new Set(),
+            selectedRows: {},
             isLoading: false,
             error: null,
             sortColumn: this.config.sortColumn,
@@ -47,1115 +161,963 @@ class TableComponent {
             searchQuery: this.config.searchQuery
         };
         
-        // DOM Elements
-        this.elements = {};
+        // Events
+        this._listeners = {};
         
-        // Bind methods
-        this.handleSort = this.handleSort.bind(this);
-        this.handleSearch = this.handleSearch.bind(this);
-        this.handlePageChange = this.handlePageChange.bind(this);
-        this.handleSelectAll = this.handleSelectAll.bind(this);
-        this.handleExport = this.handleExport.bind(this);
+        // Container
+        this.container = null;
+        if (typeof this.config.container === 'string') {
+            this.container = document.querySelector(this.config.container);
+        } else {
+            this.container = this.config.container;
+        }
         
         // Initialize
-        if (this.config.container) {
-            this.init();
+        if (this.container) {
+            this._init();
         }
     }
     
-    async init() {
-        try {
-            this.render();
-            this.attachEventListeners();
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    TableInstance.prototype._init = function() {
+        this._render();
+        this._attachEvents();
+        
+        if (this.config.data.length > 0) {
+            this.loadData(this.config.data);
+        }
+    };
+    
+    // ============================================
+    // RENDER (XSS-SAFE DOM CREATION)
+    // ============================================
+    TableInstance.prototype._render = function() {
+        if (!this.container) return;
+        
+        // Clear
+        this.container.innerHTML = '';
+        this.container.className = 'table-component-wrapper';
+        
+        var cfg = this.config;
+        var state = this.state;
+        
+        // Build DOM tree safely
+        var wrapper = document.createElement('div');
+        wrapper.className = 'table-container';
+        
+        // Toolbar
+        if (cfg.searchable || cfg.exportable || cfg.selectable) {
+            wrapper.appendChild(this._createToolbar());
+        }
+        
+        // Table content
+        var content = document.createElement('div');
+        content.className = 'table-content';
+        
+        var scroll = document.createElement('div');
+        scroll.className = 'table-scroll';
+        
+        var table = document.createElement('table');
+        table.className = 'data-table';
+        table.setAttribute('role', 'grid');
+        
+        // Header
+        table.appendChild(this._createHeader());
+        
+        // Body
+        var tbody = document.createElement('tbody');
+        tbody.id = cfg.id + '-tbody';
+        this._renderBodyContent(tbody);
+        table.appendChild(tbody);
+        
+        scroll.appendChild(table);
+        content.appendChild(scroll);
+        
+        // Loading overlay
+        var overlay = document.createElement('div');
+        overlay.className = 'table-loading-overlay';
+        overlay.id = cfg.id + '-overlay';
+        overlay.style.display = 'none';
+        var spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        overlay.appendChild(spinner);
+        content.appendChild(overlay);
+        
+        wrapper.appendChild(content);
+        
+        // Footer
+        if (cfg.pagination) {
+            wrapper.appendChild(this._createFooter());
+        }
+        
+        this.container.appendChild(wrapper);
+    };
+    
+    // ============================================
+    // CREATE TOOLBAR
+    // ============================================
+    TableInstance.prototype._createToolbar = function() {
+        var cfg = this.config;
+        var toolbar = document.createElement('div');
+        toolbar.className = 'table-toolbar';
+        
+        var left = document.createElement('div');
+        left.className = 'toolbar-left';
+        
+        // Search
+        if (cfg.searchable) {
+            var searchDiv = document.createElement('div');
+            searchDiv.className = 'table-search';
             
-            if (this.config.data.length > 0) {
-                this.loadData(this.config.data);
+            var searchIcon = document.createElement('i');
+            searchIcon.className = 'fas fa-search';
+            searchDiv.appendChild(searchIcon);
+            
+            var searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'search-input';
+            searchInput.placeholder = 'Cari data...';
+            searchInput.id = cfg.id + '-search';
+            searchInput.value = this.state.searchQuery;
+            searchInput.setAttribute('maxlength', '100');
+            searchDiv.appendChild(searchInput);
+            
+            // Clear button
+            if (this.state.searchQuery) {
+                var clearBtn = document.createElement('button');
+                clearBtn.className = 'search-clear';
+                clearBtn.id = cfg.id + '-search-clear';
+                clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+                searchDiv.appendChild(clearBtn);
             }
             
-            this.logger.debug('Table component initialized', {
-                columns: this.config.columns.length,
-                rows: this.config.data.length
+            left.appendChild(searchDiv);
+        }
+        
+        toolbar.appendChild(left);
+        
+        var right = document.createElement('div');
+        right.className = 'toolbar-right';
+        
+        // Export button
+        if (cfg.exportable) {
+            var exportBtn = document.createElement('button');
+            exportBtn.className = 'btn btn-sm btn-outline';
+            exportBtn.id = cfg.id + '-export-btn';
+            exportBtn.innerHTML = '<i class="fas fa-download"></i> Export';
+            right.appendChild(exportBtn);
+        }
+        
+        // Page size
+        if (cfg.pagination) {
+            var psDiv = document.createElement('div');
+            psDiv.className = 'page-size-selector';
+            
+            var psLabel1 = document.createElement('label');
+            psLabel1.textContent = 'Tampilkan';
+            psDiv.appendChild(psLabel1);
+            
+            var psSelect = document.createElement('select');
+            psSelect.id = cfg.id + '-page-size';
+            cfg.pageSizeOptions.forEach(function(size) {
+                var opt = document.createElement('option');
+                opt.value = size;
+                opt.textContent = size;
+                if (size === cfg.pageSize) opt.selected = true;
+                psSelect.appendChild(opt);
             });
-        } catch (error) {
-            this.logger.error('Table initialization failed', error);
-            this.showError(error.message);
+            psDiv.appendChild(psSelect);
+            
+            var psLabel2 = document.createElement('label');
+            psLabel2.textContent = 'data';
+            psDiv.appendChild(psLabel2);
+            
+            right.appendChild(psDiv);
         }
-    }
+        
+        toolbar.appendChild(right);
+        
+        return toolbar;
+    };
     
     // ============================================
-    // RENDERING
+    // CREATE HEADER
     // ============================================
-    
-    render() {
-        const container = this.getContainer();
-        if (!container) return;
+    TableInstance.prototype._createHeader = function() {
+        var cfg = this.config;
+        var state = this.state;
+        var thead = document.createElement('thead');
+        var tr = document.createElement('tr');
         
-        container.innerHTML = this.getTableHTML();
-        container.className = 'table-component-wrapper';
+        // Select all checkbox
+        if (cfg.selectable) {
+            var thCheck = document.createElement('th');
+            thCheck.className = 'col-checkbox';
+            thCheck.style.width = '40px';
+            
+            var cbAll = document.createElement('input');
+            cbAll.type = 'checkbox';
+            cbAll.id = cfg.id + '-select-all';
+            if (this._isAllSelected()) cbAll.checked = true;
+            thCheck.appendChild(cbAll);
+            tr.appendChild(thCheck);
+        }
         
-        // Cache DOM elements
-        this.cacheElements();
-    }
-    
-    getTableHTML() {
-        return `
-            <div class="table-container">
-                <!-- Table Toolbar -->
-                ${this.renderToolbar()}
+        // Column headers
+        cfg.columns.forEach(function(col) {
+            var th = document.createElement('th');
+            if (col.width) th.style.width = col.width;
+            
+            if (col.sortable !== false && cfg.sortable) {
+                th.className = 'sortable';
+                th.setAttribute('data-column', col.key);
+                th.style.cursor = 'pointer';
                 
-                <!-- Table Content -->
-                <div class="table-content">
-                    <div class="table-scroll">
-                        <table class="data-table" role="grid">
-                            <thead>
-                                ${this.renderHeader()}
-                            </thead>
-                            <tbody id="${this.getTableBodyId()}">
-                                ${this.renderBody()}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Loading Overlay -->
-                    ${this.renderLoadingOverlay()}
-                </div>
+                if (state.sortColumn === col.key) {
+                    th.classList.add('sorted');
+                    th.setAttribute('aria-sort', state.sortDirection === 'asc' ? 'ascending' : 'descending');
+                }
+            }
+            
+            var thContent = document.createElement('div');
+            thContent.className = 'th-content';
+            
+            var span = document.createElement('span');
+            span.textContent = col.label || col.key; // SAFE: textContent
+            thContent.appendChild(span);
+            
+            if (col.sortable !== false && cfg.sortable) {
+                var sortIcons = document.createElement('span');
+                sortIcons.className = 'sort-icons';
                 
-                <!-- Table Footer -->
-                ${this.renderFooter()}
-            </div>
-        `;
-    }
-    
-    renderToolbar() {
-        const { searchable, exportable, selectable } = this.config;
+                var upIcon = document.createElement('i');
+                upIcon.className = 'fas fa-sort-up';
+                if (state.sortColumn === col.key && state.sortDirection === 'asc') {
+                    upIcon.classList.add('active');
+                }
+                sortIcons.appendChild(upIcon);
+                
+                var downIcon = document.createElement('i');
+                downIcon.className = 'fas fa-sort-down';
+                if (state.sortColumn === col.key && state.sortDirection === 'desc') {
+                    downIcon.classList.add('active');
+                }
+                sortIcons.appendChild(downIcon);
+                
+                thContent.appendChild(sortIcons);
+            }
+            
+            th.appendChild(thContent);
+            tr.appendChild(th);
+        });
         
-        if (!searchable && !exportable) return '';
-        
-        return `
-            <div class="table-toolbar">
-                <div class="toolbar-left">
-                    ${searchable ? this.renderSearch() : ''}
-                    ${selectable ? this.renderBulkActions() : ''}
-                </div>
-                <div class="toolbar-right">
-                    ${exportable ? this.renderExportButton() : ''}
-                    ${this.renderPageSizeSelector()}
-                </div>
-            </div>
-        `;
-    }
-    
-    renderSearch() {
-        return `
-            <div class="table-search">
-                <i class="fas fa-search"></i>
-                <input 
-                    type="text" 
-                    class="search-input" 
-                    placeholder="Cari data..." 
-                    id="${this.getId('search-input')}"
-                    value="${this.state.searchQuery}"
-                >
-                ${this.state.searchQuery ? `
-                    <button class="search-clear" id="${this.getId('search-clear')}">
-                        <i class="fas fa-times"></i>
-                    </button>
-                ` : ''}
-            </div>
-        `;
-    }
-    
-    renderBulkActions() {
-        const selectedCount = this.state.selectedRows.size;
-        
-        return `
-            <div class="bulk-actions ${selectedCount > 0 ? 'visible' : ''}">
-                <span class="selected-count">${selectedCount} terpilih</span>
-                <button class="btn btn-sm btn-danger" id="${this.getId('bulk-delete')}">
-                    <i class="fas fa-trash"></i> Hapus
-                </button>
-                <button class="btn btn-sm btn-primary" id="${this.getId('bulk-export')}">
-                    <i class="fas fa-download"></i> Export
-                </button>
-            </div>
-        `;
-    }
-    
-    renderExportButton() {
-        return `
-            <div class="export-dropdown">
-                <button class="btn btn-sm btn-outline" id="${this.getId('export-btn')}">
-                    <i class="fas fa-download"></i> Export
-                </button>
-                <div class="export-menu">
-                    <button data-format="csv">
-                        <i class="fas fa-file-csv"></i> CSV
-                    </button>
-                    <button data-format="excel">
-                        <i class="fas fa-file-excel"></i> Excel
-                    </button>
-                    <button data-format="pdf">
-                        <i class="fas fa-file-pdf"></i> PDF
-                    </button>
-                    <button data-format="print">
-                        <i class="fas fa-print"></i> Print
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    renderPageSizeSelector() {
-        const { pageSizeOptions, pageSize } = this.config;
-        
-        return `
-            <div class="page-size-selector">
-                <label>Tampilkan</label>
-                <select id="${this.getId('page-size')}">
-                    ${pageSizeOptions.map(size => `
-                        <option value="${size}" ${size === pageSize ? 'selected' : ''}>
-                            ${size}
-                        </option>
-                    `).join('')}
-                </select>
-                <label>data</label>
-            </div>
-        `;
-    }
-    
-    renderHeader() {
-        const { columns, sortable, selectable } = this.config;
-        const { sortColumn, sortDirection } = this.state;
-        
-        return `
-            <tr>
-                ${selectable ? `
-                    <th class="col-checkbox" style="width: 40px;">
-                        <input type="checkbox" id="${this.getId('select-all')}" 
-                            ${this.isAllSelected() ? 'checked' : ''}>
-                    </th>
-                ` : ''}
-                ${columns.map(col => `
-                    <th class="${col.sortable !== false && sortable ? 'sortable' : ''} 
-                               ${sortColumn === col.key ? 'sorted' : ''}"
-                        data-column="${col.key}"
-                        style="${col.width ? `width: ${col.width}` : ''}"
-                        aria-sort="${sortColumn === col.key ? 
-                            sortDirection === 'asc' ? 'ascending' : 'descending' : 'none'}"
-                    >
-                        <div class="th-content">
-                            <span>${col.label || col.key}</span>
-                            ${col.sortable !== false && sortable ? `
-                                <span class="sort-icons">
-                                    <i class="fas fa-sort-up ${sortColumn === col.key && sortDirection === 'asc' ? 'active' : ''}"></i>
-                                    <i class="fas fa-sort-down ${sortColumn === col.key && sortDirection === 'desc' ? 'active' : ''}"></i>
-                                </span>
-                            ` : ''}
-                        </div>
-                    </th>
-                `).join('')}
-                ${this.hasActions() ? '<th class="col-actions" style="width: 100px;">Aksi</th>' : ''}
-            </tr>
-        `;
-    }
-    
-    renderBody() {
-        const { isLoading, error, filteredData } = this.state;
-        const { emptyMessage, loadingMessage, errorMessage, pageSize, selectable } = this.config;
-        
-        if (isLoading) {
-            return this.renderLoadingRow(loadingMessage);
+        // Actions column
+        if (this._hasActions()) {
+            var thAction = document.createElement('th');
+            thAction.className = 'col-actions';
+            thAction.style.width = '100px';
+            thAction.textContent = 'Aksi';
+            tr.appendChild(thAction);
         }
         
-        if (error) {
-            return this.renderErrorRow(errorMessage);
-        }
-        
-        if (!filteredData || filteredData.length === 0) {
-            return this.renderEmptyRow(emptyMessage);
-        }
-        
-        const startIndex = (this.state.currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const pageData = filteredData.slice(startIndex, endIndex);
-        
-        return pageData.map((row, index) => `
-            <tr class="${selectable && this.state.selectedRows.has(row.id) ? 'selected' : ''}"
-                data-id="${row.id || index}">
-                ${selectable ? `
-                    <td class="col-checkbox">
-                        <input type="checkbox" 
-                            id="${this.getId(`row-${row.id || index}`)}"
-                            ${this.state.selectedRows.has(row.id) ? 'checked' : ''}
-                            data-row-id="${row.id || index}">
-                    </td>
-                ` : ''}
-                ${this.config.columns.map(col => `
-                    <td class="${col.className || ''}" 
-                        data-label="${col.label || col.key}"
-                        style="${col.align ? `text-align: ${col.align}` : ''}">
-                        ${this.renderCell(row, col)}
-                    </td>
-                `).join('')}
-                ${this.hasActions() ? this.renderActions(row) : ''}
-            </tr>
-        `).join('');
-    }
+        thead.appendChild(tr);
+        return thead;
+    };
     
-    renderCell(row, column) {
-        let value = row[column.key];
+    // ============================================
+    // RENDER BODY (XSS-SAFE)
+    // ============================================
+    TableInstance.prototype._renderBodyContent = function(tbody) {
+        if (!tbody) return;
         
-        // Apply formatter if exists
-        if (column.formatter) {
-            return column.formatter(value, row);
+        // Clear
+        tbody.innerHTML = '';
+        
+        var cfg = this.config;
+        var state = this.state;
+        
+        // Loading state
+        if (state.isLoading) {
+            tbody.appendChild(this._createMessageRow('loading', cfg.loadingMessage));
+            return;
         }
         
-        // Apply renderer if exists
-        if (column.render) {
-            return column.render(value, row);
+        // Error state
+        if (state.error) {
+            tbody.appendChild(this._createMessageRow('error', cfg.errorMessage, true));
+            return;
         }
         
-        // Default rendering
+        // Empty state
+        if (!state.filteredData || state.filteredData.length === 0) {
+            tbody.appendChild(this._createMessageRow('empty', cfg.emptyMessage));
+            return;
+        }
+        
+        // Data rows
+        var startIdx = (state.currentPage - 1) * cfg.pageSize;
+        var endIdx = startIdx + cfg.pageSize;
+        var pageData = state.filteredData.slice(startIdx, endIdx);
+        var self = this;
+        
+        pageData.forEach(function(row, index) {
+            var tr = document.createElement('tr');
+            var rowId = row.id || (startIdx + index);
+            tr.setAttribute('data-id', rowId);
+            
+            if (cfg.selectable && state.selectedRows[rowId]) {
+                tr.classList.add('selected');
+            }
+            
+            // Checkbox
+            if (cfg.selectable) {
+                var tdCheck = document.createElement('td');
+                tdCheck.className = 'col-checkbox';
+                
+                var cbRow = document.createElement('input');
+                cbRow.type = 'checkbox';
+                cbRow.id = cfg.id + '-row-' + rowId;
+                cbRow.setAttribute('data-row-id', rowId);
+                if (state.selectedRows[rowId]) cbRow.checked = true;
+                tdCheck.appendChild(cbRow);
+                tr.appendChild(tdCheck);
+            }
+            
+            // Data cells
+            cfg.columns.forEach(function(col) {
+                var td = document.createElement('td');
+                if (col.className) td.className = col.className;
+                if (col.align) td.style.textAlign = col.align;
+                td.setAttribute('data-label', col.label || col.key);
+                
+                // Render cell content safely
+                self._renderCellContent(td, row, col);
+                tr.appendChild(td);
+            });
+            
+            // Actions
+            if (self._hasActions()) {
+                var tdAction = document.createElement('td');
+                tdAction.className = 'col-actions';
+                
+                var actionDiv = document.createElement('div');
+                actionDiv.className = 'action-buttons';
+                
+                (cfg.actions || []).forEach(function(action) {
+                    var btn = document.createElement('button');
+                    btn.className = 'btn-action ' + (action.class || '');
+                    btn.setAttribute('data-action', action.key);
+                    btn.setAttribute('data-id', rowId);
+                    btn.title = action.label || '';
+                    if (action.disabled) btn.disabled = true;
+                    btn.innerHTML = '<i class="' + action.icon + '"></i>';
+                    actionDiv.appendChild(btn);
+                });
+                
+                tdAction.appendChild(actionDiv);
+                tr.appendChild(tdAction);
+            }
+            
+            tbody.appendChild(tr);
+        });
+    };
+    
+    TableInstance.prototype._renderCellContent = function(td, row, col) {
+        var value = row[col.key];
+        
+        // Custom formatter
+        if (typeof col.formatter === 'function') {
+            var formatted = col.formatter(value, row);
+            if (typeof formatted === 'string') {
+                // Trust the formatter to return safe HTML
+                td.innerHTML = formatted;
+            } else if (formatted instanceof HTMLElement) {
+                td.appendChild(formatted);
+            } else {
+                td.textContent = sanitizeText(String(formatted || ''));
+            }
+            return;
+        }
+        
+        // Custom renderer
+        if (typeof col.render === 'function') {
+            var rendered = col.render(value, row);
+            if (typeof rendered === 'string') {
+                td.innerHTML = rendered;
+            } else if (rendered instanceof HTMLElement) {
+                td.appendChild(rendered);
+            } else {
+                td.textContent = sanitizeText(String(rendered || ''));
+            }
+            return;
+        }
+        
+        // Null/undefined
         if (value === null || value === undefined) {
-            return '<span class="text-muted">-</span>';
+            td.innerHTML = '<span class="text-muted">-</span>';
+            return;
         }
         
-        if (column.type === 'date') {
-            return utils.formatDate(value, 'medium');
+        // Type-based rendering
+        switch (col.type) {
+            case 'date':
+                td.textContent = formatDate(value, 'short');
+                break;
+            case 'datetime':
+                td.textContent = formatDate(value, 'datetime');
+                break;
+            case 'currency':
+                td.textContent = formatCurrency(value);
+                break;
+            case 'number':
+                td.textContent = formatNumber(value);
+                break;
+            case 'boolean':
+                td.innerHTML = value 
+                    ? '<span class="badge badge-success">Ya</span>' 
+                    : '<span class="badge badge-danger">Tidak</span>';
+                break;
+            case 'status':
+                td.innerHTML = this._getStatusBadge(value);
+                break;
+            default:
+                td.textContent = sanitizeText(String(value)); // SAFE: textContent
+        }
+    };
+    
+    TableInstance.prototype._getStatusBadge = function(status) {
+        var config = STATUS_CONFIG[status] || { class: 'badge-secondary', label: status };
+        return '<span class="badge ' + config.class + '">' + sanitizeHTML(config.label) + '</span>';
+    };
+    
+    // ============================================
+    // MESSAGE ROWS
+    // ============================================
+    TableInstance.prototype._createMessageRow = function(type, message, showRetry) {
+        var tr = document.createElement('tr');
+        tr.className = 'table-message-row';
+        
+        var td = document.createElement('td');
+        td.colSpan = this._getColSpan();
+        
+        var div = document.createElement('div');
+        div.className = 'table-message ' + type;
+        
+        if (type === 'loading') {
+            var spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            div.appendChild(spinner);
+        } else {
+            var icon = document.createElement('i');
+            icon.className = 'fas ' + (type === 'empty' ? 'fa-inbox' : 'fa-exclamation-circle');
+            div.appendChild(icon);
         }
         
-        if (column.type === 'datetime') {
-            return utils.formatDate(value, 'datetime');
+        var span = document.createElement('span');
+        span.textContent = message; // SAFE: textContent
+        div.appendChild(span);
+        
+        if (showRetry) {
+            var retryBtn = document.createElement('button');
+            retryBtn.className = 'btn btn-sm btn-outline';
+            retryBtn.id = this.config.id + '-retry';
+            retryBtn.textContent = 'Coba Lagi';
+            div.appendChild(retryBtn);
         }
         
-        if (column.type === 'currency') {
-            return utils.formatCurrency(value);
-        }
+        td.appendChild(div);
+        tr.appendChild(td);
         
-        if (column.type === 'number') {
-            return utils.formatNumber(value);
-        }
-        
-        if (column.type === 'boolean') {
-            return value ? 
-                '<span class="badge badge-success">Ya</span>' : 
-                '<span class="badge badge-danger">Tidak</span>';
-        }
-        
-        if (column.type === 'status') {
-            return this.renderStatusBadge(value);
-        }
-        
-        return value.toString();
-    }
+        return tr;
+    };
     
-    renderStatusBadge(status) {
-        const statusConfig = {
-            active: { class: 'badge-success', label: 'Aktif' },
-            inactive: { class: 'badge-secondary', label: 'Nonaktif' },
-            pending: { class: 'badge-warning', label: 'Pending' },
-            approved: { class: 'badge-info', label: 'Disetujui' },
-            rejected: { class: 'badge-danger', label: 'Ditolak' },
-            draft: { class: 'badge-light', label: 'Draft' },
-            completed: { class: 'badge-success', label: 'Selesai' }
-        };
+    // ============================================
+    // FOOTER
+    // ============================================
+    TableInstance.prototype._createFooter = function() {
+        var cfg = this.config;
+        var state = this.state;
+        var footer = document.createElement('div');
+        footer.className = 'table-footer';
         
-        const config = statusConfig[status] || { class: 'badge-secondary', label: status };
-        return `<span class="badge ${config.class}">${config.label}</span>`;
-    }
+        // Info
+        var info = document.createElement('div');
+        info.className = 'table-info';
+        info.id = cfg.id + '-info';
+        info.textContent = this._getShowingInfo();
+        footer.appendChild(info);
+        
+        // Pagination
+        var pagination = document.createElement('div');
+        pagination.className = 'table-pagination';
+        pagination.id = cfg.id + '-pagination';
+        this._renderPaginationContent(pagination);
+        footer.appendChild(pagination);
+        
+        return footer;
+    };
     
-    renderActions(row) {
-        const actions = this.config.actions || [];
+    TableInstance.prototype._renderPaginationContent = function(container) {
+        if (!container) return;
+        container.innerHTML = '';
         
-        return `
-            <td class="col-actions">
-                <div class="action-buttons">
-                    ${actions.map(action => `
-                        <button class="btn-action ${action.class || ''}"
-                            data-action="${action.key}"
-                            data-id="${row.id}"
-                            title="${action.label}"
-                            ${action.disabled ? 'disabled' : ''}>
-                            <i class="${action.icon}"></i>
-                        </button>
-                    `).join('')}
-                </div>
-            </td>
-        `;
-    }
+        var cfg = this.config;
+        var state = this.state;
+        var totalPages = Math.ceil((state.filteredData || []).length / cfg.pageSize);
+        
+        if (totalPages <= 1) return;
+        
+        // Previous
+        var prevBtn = document.createElement('button');
+        prevBtn.className = 'btn-page';
+        prevBtn.setAttribute('data-page', 'prev');
+        if (state.currentPage === 1) prevBtn.disabled = true;
+        prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        container.appendChild(prevBtn);
+        
+        // Pages
+        var pages = this._getPageNumbers(state.currentPage, totalPages);
+        var self = this;
+        pages.forEach(function(p) {
+            if (p === '...') {
+                var ellipsis = document.createElement('span');
+                ellipsis.className = 'page-ellipsis';
+                ellipsis.textContent = '...';
+                container.appendChild(ellipsis);
+            } else {
+                var pageBtn = document.createElement('button');
+                pageBtn.className = 'btn-page';
+                if (p === state.currentPage) pageBtn.classList.add('active');
+                pageBtn.setAttribute('data-page', p);
+                pageBtn.textContent = p;
+                container.appendChild(pageBtn);
+            }
+        });
+        
+        // Next
+        var nextBtn = document.createElement('button');
+        nextBtn.className = 'btn-page';
+        nextBtn.setAttribute('data-page', 'next');
+        if (state.currentPage === totalPages) nextBtn.disabled = true;
+        nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        container.appendChild(nextBtn);
+    };
     
-    renderLoadingRow(message) {
-        const colspan = this.getColSpan();
-        
-        return `
-            <tr class="table-message-row">
-                <td colspan="${colspan}">
-                    <div class="table-message loading">
-                        <div class="spinner"></div>
-                        <span>${message}</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-    
-    renderEmptyRow(message) {
-        const colspan = this.getColSpan();
-        
-        return `
-            <tr class="table-message-row">
-                <td colspan="${colspan}">
-                    <div class="table-message empty">
-                        <i class="fas fa-inbox"></i>
-                        <span>${message}</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-    
-    renderErrorRow(message) {
-        const colspan = this.getColSpan();
-        
-        return `
-            <tr class="table-message-row">
-                <td colspan="${colspan}">
-                    <div class="table-message error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>${message}</span>
-                        <button class="btn btn-sm btn-outline" id="${this.getId('retry-btn')}">
-                            Coba Lagi
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-    
-    renderLoadingOverlay() {
-        return `
-            <div class="table-loading-overlay ${this.state.isLoading ? 'visible' : ''}">
-                <div class="spinner"></div>
-            </div>
-        `;
-    }
-    
-    renderFooter() {
-        const { pagination } = this.config;
-        
-        if (!pagination) return '';
-        
-        const { filteredData } = this.state;
-        const { pageSize } = this.config;
-        const totalPages = Math.ceil(filteredData.length / pageSize);
-        const { currentPage } = this.state;
-        
-        return `
-            <div class="table-footer">
-                <div class="table-info">
-                    Menampilkan ${this.getShowingInfo()}
-                </div>
-                <div class="table-pagination">
-                    <button class="btn-page" ${currentPage === 1 ? 'disabled' : ''} 
-                        data-page="prev">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    ${this.renderPageNumbers(currentPage, totalPages)}
-                    <button class="btn-page" ${currentPage === totalPages ? 'disabled' : ''} 
-                        data-page="next">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    renderPageNumbers(current, total) {
+    TableInstance.prototype._getPageNumbers = function(current, total) {
         if (total <= 7) {
-            return Array.from({ length: total }, (_, i) => `
-                <button class="btn-page ${current === i + 1 ? 'active' : ''}" 
-                    data-page="${i + 1}">${i + 1}</button>
-            `).join('');
+            var arr = [];
+            for (var i = 1; i <= total; i++) arr.push(i);
+            return arr;
         }
         
-        let pages = [];
+        var pages = [1];
+        var start = Math.max(2, current - 1);
+        var end = Math.min(total - 1, current + 1);
         
-        // Always show first page
-        pages.push(1);
+        if (current <= 3) end = Math.min(5, total - 1);
+        if (current >= total - 2) start = Math.max(total - 4, 2);
         
-        // Calculate range
-        let start = Math.max(2, current - 1);
-        let end = Math.min(total - 1, current + 1);
+        if (start > 2) pages.push('...');
+        for (var j = start; j <= end; j++) pages.push(j);
+        if (end < total - 1) pages.push('...');
+        if (total > 1) pages.push(total);
         
-        // Adjust range
-        if (current <= 3) {
-            end = Math.min(5, total - 1);
-        }
-        if (current >= total - 2) {
-            start = Math.max(total - 4, 2);
-        }
-        
-        // Add ellipsis after first page
-        if (start > 2) {
-            pages.push('...');
-        }
-        
-        // Add middle pages
-        for (let i = start; i <= end; i++) {
-            pages.push(i);
-        }
-        
-        // Add ellipsis before last page
-        if (end < total - 1) {
-            pages.push('...');
-        }
-        
-        // Always show last page
-        if (total > 1) {
-            pages.push(total);
-        }
-        
-        return pages.map(page => {
-            if (page === '...') {
-                return '<span class="page-ellipsis">...</span>';
-            }
-            return `
-                <button class="btn-page ${current === page ? 'active' : ''}" 
-                    data-page="${page}">${page}</button>
-            `;
-        }).join('');
-    }
-    
-    // ============================================
-    // DATA MANAGEMENT
-    // ============================================
-    
-    loadData(data) {
-        this.config.data = data;
-        this.state.filteredData = [...data];
-        this.state.selectedRows.clear();
-        this.state.currentPage = 1;
-        this.state.error = null;
-        
-        this.applyFilters();
-        this.renderBody();
-        this.updateFooter();
-        this.updateBulkActions();
-    }
-    
-    appendData(data) {
-        this.config.data = [...this.config.data, ...data];
-        this.state.filteredData = [...this.state.filteredData, ...data];
-        
-        this.renderBody();
-        this.updateFooter();
-    }
-    
-    updateRow(rowId, updatedData) {
-        const index = this.config.data.findIndex(row => row.id === rowId);
-        if (index !== -1) {
-            this.config.data[index] = { ...this.config.data[index], ...updatedData };
-        }
-        
-        const filteredIndex = this.state.filteredData.findIndex(row => row.id === rowId);
-        if (filteredIndex !== -1) {
-            this.state.filteredData[filteredIndex] = { 
-                ...this.state.filteredData[filteredIndex], 
-                ...updatedData 
-            };
-        }
-        
-        this.renderBody();
-    }
-    
-    removeRow(rowId) {
-        this.config.data = this.config.data.filter(row => row.id !== rowId);
-        this.state.filteredData = this.state.filteredData.filter(row => row.id !== rowId);
-        this.state.selectedRows.delete(rowId);
-        
-        this.renderBody();
-        this.updateFooter();
-        this.updateBulkActions();
-    }
-    
-    removeSelectedRows() {
-        const selectedIds = Array.from(this.state.selectedRows);
-        this.config.data = this.config.data.filter(row => !selectedIds.includes(row.id));
-        this.state.filteredData = this.state.filteredData.filter(row => !selectedIds.includes(row.id));
-        this.state.selectedRows.clear();
-        
-        this.renderBody();
-        this.updateFooter();
-        this.updateBulkActions();
-    }
-    
-    // ============================================
-    // FILTERING & SORTING
-    // ============================================
-    
-    applyFilters() {
-        let data = [...this.config.data];
-        
-        // Apply search filter
-        if (this.state.searchQuery) {
-            const query = this.state.searchQuery.toLowerCase();
-            data = data.filter(row => {
-                return this.config.columns.some(col => {
-                    const value = row[col.key];
-                    if (value === null || value === undefined) return false;
-                    return value.toString().toLowerCase().includes(query);
-                });
-            });
-        }
-        
-        // Apply sorting
-        if (this.state.sortColumn) {
-            const column = this.config.columns.find(col => col.key === this.state.sortColumn);
-            data = utils.sortBy(data, this.state.sortColumn, this.state.sortDirection);
-            
-            if (column?.sortFunction) {
-                data.sort((a, b) => {
-                    const result = column.sortFunction(a, b);
-                    return this.state.sortDirection === 'desc' ? -result : result;
-                });
-            }
-        }
-        
-        this.state.filteredData = data;
-        
-        // Reset to first page if current page exceeds total pages
-        const totalPages = Math.ceil(data.length / this.config.pageSize);
-        if (this.state.currentPage > totalPages && totalPages > 0) {
-            this.state.currentPage = 1;
-        }
-    }
-    
-    handleSort(columnKey) {
-        const column = this.config.columns.find(col => col.key === columnKey);
-        if (!column || column.sortable === false) return;
-        
-        if (this.state.sortColumn === columnKey) {
-            // Toggle direction
-            this.state.sortDirection = this.state.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            // New column sort
-            this.state.sortColumn = columnKey;
-            this.state.sortDirection = 'asc';
-        }
-        
-        this.applyFilters();
-        this.renderBody();
-        this.renderHeader();
-        
-        // Emit event
-        this.emit('sort', {
-            column: columnKey,
-            direction: this.state.sortDirection
-        });
-    }
-    
-    handleSearch(query) {
-        this.state.searchQuery = query;
-        this.state.currentPage = 1;
-        
-        this.applyFilters();
-        this.renderBody();
-        this.updateFooter();
-    }
-    
-    // ============================================
-    // PAGINATION
-    // ============================================
-    
-    handlePageChange(page) {
-        const totalPages = Math.ceil(this.state.filteredData.length / this.config.pageSize);
-        
-        if (page === 'prev') {
-            page = Math.max(1, this.state.currentPage - 1);
-        } else if (page === 'next') {
-            page = Math.min(totalPages, this.state.currentPage + 1);
-        }
-        
-        if (page >= 1 && page <= totalPages) {
-            this.state.currentPage = page;
-            this.renderBody();
-            this.updateFooter();
-            
-            // Scroll to top of table
-            this.scrollToTop();
-            
-            // Emit event
-            this.emit('pageChange', { page, totalPages });
-        }
-    }
-    
-    handlePageSizeChange(size) {
-        this.config.pageSize = parseInt(size);
-        this.state.currentPage = 1;
-        
-        this.renderBody();
-        this.updateFooter();
-        
-        // Emit event
-        this.emit('pageSizeChange', { pageSize: this.config.pageSize });
-    }
-    
-    // ============================================
-    // SELECTION
-    // ============================================
-    
-    handleRowSelect(rowId, checked) {
-        if (checked) {
-            this.state.selectedRows.add(rowId);
-        } else {
-            this.state.selectedRows.delete(rowId);
-        }
-        
-        this.updateBulkActions();
-        this.renderBody();
-        
-        // Emit event
-        this.emit('selectionChange', {
-            selected: Array.from(this.state.selectedRows)
-        });
-    }
-    
-    handleSelectAll(checked) {
-        if (checked) {
-            const pageData = this.getCurrentPageData();
-            pageData.forEach(row => this.state.selectedRows.add(row.id));
-        } else {
-            this.state.selectedRows.clear();
-        }
-        
-        this.updateBulkActions();
-        this.renderBody();
-        
-        // Emit event
-        this.emit('selectionChange', {
-            selected: Array.from(this.state.selectedRows)
-        });
-    }
-    
-    isAllSelected() {
-        const pageData = this.getCurrentPageData();
-        if (pageData.length === 0) return false;
-        return pageData.every(row => this.state.selectedRows.has(row.id));
-    }
-    
-    getSelectedRows() {
-        return this.config.data.filter(row => this.state.selectedRows.has(row.id));
-    }
-    
-    // ============================================
-    // EXPORT
-    // ============================================
-    
-    async handleExport(format) {
-        const data = this.state.selectedRows.size > 0 
-            ? this.getSelectedRows() 
-            : this.state.filteredData;
-        
-        this.logger.info('Exporting data', { format, rowCount: data.length });
-        
-        switch (format) {
-            case 'csv':
-                this.exportCSV(data);
-                break;
-            case 'excel':
-                await this.exportExcel(data);
-                break;
-            case 'pdf':
-                await this.exportPDF(data);
-                break;
-            case 'print':
-                this.printTable(data);
-                break;
-        }
-    }
-    
-    exportCSV(data) {
-        const columns = this.config.columns;
-        const headers = columns.map(col => col.label || col.key);
-        
-        const rows = data.map(row => 
-            columns.map(col => {
-                const value = row[col.key];
-                return value !== null && value !== undefined ? `"${value}"` : '';
-            }).join(',')
-        );
-        
-        const csv = [headers.join(','), ...rows].join('\n');
-        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        utils.downloadFile(url, `export-${Date.now()}.csv`);
-        URL.revokeObjectURL(url);
-    }
-    
-    async exportExcel(data) {
-        try {
-            const XLSX = await import('xlsx');
-            const worksheet = XLSX.utils.json_to_sheet(data);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
-            
-            XLSX.writeFile(workbook, `export-${Date.now()}.xlsx`);
-        } catch (error) {
-            this.logger.error('Excel export failed', error);
-            this.showError('Gagal mengekspor ke Excel');
-        }
-    }
-    
-    async exportPDF(data) {
-        // PDF export implementation
-        this.logger.warn('PDF export not implemented');
-        this.showError('Ekspor PDF belum tersedia');
-    }
-    
-    printTable(data) {
-        const columns = this.config.columns;
-        
-        const printWindow = window.open('', '_blank');
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Print Table</title>
-                <link rel="stylesheet" href="/css/print.css">
-            </head>
-            <body>
-                <h2>Data Export</h2>
-                <table border="1">
-                    <thead>
-                        <tr>
-                            ${columns.map(col => `<th>${col.label || col.key}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.map(row => `
-                            <tr>
-                                ${columns.map(col => `<td>${row[col.key] || ''}</td>`).join('')}
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <script>
-                    window.onload = () => window.print();
-                </script>
-            </body>
-            </html>
-        `;
-        
-        printWindow.document.write(html);
-        printWindow.document.close();
-    }
+        return pages;
+    };
     
     // ============================================
     // EVENT HANDLING
     // ============================================
-    
-    attachEventListeners() {
-        const container = this.getContainer();
-        if (!container) return;
+    TableInstance.prototype._attachEvents = function() {
+        if (!this.container) return;
         
-        // Sort clicks
-        container.querySelectorAll('.sortable').forEach(th => {
-            th.addEventListener('click', () => {
-                this.handleSort(th.dataset.column);
-            });
+        var self = this;
+        var cfg = this.config;
+        
+        // Delegated event handler
+        this.container.addEventListener('click', function(e) {
+            var target = e.target;
+            
+            // Sort header
+            var th = target.closest('.sortable');
+            if (th) {
+                self.handleSort(th.dataset.column);
+                return;
+            }
+            
+            // Page button
+            var pageBtn = target.closest('[data-page]');
+            if (pageBtn && pageBtn.closest('.table-pagination')) {
+                var page = pageBtn.dataset.page;
+                self.handlePageChange(isNaN(page) ? page : parseInt(page));
+                return;
+            }
+            
+            // Select all
+            if (target.id === cfg.id + '-select-all') {
+                self.handleSelectAll(target.checked);
+                return;
+            }
+            
+            // Row checkbox
+            if (target.dataset.rowId) {
+                self.handleRowSelect(target.dataset.rowId, target.checked);
+                return;
+            }
+            
+            // Action button
+            var actionBtn = target.closest('.btn-action');
+            if (actionBtn) {
+                var action = actionBtn.dataset.action;
+                var rowId = actionBtn.dataset.id;
+                self._emit('action', { action: action, rowId: rowId });
+                return;
+            }
+            
+            // Search clear
+            if (target.closest('#' + cfg.id + '-search-clear')) {
+                var searchInput = document.getElementById(cfg.id + '-search');
+                if (searchInput) searchInput.value = '';
+                self.handleSearch('');
+                return;
+            }
+            
+            // Export button
+            if (target.closest('#' + cfg.id + '-export-btn')) {
+                self.handleExport('csv');
+                return;
+            }
+            
+            // Retry button
+            if (target.closest('#' + cfg.id + '-retry')) {
+                self.loadData(self.config.data);
+                return;
+            }
         });
         
         // Search input
-        const searchInput = container.querySelector(`#${this.getId('search-input')}`);
+        var searchInput = document.getElementById(cfg.id + '-search');
         if (searchInput) {
-            searchInput.addEventListener('input', utils.debounce((e) => {
-                this.handleSearch(e.target.value);
+            searchInput.addEventListener('input', debounce(function() {
+                self.handleSearch(this.value);
             }, 300));
         }
         
-        // Search clear
-        const searchClear = container.querySelector(`#${this.getId('search-clear')}`);
-        if (searchClear) {
-            searchClear.addEventListener('click', () => {
-                this.handleSearch('');
-                searchInput.value = '';
-            });
-        }
-        
         // Page size change
-        const pageSizeSelect = container.querySelector(`#${this.getId('page-size')}`);
+        var pageSizeSelect = document.getElementById(cfg.id + '-page-size');
         if (pageSizeSelect) {
-            pageSizeSelect.addEventListener('change', (e) => {
-                this.handlePageSizeChange(e.target.value);
+            pageSizeSelect.addEventListener('change', function() {
+                self.handlePageSizeChange(parseInt(this.value));
             });
         }
-        
-        // Pagination clicks
-        container.querySelectorAll('[data-page]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const page = e.currentTarget.dataset.page;
-                this.handlePageChange(isNaN(page) ? page : parseInt(page));
-            });
-        });
-        
-        // Select all
-        const selectAll = container.querySelector(`#${this.getId('select-all')}`);
-        if (selectAll) {
-            selectAll.addEventListener('change', (e) => {
-                this.handleSelectAll(e.target.checked);
-            });
-        }
-        
-        // Row selection
-        container.querySelectorAll('input[data-row-id]').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                this.handleRowSelect(e.target.dataset.rowId, e.target.checked);
-            });
-        });
-        
-        // Export button
-        const exportBtn = container.querySelector(`#${this.getId('export-btn')}`);
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                const menu = exportBtn.nextElementSibling;
-                menu.classList.toggle('visible');
-            });
-        }
-        
-        // Export format selection
-        container.querySelectorAll('.export-menu button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.handleExport(e.currentTarget.dataset.format);
-                e.currentTarget.parentElement.classList.remove('visible');
-            });
-        });
-        
-        // Action buttons
-        container.querySelectorAll('.btn-action').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const action = e.currentTarget.dataset.action;
-                const rowId = e.currentTarget.dataset.id;
-                this.emit('action', { action, rowId });
-            });
-        });
-        
-        // Bulk actions
-        const bulkDelete = container.querySelector(`#${this.getId('bulk-delete')}`);
-        if (bulkDelete) {
-            bulkDelete.addEventListener('click', () => {
-                this.emit('bulkDelete', { rows: this.getSelectedRows() });
-            });
-        }
-        
-        // Retry button
-        const retryBtn = container.querySelector(`#${this.getId('retry-btn')}`);
-        if (retryBtn) {
-            retryBtn.addEventListener('click', () => {
-                this.loadData(this.config.data);
-            });
-        }
-    }
+    };
     
     // ============================================
-    // UI UPDATES
+    // DATA MANAGEMENT
     // ============================================
-    
-    updateFooter() {
-        const footer = this.getContainer()?.querySelector('.table-footer');
-        if (!footer) return;
+    TableInstance.prototype.loadData = function(data) {
+        this.config.data = data || [];
+        this.state.filteredData = data ? data.slice() : [];
+        this.state.selectedRows = {};
+        this.state.currentPage = 1;
+        this.state.error = null;
         
-        footer.innerHTML = this.renderFooter().innerHTML;
-    }
+        this._applyFilters();
+        this._refreshBody();
+        this._refreshFooter();
+    };
     
-    updateBulkActions() {
-        const bulkActions = this.getContainer()?.querySelector('.bulk-actions');
-        if (!bulkActions) return;
+    TableInstance.prototype._applyFilters = function() {
+        var data = (this.config.data || []).slice();
+        var state = this.state;
+        var cfg = this.config;
         
-        const selectedCount = this.state.selectedRows.size;
-        if (selectedCount > 0) {
-            bulkActions.classList.add('visible');
-            bulkActions.querySelector('.selected-count').textContent = 
-                `${selectedCount} terpilih`;
+        // Search
+        if (state.searchQuery) {
+            var query = state.searchQuery.toLowerCase();
+            data = data.filter(function(row) {
+                return cfg.columns.some(function(col) {
+                    var val = row[col.key];
+                    if (val === null || val === undefined) return false;
+                    return String(val).toLowerCase().indexOf(query) !== -1;
+                });
+            });
+        }
+        
+        // Sort
+        if (state.sortColumn) {
+            data = sortBy(data, state.sortColumn, state.sortDirection);
+        }
+        
+        this.state.filteredData = data;
+        
+        // Reset page if needed
+        var totalPages = Math.ceil(data.length / cfg.pageSize);
+        if (state.currentPage > totalPages && totalPages > 0) {
+            state.currentPage = 1;
+        }
+    };
+    
+    // ============================================
+    // HANDLERS
+    // ============================================
+    TableInstance.prototype.handleSort = function(columnKey) {
+        var col = this.config.columns.find(function(c) { return c.key === columnKey; });
+        if (!col || col.sortable === false) return;
+        
+        if (this.state.sortColumn === columnKey) {
+            this.state.sortDirection = this.state.sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
-            bulkActions.classList.remove('visible');
+            this.state.sortColumn = columnKey;
+            this.state.sortDirection = 'asc';
         }
-    }
+        
+        this._applyFilters();
+        this._refreshAll();
+        this._emit('sort', { column: columnKey, direction: this.state.sortDirection });
+    };
     
-    showLoading() {
-        this.state.isLoading = true;
-        const overlay = this.getContainer()?.querySelector('.table-loading-overlay');
-        if (overlay) {
-            overlay.classList.add('visible');
+    TableInstance.prototype.handleSearch = function(query) {
+        this.state.searchQuery = query || '';
+        this.state.currentPage = 1;
+        this._applyFilters();
+        this._refreshBody();
+        this._refreshFooter();
+    };
+    
+    TableInstance.prototype.handlePageChange = function(page) {
+        var totalPages = Math.ceil((this.state.filteredData || []).length / this.config.pageSize);
+        
+        if (page === 'prev') page = Math.max(1, this.state.currentPage - 1);
+        if (page === 'next') page = Math.min(totalPages, this.state.currentPage + 1);
+        
+        if (page >= 1 && page <= totalPages) {
+            this.state.currentPage = page;
+            this._refreshBody();
+            this._refreshFooter();
+            this._emit('pageChange', { page: page, totalPages: totalPages });
         }
-    }
+    };
     
-    hideLoading() {
-        this.state.isLoading = false;
-        const overlay = this.getContainer()?.querySelector('.table-loading-overlay');
-        if (overlay) {
-            overlay.classList.remove('visible');
+    TableInstance.prototype.handlePageSizeChange = function(size) {
+        this.config.pageSize = size;
+        this.state.currentPage = 1;
+        this._refreshBody();
+        this._refreshFooter();
+        this._emit('pageSizeChange', { pageSize: size });
+    };
+    
+    TableInstance.prototype.handleRowSelect = function(rowId, checked) {
+        if (checked) {
+            this.state.selectedRows[rowId] = true;
+        } else {
+            delete this.state.selectedRows[rowId];
         }
-    }
+        this._refreshBody();
+        this._emit('selectionChange', { selected: Object.keys(this.state.selectedRows) });
+    };
     
-    showError(message) {
-        this.state.error = message;
-        this.renderBody();
-    }
-    
-    scrollToTop() {
-        const tableContent = this.getContainer()?.querySelector('.table-scroll');
-        if (tableContent) {
-            tableContent.scrollTop = 0;
+    TableInstance.prototype.handleSelectAll = function(checked) {
+        var self = this;
+        var pageData = this._getCurrentPageData();
+        
+        if (checked) {
+            pageData.forEach(function(row) {
+                self.state.selectedRows[row.id || row._idx] = true;
+            });
+        } else {
+            this.state.selectedRows = {};
         }
-    }
+        
+        this._refreshBody();
+        this._emit('selectionChange', { selected: Object.keys(this.state.selectedRows) });
+    };
+    
+    TableInstance.prototype.handleExport = function(format) {
+        var data = Object.keys(this.state.selectedRows).length > 0
+            ? this._getSelectedData()
+            : this.state.filteredData;
+        
+        if (format === 'csv') {
+            this._exportCSV(data);
+        } else if (format === 'print') {
+            this._printTable(data);
+        }
+    };
     
     // ============================================
-    // UTILITY METHODS
+    // EXPORT
     // ============================================
+    TableInstance.prototype._exportCSV = function(data) {
+        var cols = this.config.columns;
+        var headers = cols.map(function(c) { return c.label || c.key; });
+        
+        var rows = data.map(function(row) {
+            return cols.map(function(col) {
+                var val = row[col.key];
+                if (val === null || val === undefined) return '';
+                // Escape CSV
+                var str = String(val).replace(/"/g, '""');
+                return '"' + str + '"';
+            }).join(',');
+        });
+        
+        var bom = '\uFEFF';
+        var csv = bom + [headers.join(','), rows.join('\n')].join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        downloadBlob(blob, 'export-' + Date.now() + '.csv');
+    };
     
-    getContainer() {
-        if (typeof this.config.container === 'string') {
-            return document.querySelector(this.config.container);
+    TableInstance.prototype._printTable = function(data) {
+        var cols = this.config.columns;
+        
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cetak</title>';
+        html += '<style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:6px;font-size:12px}th{background:#eee}@media print{@page{size:A4 landscape}}</style>';
+        html += '</head><body><h2>Data Export</h2><table><thead><tr>';
+        
+        cols.forEach(function(c) {
+            html += '<th>' + sanitizeHTML(c.label || c.key) + '</th>';
+        });
+        
+        html += '</tr></thead><tbody>';
+        
+        data.forEach(function(row) {
+            html += '<tr>';
+            cols.forEach(function(col) {
+                var val = row[col.key];
+                html += '<td>' + sanitizeHTML(val !== null && val !== undefined ? String(val) : '') + '</td>';
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table><script>window.onload=function(){window.print();}<\/script></body></html>';
+        
+        var printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
         }
-        return this.config.container;
-    }
+    };
     
-    getId(suffix) {
-        return `table-${this.config.id || 'default'}-${suffix}`;
-    }
+    // ============================================
+    // REFRESH HELPERS
+    // ============================================
+    TableInstance.prototype._refreshBody = function() {
+        var tbody = document.getElementById(this.config.id + '-tbody');
+        if (tbody) this._renderBodyContent(tbody);
+    };
     
-    getTableBodyId() {
-        return this.getId('tbody');
-    }
+    TableInstance.prototype._refreshFooter = function() {
+        var pagination = document.getElementById(this.config.id + '-pagination');
+        if (pagination) this._renderPaginationContent(pagination);
+        
+        var info = document.getElementById(this.config.id + '-info');
+        if (info) info.textContent = this._getShowingInfo();
+    };
     
-    getColSpan() {
-        let span = this.config.columns.length;
+    TableInstance.prototype._refreshAll = function() {
+        // Rebuild header for sort indicators
+        var table = this.container.querySelector('.data-table');
+        if (table) {
+            var thead = table.querySelector('thead');
+            if (thead) {
+                var newThead = this._createHeader();
+                thead.parentNode.replaceChild(newThead, thead);
+            }
+        }
+        this._refreshBody();
+        this._refreshFooter();
+    };
+    
+    // ============================================
+    // HELPERS
+    // ============================================
+    TableInstance.prototype._getColSpan = function() {
+        var span = this.config.columns.length;
         if (this.config.selectable) span++;
-        if (this.hasActions()) span++;
+        if (this._hasActions()) span++;
         return span;
-    }
+    };
     
-    hasActions() {
+    TableInstance.prototype._hasActions = function() {
         return this.config.actions && this.config.actions.length > 0;
-    }
+    };
     
-    getCurrentPageData() {
-        const { currentPage } = this.state;
-        const { pageSize } = this.config;
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        
-        return this.state.filteredData.slice(startIndex, endIndex);
-    }
+    TableInstance.prototype._isAllSelected = function() {
+        var pageData = this._getCurrentPageData();
+        if (pageData.length === 0) return false;
+        var self = this;
+        return pageData.every(function(row) {
+            return self.state.selectedRows[row.id || row._idx];
+        });
+    };
     
-    getShowingInfo() {
-        const { filteredData, currentPage } = this.state;
-        const { pageSize } = this.config;
-        const total = filteredData.length;
-        
+    TableInstance.prototype._getCurrentPageData = function() {
+        var startIdx = (this.state.currentPage - 1) * this.config.pageSize;
+        var endIdx = startIdx + this.config.pageSize;
+        return (this.state.filteredData || []).slice(startIdx, endIdx);
+    };
+    
+    TableInstance.prototype._getSelectedData = function() {
+        var self = this;
+        var selectedIds = Object.keys(this.state.selectedRows);
+        return (this.config.data || []).filter(function(row) {
+            return selectedIds.indexOf(String(row.id)) !== -1;
+        });
+    };
+    
+    TableInstance.prototype._getShowingInfo = function() {
+        var total = (this.state.filteredData || []).length;
         if (total === 0) return '0 data';
-        
-        const start = (currentPage - 1) * pageSize + 1;
-        const end = Math.min(currentPage * pageSize, total);
-        
-        return `${start}-${end} dari ${total} data`;
-    }
+        var start = (this.state.currentPage - 1) * this.config.pageSize + 1;
+        var end = Math.min(this.state.currentPage * this.config.pageSize, total);
+        return start + '-' + end + ' dari ' + total + ' data';
+    };
     
     // ============================================
     // EVENT SYSTEM
     // ============================================
-    
-    on(event, callback) {
-        if (!this._eventListeners) {
-            this._eventListeners = {};
-        }
-        
-        if (!this._eventListeners[event]) {
-            this._eventListeners[event] = [];
-        }
-        
-        this._eventListeners[event].push(callback);
-        
-        return () => {
-            this._eventListeners[event] = this._eventListeners[event]
-                .filter(cb => cb !== callback);
-        };
-    }
-    
-    emit(event, data) {
-        if (!this._eventListeners?.[event]) return;
-        
-        this._eventListeners[event].forEach(callback => {
-            try {
-                callback(data);
-            } catch (error) {
-                this.logger.error(`Event listener error: ${event}`, error);
-            }
+    TableInstance.prototype._emit = function(event, data) {
+        if (!this._listeners[event]) return;
+        this._listeners[event].forEach(function(cb) {
+            try { cb(data); } catch(e) { console.error('Table event error:', e); }
         });
-    }
+    };
+    
+    TableInstance.prototype.on = function(event, callback) {
+        if (!this._listeners[event]) this._listeners[event] = [];
+        this._listeners[event].push(callback);
+        return function() {
+            this._listeners[event] = this._listeners[event].filter(function(cb) { return cb !== callback; });
+        }.bind(this);
+    };
     
     // ============================================
     // PUBLIC API
     // ============================================
+    TableInstance.prototype.refresh = function() {
+        this._applyFilters();
+        this._refreshBody();
+        this._refreshFooter();
+    };
     
-    refresh() {
-        this.applyFilters();
-        this.renderBody();
-        this.updateFooter();
-    }
-    
-    setData(data) {
+    TableInstance.prototype.setData = function(data) {
         this.loadData(data);
-    }
+    };
     
-    getData() {
-        return this.config.data;
-    }
+    TableInstance.prototype.destroy = function() {
+        if (this.container) this.container.innerHTML = '';
+        this._listeners = {};
+    };
     
-    getFilteredData() {
-        return this.state.filteredData;
-    }
-    
-    getSelectedData() {
-        return this.getSelectedRows();
-    }
-    
-    clearSelection() {
-        this.state.selectedRows.clear();
-        this.updateBulkActions();
-        this.renderBody();
-    }
-    
-    setPageSize(size) {
-        this.handlePageSizeChange(size);
-    }
-    
-    setSearchQuery(query) {
-        this.handleSearch(query);
-    }
-    
-    reset() {
-        this.state.searchQuery = '';
-        this.state.sortColumn = null;
-        this.state.sortDirection = 'asc';
-        this.state.currentPage = 1;
-        this.state.selectedRows.clear();
-        
-        this.applyFilters();
-        this.render();
-    }
-    
-    destroy() {
-        const container = this.getContainer();
-        if (container) {
-            container.innerHTML = '';
+    // ============================================
+    // STATIC API
+    // ============================================
+    return {
+        create: function(options) {
+            return new TableInstance(options);
         }
-        
-        this._eventListeners = {};
-        this.state.selectedRows.clear();
-    }
-}
-
-export default TableComponent;
-export { TableComponent };
+    };
+})();

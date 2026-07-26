@@ -1,104 +1,86 @@
-// js/accessibility.js - Accessibility Features 2026
+// js/accessibility.js - Accessibility Features 2026 (LIGHTWEIGHT)
 /**
  * E-Arsip Digital - Accessibility Module
  * Version: 2026.1.0
- * Features: Screen reader support, keyboard navigation, focus management,
- *           contrast checking, font size adjustment, reduced motion
+ * 
+ * Features:
+ * - Reduced motion support
+ * - Font size adjustment
+ * - High contrast mode
+ * - Screen reader announcements
+ * - Focus visible enhancement
+ * - Keyboard navigation helpers
  */
 
-import { Logger } from './logger.js';
-<<<<<<< HEAD
-import { resolveAppPath } from './path-utils.js';
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-
-class AccessibilityManager {
-    constructor() {
-        this.logger = new Logger('Accessibility');
-        
-        this.config = {
-            enableScreenReader: true,
-            enableKeyboardNav: true,
-            enableFocusTrap: true,
-            enableContrastCheck: true,
-            enableFontScaling: true,
-            enableReducedMotion: true,
-            announcePageChanges: true,
-            ...this.loadPreferences()
-        };
-        
-        // State
-        this.focusHistory = [];
-        this.currentFocusTrap = null;
-        this.announcements = [];
-        this.announcementTimeout = null;
-        
-        // Font sizes
-        this.fontSizes = ['small', 'normal', 'large', 'xlarge'];
-        this.currentFontSize = this.config.fontSize || 'normal';
-        this.fontSizeValues = {
-            small: 14,
-            normal: 16,
-            large: 18,
-            xlarge: 22
-        };
-        
-        this.init();
-    }
-    
-    init() {
-        this.applySettings();
-        this.setupKeyboardNavigation();
-        this.setupScreenReaderAnnouncements();
-        this.setupReducedMotion();
-        this.injectAccessibilityTools();
-        this.announcePageReady();
-        
-        this.logger.info('Accessibility manager initialized');
-    }
+var Accessibility = (function() {
+    'use strict';
     
     // ============================================
-    // SETTINGS APPLICATION
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        enableFontScaling: true,
+        enableReducedMotion: true,
+        enableHighContrast: false,
+        enableScreenReader: true,
+        enableFocusVisible: true,
+        announcePageChanges: true,
+        storageKey: 'earsip_a11y_prefs'
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _fontSizes = ['small', 'normal', 'large', 'xlarge'];
+    var _fontSizeValues = {
+        small: '14px',
+        normal: '16px',
+        large: '20px',
+        xlarge: '24px'
+    };
+    var _currentFontSize = 'normal';
+    var _reducedMotion = false;
+    var _highContrast = false;
+    var _announceRegion = null;
+    var _announceTimer = null;
+    
+    // ============================================
+    // PREFERENCE STORAGE
     // ============================================
     
-    applySettings() {
-        // Font size
-        if (this.config.enableFontScaling) {
-            this.applyFontSize(this.currentFontSize);
-        }
-        
-        // Reduced motion
-        if (this.config.enableReducedMotion) {
-            this.applyReducedMotion(this.config.reducedMotion);
-        }
-        
-        // High contrast
-        if (this.config.highContrast) {
-            document.body.classList.add('high-contrast');
-        }
-        
-        // Focus visible
-        document.body.classList.add('focus-visible-enabled');
-    }
-    
-    loadPreferences() {
+    function loadPreferences() {
         try {
-            const stored = localStorage.getItem('accessibility_preferences');
-            return stored ? JSON.parse(stored) : {};
-        } catch {
-            return {};
+            var stored = localStorage.getItem(config.storageKey);
+            if (stored) {
+                var prefs = JSON.parse(stored);
+                _currentFontSize = prefs.fontSize || 'normal';
+                _reducedMotion = prefs.reducedMotion || false;
+                _highContrast = prefs.highContrast || false;
+            }
+        } catch(e) {
+            // Invalid data
+        }
+        
+        // Check system preference for reduced motion
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            _reducedMotion = true;
+        }
+        
+        // Check system preference for contrast
+        if (window.matchMedia && window.matchMedia('(prefers-contrast: high)').matches) {
+            _highContrast = true;
         }
     }
     
-    savePreferences() {
+    function savePreferences() {
         try {
-            localStorage.setItem('accessibility_preferences', JSON.stringify({
-                fontSize: this.currentFontSize,
-                reducedMotion: this.config.reducedMotion,
-                highContrast: this.config.highContrast
+            localStorage.setItem(config.storageKey, JSON.stringify({
+                fontSize: _currentFontSize,
+                reducedMotion: _reducedMotion,
+                highContrast: _highContrast
             }));
-        } catch {
-            // Ignore
+        } catch(e) {
+            // Storage full
         }
     }
     
@@ -106,361 +88,352 @@ class AccessibilityManager {
     // FONT SIZE
     // ============================================
     
-    applyFontSize(size) {
-        const fontSize = this.fontSizeValues[size] || 16;
-        document.documentElement.style.fontSize = `${fontSize}px`;
-        this.currentFontSize = size;
-        this.savePreferences();
+    function applyFontSize(size) {
+        var value = _fontSizeValues[size] || _fontSizeValues['normal'];
+        document.documentElement.style.setProperty('--font-size-base', value);
+        document.documentElement.setAttribute('data-font-size', size);
+        _currentFontSize = size;
+        savePreferences();
     }
     
-    increaseFontSize() {
-        const currentIndex = this.fontSizes.indexOf(this.currentFontSize);
-        if (currentIndex < this.fontSizes.length - 1) {
-            this.applyFontSize(this.fontSizes[currentIndex + 1]);
-            this.announce(`Ukuran font diubah ke ${this.currentFontSize}`);
+    function increaseFontSize() {
+        var idx = _fontSizes.indexOf(_currentFontSize);
+        if (idx < _fontSizes.length - 1) {
+            applyFontSize(_fontSizes[idx + 1]);
+            announce('Font size: ' + _currentFontSize);
         }
     }
     
-    decreaseFontSize() {
-        const currentIndex = this.fontSizes.indexOf(this.currentFontSize);
-        if (currentIndex > 0) {
-            this.applyFontSize(this.fontSizes[currentIndex - 1]);
-            this.announce(`Ukuran font diubah ke ${this.currentFontSize}`);
+    function decreaseFontSize() {
+        var idx = _fontSizes.indexOf(_currentFontSize);
+        if (idx > 0) {
+            applyFontSize(_fontSizes[idx - 1]);
+            announce('Font size: ' + _currentFontSize);
         }
     }
     
-    resetFontSize() {
-        this.applyFontSize('normal');
-        this.announce('Ukuran font direset ke normal');
+    function resetFontSize() {
+        applyFontSize('normal');
+        announce('Font size reset');
+    }
+    
+    function getFontSize() {
+        return _currentFontSize;
+    }
+    
+    function getFontSizeValue() {
+        return _fontSizeValues[_currentFontSize] || '16px';
     }
     
     // ============================================
     // REDUCED MOTION
     // ============================================
     
-    setupReducedMotion() {
-        // Check system preference
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function applyReducedMotion(enabled) {
+        _reducedMotion = !!enabled;
         
-        if (prefersReducedMotion.matches) {
-            this.config.reducedMotion = true;
-            this.applyReducedMotion(true);
-        }
-        
-        prefersReducedMotion.addEventListener('change', (e) => {
-            this.config.reducedMotion = e.matches;
-            this.applyReducedMotion(e.matches);
-        });
-    }
-    
-    applyReducedMotion(enabled) {
-        if (enabled) {
+        if (_reducedMotion) {
             document.documentElement.classList.add('reduced-motion');
+            document.documentElement.setAttribute('data-reduced-motion', 'true');
         } else {
             document.documentElement.classList.remove('reduced-motion');
+            document.documentElement.removeAttribute('data-reduced-motion');
         }
+        
+        savePreferences();
     }
     
-    toggleReducedMotion() {
-        this.config.reducedMotion = !this.config.reducedMotion;
-        this.applyReducedMotion(this.config.reducedMotion);
-        this.savePreferences();
-        this.announce(this.config.reducedMotion ? 'Reduced motion diaktifkan' : 'Reduced motion dinonaktifkan');
+    function toggleReducedMotion() {
+        applyReducedMotion(!_reducedMotion);
+        announce(_reducedMotion ? 'Reduced motion enabled' : 'Reduced motion disabled');
+    }
+    
+    function isReducedMotion() {
+        return _reducedMotion;
     }
     
     // ============================================
-    // KEYBOARD NAVIGATION
+    // HIGH CONTRAST
     // ============================================
     
-    setupKeyboardNavigation() {
-        if (!this.config.enableKeyboardNav) return;
+    function applyHighContrast(enabled) {
+        _highContrast = !!enabled;
         
-        document.addEventListener('keydown', (e) => {
-            this.handleKeyboardShortcut(e);
-        });
-        
-        // Track focus
-        document.addEventListener('focusin', (e) => {
-            this.focusHistory.push(e.target);
-            if (this.focusHistory.length > 50) {
-                this.focusHistory.shift();
-            }
-        });
-    }
-    
-    handleKeyboardShortcut(event) {
-        // Alt + 1-9 for navigation
-        if (event.altKey && !event.ctrlKey && !event.metaKey) {
-            const key = parseInt(event.key);
-            if (key >= 1 && key <= 9) {
-                event.preventDefault();
-                
-                const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
-                if (navItems[key - 1]) {
-                    navItems[key - 1].click();
-                }
-            }
-            
-            // Alt + 0: Skip to main content
-            if (event.key === '0') {
-                event.preventDefault();
-                const mainContent = document.querySelector('.main-content') || 
-                                   document.querySelector('main') ||
-                                   document.querySelector('#main-content');
-                mainContent?.focus();
-            }
-            
-            // Alt + F: Focus search
-            if (event.key === 'f' || event.key === 'F') {
-                event.preventDefault();
-                const searchInput = document.querySelector('[data-search-input], #search-input, .search-input, [type="search"]');
-                searchInput?.focus();
-            }
-            
-            // Alt + H: Go home
-            if (event.key === 'h' || event.key === 'H') {
-                event.preventDefault();
-<<<<<<< HEAD
-                window.location.href = resolveAppPath('/dashboard/');
-=======
-                window.location.href = '/dashboard/';
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
-            }
-            
-            // Alt + A: Accessibility menu
-            if (event.key === 'a' || event.key === 'A') {
-                event.preventDefault();
-                this.toggleAccessibilityPanel();
-            }
+        if (_highContrast) {
+            document.documentElement.classList.add('high-contrast');
+            document.documentElement.setAttribute('data-high-contrast', 'true');
+        } else {
+            document.documentElement.classList.remove('high-contrast');
+            document.documentElement.removeAttribute('data-high-contrast');
         }
         
-        // Escape: Close modals/dropdowns
-        if (event.key === 'Escape') {
-            this.closeOpenElements();
-        }
+        savePreferences();
     }
     
-    closeOpenElements() {
-        document.querySelectorAll('.modal-overlay.visible').forEach(modal => {
-            modal.classList.remove('visible');
-        });
-        
-        document.querySelectorAll('.dropdown.open, .dropdown-menu.show').forEach(dropdown => {
-            dropdown.classList.remove('open', 'show');
-        });
+    function toggleHighContrast() {
+        applyHighContrast(!_highContrast);
+        announce(_highContrast ? 'High contrast enabled' : 'High contrast disabled');
+    }
+    
+    function isHighContrast() {
+        return _highContrast;
     }
     
     // ============================================
-    // FOCUS TRAPPING
+    // FOCUS VISIBLE
     // ============================================
     
-    trapFocus(container) {
-        if (!this.config.enableFocusTrap) return;
-        
-        this.currentFocusTrap = container;
-        
-        const focusableElements = container.querySelectorAll(
-            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        
-        if (focusableElements.length === 0) return;
-        
-        const firstFocusable = focusableElements[0];
-        const lastFocusable = focusableElements[focusableElements.length - 1];
-        
-        firstFocusable.focus();
-        
-        const handleTab = (e) => {
-            if (e.key !== 'Tab') return;
-            
-            if (e.shiftKey) {
-                if (document.activeElement === firstFocusable) {
-                    e.preventDefault();
-                    lastFocusable.focus();
-                }
-            } else {
-                if (document.activeElement === lastFocusable) {
-                    e.preventDefault();
-                    firstFocusable.focus();
-                }
+    function enableFocusVisible() {
+        // Tambahkan class untuk keyboard users
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                document.body.classList.add('keyboard-user');
             }
-        };
+        });
         
-        container.addEventListener('keydown', handleTab);
-        
-        // Store cleanup function
-        container._untrapFocus = () => {
-            container.removeEventListener('keydown', handleTab);
-        };
-    }
-    
-    releaseFocusTrap(container) {
-        if (container._untrapFocus) {
-            container._untrapFocus();
-            delete container._untrapFocus;
-        }
-        
-        this.currentFocusTrap = null;
+        // Hapus class untuk mouse users
+        document.addEventListener('mousedown', function() {
+            document.body.classList.remove('keyboard-user');
+        });
     }
     
     // ============================================
     // SCREEN READER ANNOUNCEMENTS
     // ============================================
     
-    setupScreenReaderAnnouncements() {
-        if (!this.config.enableScreenReader) return;
+    function createAnnounceRegion() {
+        if (_announceRegion) return;
         
-        // Create aria-live region
-        if (!document.getElementById('sr-announcements')) {
-            const region = document.createElement('div');
-            region.id = 'sr-announcements';
-            region.setAttribute('aria-live', 'polite');
-            region.setAttribute('aria-atomic', 'true');
-            region.className = 'sr-only';
-            document.body.appendChild(region);
-        }
-        
-        // Create assertive region for urgent messages
-        if (!document.getElementById('sr-assertive')) {
-            const region = document.createElement('div');
-            region.id = 'sr-assertive';
-            region.setAttribute('aria-live', 'assertive');
-            region.setAttribute('aria-atomic', 'true');
-            region.className = 'sr-only';
-            document.body.appendChild(region);
-        }
+        _announceRegion = document.createElement('div');
+        _announceRegion.id = 'sr-announcements';
+        _announceRegion.setAttribute('aria-live', 'polite');
+        _announceRegion.setAttribute('aria-atomic', 'true');
+        _announceRegion.className = 'sr-only';
+        _announceRegion.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+        document.body.appendChild(_announceRegion);
     }
     
-    announce(message, assertive = false) {
-        const regionId = assertive ? 'sr-assertive' : 'sr-announcements';
-        const region = document.getElementById(regionId);
+    function announce(message) {
+        if (!_announceRegion) createAnnounceRegion();
+        if (!_announceRegion) return;
         
-        if (!region) return;
+        // Clear previous
+        if (_announceTimer) clearTimeout(_announceTimer);
         
-        // Clear previous announcement
-        region.textContent = '';
+        // Set new message (use textContent for safety)
+        _announceRegion.textContent = '';
         
-        // Set new announcement
-        setTimeout(() => {
-            region.textContent = message;
-        }, 50);
+        // Small delay untuk memastikan screen reader membaca
+        setTimeout(function() {
+            if (_announceRegion) {
+                _announceRegion.textContent = message || '';
+            }
+        }, 100);
         
-        // Clear after delay
-        if (this.announcementTimeout) {
-            clearTimeout(this.announcementTimeout);
-        }
-        
-        this.announcementTimeout = setTimeout(() => {
-            region.textContent = '';
+        // Clear after some time
+        _announceTimer = setTimeout(function() {
+            if (_announceRegion) {
+                _announceRegion.textContent = '';
+            }
         }, 5000);
     }
     
-    announcePageReady() {
-        if (this.config.announcePageChanges) {
-            setTimeout(() => {
-                const pageTitle = document.title || 'Halaman';
-                this.announce(`${pageTitle} telah dimuat`);
-            }, 500);
+    function announcePageReady() {
+        if (config.announcePageChanges) {
+            setTimeout(function() {
+                var title = document.title || 'Halaman';
+                announce(title + ' telah dimuat');
+            }, 800);
         }
     }
     
     // ============================================
-    // ACCESSIBILITY TOOLS PANEL
+    // KEYBOARD HELPERS
     // ============================================
     
-    injectAccessibilityTools() {
-        if (document.querySelector('.a11y-tools')) return;
+    /**
+     * Trap focus dalam container (untuk modal)
+     */
+    function trapFocus(container) {
+        if (!container) return function() {};
         
-        const tools = document.createElement('div');
-        tools.className = 'a11y-tools';
-        tools.setAttribute('role', 'toolbar');
-        tools.setAttribute('aria-label', 'Alat aksesibilitas');
-        tools.innerHTML = `
-            <button class="a11y-tool-btn" data-action="font-increase" title="Perbesar font" aria-label="Perbesar ukuran font">
-                <i class="fas fa-text-height"></i>
-            </button>
-            <button class="a11y-tool-btn" data-action="font-decrease" title="Perkecil font" aria-label="Perkecil ukuran font">
-                <i class="fas fa-text-width"></i>
-            </button>
-            <button class="a11y-tool-btn" data-action="contrast" title="High contrast" aria-label="Toggle high contrast mode">
-                <i class="fas fa-adjust"></i>
-            </button>
-            <button class="a11y-tool-btn" data-action="motion" title="Reduced motion" aria-label="Toggle reduced motion">
-                <i class="fas fa-running"></i>
-            </button>
-            <button class="a11y-tool-btn" data-action="reset" title="Reset" aria-label="Reset pengaturan aksesibilitas">
-                <i class="fas fa-undo"></i>
-            </button>
-        `;
+        var focusable = container.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), ' +
+            'select:not([disabled]), textarea:not([disabled]), ' +
+            '[tabindex]:not([tabindex="-1"])'
+        );
         
-        document.body.appendChild(tools);
+        if (focusable.length === 0) return function() {};
         
-        // Event handlers
-        tools.querySelector('[data-action="font-increase"]')?.addEventListener('click', () => this.increaseFontSize());
-        tools.querySelector('[data-action="font-decrease"]')?.addEventListener('click', () => this.decreaseFontSize());
-        tools.querySelector('[data-action="contrast"]')?.addEventListener('click', () => this.toggleHighContrast());
-        tools.querySelector('[data-action="motion"]')?.addEventListener('click', () => this.toggleReducedMotion());
-        tools.querySelector('[data-action="reset"]')?.addEventListener('click', () => this.resetAll());
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        
+        // Focus first element
+        if (first.focus) first.focus();
+        
+        var handler = function(e) {
+            if (e.key !== 'Tab') return;
+            
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    if (last.focus) last.focus();
+                }
+            } else {
+                if (document.activeElement === last) {
+                    e.preventDefault();
+                    if (first.focus) first.focus();
+                }
+            }
+        };
+        
+        container.addEventListener('keydown', handler);
+        
+        // Return cleanup function
+        return function() {
+            container.removeEventListener('keydown', handler);
+        };
     }
     
-    toggleAccessibilityPanel() {
-        const tools = document.querySelector('.a11y-tools');
-        if (tools) {
-            tools.classList.toggle('visible');
-        }
-    }
-    
-    toggleHighContrast() {
-        this.config.highContrast = !this.config.highContrast;
-        document.body.classList.toggle('high-contrast');
-        this.savePreferences();
-        this.announce(this.config.highContrast ? 'High contrast diaktifkan' : 'High contrast dinonaktifkan');
-    }
-    
-    resetAll() {
-        this.resetFontSize();
-        this.config.highContrast = false;
-        document.body.classList.remove('high-contrast');
-        this.config.reducedMotion = false;
-        document.documentElement.classList.remove('reduced-motion');
-        this.savePreferences();
-        this.announce('Pengaturan aksesibilitas direset');
-    }
-    
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    isScreenReaderActive() {
-        // Detect if screen reader is likely active
-        return window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-               document.querySelector('[aria-live]') !== null;
-    }
-    
-    getFocusableElements(container = document) {
+    /**
+     * Get all focusable elements dalam container
+     */
+    function getFocusableElements(container) {
+        if (!container) container = document;
+        
         return container.querySelectorAll(
-            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            'a[href], button:not([disabled]), input:not([disabled]), ' +
+            'select:not([disabled]), textarea:not([disabled]), ' +
+            '[tabindex]:not([tabindex="-1"])'
         );
     }
     
-    getLastFocused() {
-        return this.focusHistory[this.focusHistory.length - 1] || null;
+    // ============================================
+    // RESET ALL
+    // ============================================
+    
+    function resetAll() {
+        applyFontSize('normal');
+        applyReducedMotion(false);
+        applyHighContrast(false);
+        announce('All accessibility settings reset');
     }
     
     // ============================================
-    // CLEANUP
+    // INITIALIZATION
     // ============================================
     
-    destroy() {
-        const tools = document.querySelector('.a11y-tools');
-        tools?.remove();
+    function init(options) {
+        if (options) {
+            for (var key in options) {
+                if (options.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                    config[key] = options[key];
+                }
+            }
+        }
         
-        this.logger.info('Accessibility manager destroyed');
+        // Load preferences
+        loadPreferences();
+        
+        // Apply settings
+        applyFontSize(_currentFontSize);
+        applyReducedMotion(_reducedMotion);
+        applyHighContrast(_highContrast);
+        
+        // Setup
+        if (config.enableFocusVisible) {
+            enableFocusVisible();
+        }
+        
+        if (config.enableScreenReader) {
+            createAnnounceRegion();
+        }
+        
+        // Announce page
+        announcePageReady();
+        
+        // Listen for system preference changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function(e) {
+                if (!localStorage.getItem(config.storageKey)) {
+                    applyReducedMotion(e.matches);
+                }
+            });
+            
+            window.matchMedia('(prefers-contrast: high)').addEventListener('change', function(e) {
+                if (!localStorage.getItem(config.storageKey)) {
+                    applyHighContrast(e.matches);
+                }
+            });
+        }
+        
+        console.info('[Accessibility] Initialized (font: ' + _currentFontSize + 
+            ', motion: ' + _reducedMotion + ', contrast: ' + _highContrast + ')');
     }
-}
+    
+    // ============================================
+    // PUBLIC API
+    // ============================================
+    
+    return {
+        // Initialization
+        init: init,
+        
+        // Font size
+        increaseFontSize: increaseFontSize,
+        decreaseFontSize: decreaseFontSize,
+        resetFontSize: resetFontSize,
+        getFontSize: getFontSize,
+        getFontSizeValue: getFontSizeValue,
+        applyFontSize: applyFontSize,
+        
+        // Reduced motion
+        toggleReducedMotion: toggleReducedMotion,
+        isReducedMotion: isReducedMotion,
+        applyReducedMotion: applyReducedMotion,
+        
+        // High contrast
+        toggleHighContrast: toggleHighContrast,
+        isHighContrast: isHighContrast,
+        applyHighContrast: applyHighContrast,
+        
+        // Announcements
+        announce: announce,
+        
+        // Focus
+        trapFocus: trapFocus,
+        getFocusableElements: getFocusableElements,
+        
+        // Reset
+        resetAll: resetAll,
+        
+        // Config
+        getConfig: function() {
+            return {
+                fontSize: _currentFontSize,
+                reducedMotion: _reducedMotion,
+                highContrast: _highContrast
+            };
+        }
+    };
+})();
 
-// Create singleton
-const accessibility = new AccessibilityManager();
+// ============================================
+// AUTO-INIT
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    Accessibility.init();
+});
 
-export default accessibility;
-export { AccessibilityManager };
+// ============================================
+// USAGE:
+// ============================================
+// Accessibility.increaseFontSize();
+// Accessibility.toggleHighContrast();
+// Accessibility.announce('Pesan untuk screen reader');
+// 
+// // Trap focus in modal
+// var untrap = Accessibility.trapFocus(modalElement);
+// // ... when modal closes:
+// untrap();
+// ============================================

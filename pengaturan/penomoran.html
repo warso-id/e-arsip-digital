@@ -2,81 +2,66 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<<<<<<< HEAD
-    <script>
-        (function () {
-            const getAppBasePath = () => {
-                const pathname = window.location.pathname || '/';
-                const segments = pathname.split('/').filter(Boolean);
-                if (segments.length === 0) return '/';
-                const repoSegment = segments[0];
-                const isLikelySubfolder = pathname.includes(`/${repoSegment}/`) || pathname.endsWith(`/${repoSegment}`);
-                if (isLikelySubfolder && repoSegment !== 'dashboard' && repoSegment !== 'surat-masuk' && repoSegment !== 'surat-keluar') {
-                    return `/${repoSegment}/`;
-                }
-                return '/';
-            };
-            const appBasePath = getAppBasePath();
-            const rewrite = (value) => {
-                if (!value || !value.startsWith('/')) return value;
-                const clean = value.replace(/^\/+/, '');
-                return `${appBasePath}${clean}`.replace(/\/+/g, '/');
-            };
-            document.querySelectorAll('link[href], script[src], img[src], a[href]').forEach((el) => {
-                ['href', 'src'].forEach((attr) => {
-                    if (!el.hasAttribute(attr)) return;
-                    const value = el.getAttribute(attr);
-                    if (value && value.startsWith('/')) {
-                        el.setAttribute(attr, rewrite(value));
-                    }
-                });
-            });
-        })();
-    </script>
-=======
->>>>>>> b68782b40b3eac4474e696c20e4ba68519477216
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Konfigurasi format penomoran surat E-Arsip Digital">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" id="csrf-token" content="">
+    
+    <!-- PWA Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
     <title>Konfigurasi Penomoran - E-Arsip Digital</title>
     
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <style>
-        .settings-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
+        .settings-container { max-width: 800px; margin: 0 auto; }
         
         .format-preview {
-            background: #f8fafc;
-            border: 2px dashed #e2e8f0;
-            border-radius: 10px;
-            padding: 20px;
+            background: var(--color-bg-secondary, #f8fafc);
+            border: 2px dashed var(--color-border, #e2e8f0);
+            border-radius: 12px;
+            padding: 24px;
             text-align: center;
-            margin-top: 16px;
+            margin-top: 20px;
+        }
+        
+        .format-preview .format-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
         
         .format-preview .format-string {
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 20px;
-            font-weight: 600;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 22px;
+            font-weight: 700;
             color: #2563eb;
             letter-spacing: 1px;
+            word-break: break-all;
         }
         
         .format-preview .format-example {
             font-size: 13px;
-            color: #64748b;
+            color: var(--color-text-muted, #64748b);
             margin-top: 8px;
         }
         
         .format-components {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
             margin-top: 16px;
         }
         
@@ -84,100 +69,225 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            padding: 10px 14px;
+            background: var(--color-bg-secondary, #f8fafc);
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            user-select: none;
         }
         
         .format-component:hover {
             background: #eff6ff;
             border-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(37,99,235,0.1);
+        }
+        
+        .format-component:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+        
+        .format-component:active {
+            transform: scale(0.97);
+            background: #dbeafe;
         }
         
         .format-component code {
             background: #eff6ff;
             color: #2563eb;
-            padding: 2px 6px;
-            border-radius: 3px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .format-component .comp-desc {
+            color: var(--color-text-muted, #64748b);
             font-size: 12px;
         }
         
+        .format-component.inserted {
+            background: #dcfce7;
+            border-color: #16a34a;
+            animation: flashInsert 0.6s ease;
+        }
+        
+        @keyframes flashInsert {
+            0%, 100% { background: #dcfce7; }
+            50% { background: #bbf7d0; }
+        }
+        
         .unit-list {
-            list-style: none;
-            padding: 0;
+            list-style: none; padding: 0; margin: 0;
         }
         
         .unit-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            border: 1px solid #e2e8f0;
+            padding: 14px 16px;
+            border: 1px solid var(--color-border, #e2e8f0);
             border-radius: 8px;
             margin-bottom: 8px;
+            transition: all 0.2s;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .unit-item:hover {
+            background: var(--color-bg-secondary, #f8fafc);
+        }
+        
+        .unit-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         .unit-code {
-            font-family: monospace;
-            background: #f1f5f9;
-            padding: 2px 8px;
-            border-radius: 4px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 4px 12px;
+            border-radius: 6px;
             font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
         
-        .counter-info {
+        .unit-name {
+            font-weight: 500;
+            color: var(--color-text, #1e293b);
+        }
+        
+        .counter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 16px;
         }
         
         .counter-card {
             text-align: center;
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
+            padding: 24px 16px;
+            background: var(--color-bg-secondary, #f8fafc);
+            border-radius: 12px;
+            border: 1px solid var(--color-border, #e2e8f0);
+            transition: all 0.2s;
+        }
+        
+        .counter-card:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.08);
         }
         
         .counter-value {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
             color: #2563eb;
+            line-height: 1;
+            margin-bottom: 8px;
         }
         
         .counter-label {
             font-size: 13px;
-            color: #64748b;
-            margin-top: 4px;
+            color: var(--color-text-muted, #64748b);
+        }
+        
+        .counter-icon {
+            font-size: 20px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .toast-inserted {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #16a34a;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 9999;
+            animation: toastUp 0.3s ease, toastDown 0.3s ease 1.5s forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes toastUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        @keyframes toastDown {
+            from { opacity: 1; transform: translateX(-50%) translateY(0); }
+            to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        }
+        
+        /* Unit edit modal */
+        .unit-edit-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .format-components { grid-template-columns: 1fr 1fr; }
+            .counter-grid { grid-template-columns: 1fr 1fr; }
+        }
+        
+        @media (max-width: 480px) {
+            .format-components { grid-template-columns: 1fr; }
+            .format-preview .format-string { font-size: 18px; }
         }
     </style>
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen">
-        <div class="spinner"></div>
+    <!-- Skip Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen" aria-hidden="true">
+        <div class="spinner" role="status" aria-label="Memuat halaman"></div>
     </div>
     
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
         <div class="sidebar-brand">
-            <i class="fas fa-archive"></i>
+            <i class="fas fa-archive" aria-hidden="true"></i>
             <span>E-Arsip Digital</span>
         </div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog"></i> Pengaturan</a>
-            <a href="/pengaturan/penomoran.html" class="nav-item active"><i class="fas fa-sort-numeric-down"></i> Penomoran</a>
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home" aria-hidden="true"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane" aria-hidden="true"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox" aria-hidden="true"></i> Surat Masuk</a>
+            <a href="/pengaturan/" class="nav-item"><i class="fas fa-cog" aria-hidden="true"></i> Pengaturan</a>
+            <a href="/pengaturan/penomoran.html" class="nav-item active" aria-current="page"><i class="fas fa-sort-numeric-down" aria-hidden="true"></i> Penomoran</a>
         </nav>
     </aside>
     
     <!-- Main Content -->
-    <main class="main-content">
+    <main class="main-content" id="main-content">
         <div class="settings-container">
-            <h2 style="margin-bottom:8px;">Konfigurasi Penomoran Surat</h2>
+            <a href="javascript:history.back()" class="btn-back" aria-label="Kembali">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali
+            </a>
+            
+            <h2 style="margin-bottom:4px;">Konfigurasi Penomoran Surat</h2>
             <p style="color:#64748b;margin-bottom:24px;">Atur format penomoran surat keluar</p>
             
             <!-- Format Settings -->
@@ -187,58 +297,62 @@
                 </div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label class="form-label">Format String</label>
-                        <input type="text" class="form-input" id="format-string" 
-                            value="{nomor}/{kode_unit}/{klasifikasi}/{bulan_romawi}/{tahun}">
-                        <div class="form-help">
-                            Gunakan variabel dalam kurung kurawal. Klik komponen di bawah untuk menambahkan.
+                        <label class="form-label" for="format-string">Format String</label>
+                        <div class="input-group">
+                            <input type="text" class="form-input" id="format-string" 
+                                value="{nomor}/{kode_unit}/{klasifikasi}/{bulan_romawi}/{tahun}"
+                                maxlength="200" aria-describedby="format-help">
+                        </div>
+                        <div class="form-help" id="format-help">
+                            Gunakan variabel dalam kurung kurawal. Klik komponen di bawah untuk menambahkan ke posisi kursor.
                         </div>
                     </div>
                     
-                    <div class="format-components">
-                        <div class="format-component" onclick="insertFormat('{nomor}')">
-                            <code>{nomor}</code> Nomor Urut
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{kode_unit}')">
-                            <code>{kode_unit}</code> Kode Unit
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{klasifikasi}')">
-                            <code>{klasifikasi}</code> Kode Klasifikasi
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{bulan_romawi}')">
-                            <code>{bulan_romawi}</code> Bulan Romawi
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{bulan}')">
-                            <code>{bulan}</code> Bulan (01-12)
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{tahun}')">
-                            <code>{tahun}</code> Tahun
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{tahun_pendek}')">
-                            <code>{tahun_pendek}</code> Tahun 2 Digit
-                        </div>
-                        <div class="format-component" onclick="insertFormat('{jenis}')">
-                            <code>{jenis}</code> Kode Jenis Surat
-                        </div>
+                    <label class="form-label" style="margin-top:12px;">Komponen Tersedia</label>
+                    <div class="format-components" role="list" aria-label="Komponen format nomor">
+                        <button class="format-component" data-code="{nomor}" type="button" aria-label="Tambahkan nomor urut">
+                            <code>{nomor}</code> <span class="comp-desc">Nomor Urut</span>
+                        </button>
+                        <button class="format-component" data-code="{kode_unit}" type="button" aria-label="Tambahkan kode unit">
+                            <code>{kode_unit}</code> <span class="comp-desc">Kode Unit</span>
+                        </button>
+                        <button class="format-component" data-code="{klasifikasi}" type="button" aria-label="Tambahkan kode klasifikasi">
+                            <code>{klasifikasi}</code> <span class="comp-desc">Kode Klasifikasi</span>
+                        </button>
+                        <button class="format-component" data-code="{bulan_romawi}" type="button" aria-label="Tambahkan bulan romawi">
+                            <code>{bulan_romawi}</code> <span class="comp-desc">Bulan Romawi</span>
+                        </button>
+                        <button class="format-component" data-code="{bulan}" type="button" aria-label="Tambahkan bulan angka">
+                            <code>{bulan}</code> <span class="comp-desc">Bulan (01-12)</span>
+                        </button>
+                        <button class="format-component" data-code="{tahun}" type="button" aria-label="Tambahkan tahun">
+                            <code>{tahun}</code> <span class="comp-desc">Tahun</span>
+                        </button>
+                        <button class="format-component" data-code="{tahun_pendek}" type="button" aria-label="Tambahkan tahun 2 digit">
+                            <code>{tahun_pendek}</code> <span class="comp-desc">Tahun 2 Digit</span>
+                        </button>
+                        <button class="format-component" data-code="{jenis}" type="button" aria-label="Tambahkan jenis surat">
+                            <code>{jenis}</code> <span class="comp-desc">Kode Jenis</span>
+                        </button>
                     </div>
                     
-                    <div class="format-preview">
-                        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">PREVIEW</div>
+                    <div class="format-preview" aria-live="polite" aria-label="Preview format nomor">
+                        <div class="format-label">Preview</div>
                         <div class="format-string" id="format-preview">001/UN.01/UM/XI/2026</div>
                         <div class="format-example">Contoh nomor surat yang akan dihasilkan</div>
                     </div>
                 </div>
             </div>
             
-            <!-- Separator Settings -->
+            <!-- Separator & Reset Settings -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header">
-                    <h3>Pengaturan Separator</h3>
+                    <h3>Pengaturan Separator & Reset</h3>
                 </div>
                 <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Separator</label>
+                            <label class="form-label" for="separator">Separator</label>
                             <select class="form-select" id="separator">
                                 <option value="/">Garis Miring (/)</option>
                                 <option value="-">Strip (-)</option>
@@ -247,12 +361,26 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Reset Nomor</label>
+                            <label class="form-label" for="reset-periode">Reset Nomor</label>
                             <select class="form-select" id="reset-periode">
                                 <option value="tahun">Setiap Tahun</option>
                                 <option value="bulan">Setiap Bulan</option>
                                 <option value="never">Tidak Pernah</option>
                             </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row" style="margin-top:16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="padding-length">Panjang Nomor (Padding)</label>
+                            <input type="number" class="form-input" id="padding-length" 
+                                value="3" min="1" max="6" aria-describedby="padding-help">
+                            <div class="form-help" id="padding-help">Jumlah digit untuk nomor urut (contoh: 3 = 001, 4 = 0001)</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="start-number">Nomor Awal</label>
+                            <input type="number" class="form-input" id="start-number" 
+                                value="1" min="1" max="999999">
                         </div>
                     </div>
                 </div>
@@ -264,67 +392,38 @@
                     <h3>Kode Unit</h3>
                 </div>
                 <div class="card-body">
-                    <ul class="unit-list" id="unit-list">
-                        <li class="unit-item">
-                            <div>
-                                <strong>Dekanat</strong>
-                                <span class="unit-code">UN.01</span>
-                            </div>
-                            <button class="btn btn-sm btn-outline" onclick="editUnit('dekanat')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </li>
-                        <li class="unit-item">
-                            <div>
-                                <strong>Prodi Teknik Informatika</strong>
-                                <span class="unit-code">UN.02</span>
-                            </div>
-                            <button class="btn btn-sm btn-outline" onclick="editUnit('prodi_ti')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </li>
-                        <li class="unit-item">
-                            <div>
-                                <strong>Prodi Sistem Informasi</strong>
-                                <span class="unit-code">UN.03</span>
-                            </div>
-                            <button class="btn btn-sm btn-outline" onclick="editUnit('prodi_si')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </li>
-                        <li class="unit-item">
-                            <div>
-                                <strong>BAAK</strong>
-                                <span class="unit-code">UN.04</span>
-                            </div>
-                            <button class="btn btn-sm btn-outline" onclick="editUnit('baak')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </li>
+                    <ul class="unit-list" id="unit-list" role="list" aria-label="Daftar kode unit">
+                        <!-- Dynamic content -->
                     </ul>
                     
-                    <button class="btn btn-outline btn-sm" style="margin-top:12px;" id="add-unit-btn">
-                        <i class="fas fa-plus"></i> Tambah Unit
+                    <button class="btn btn-outline btn-sm" style="margin-top:12px;" id="add-unit-btn" type="button">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Tambah Unit
                     </button>
                 </div>
             </div>
             
             <!-- Counter Info -->
             <div class="card" style="margin-bottom:20px;">
-                <div class="card-header">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
                     <h3>Status Nomor Saat Ini</h3>
+                    <button class="btn btn-sm btn-outline" id="reset-counter-btn" type="button">
+                        <i class="fas fa-undo" aria-hidden="true"></i> Reset Manual
+                    </button>
                 </div>
                 <div class="card-body">
-                    <div class="counter-info">
+                    <div class="counter-grid">
                         <div class="counter-card">
+                            <div class="counter-icon">📊</div>
                             <div class="counter-value" id="counter-total">1,245</div>
                             <div class="counter-label">Total Surat Tahun Ini</div>
                         </div>
                         <div class="counter-card">
+                            <div class="counter-icon">📅</div>
                             <div class="counter-value" id="counter-bulan">45</div>
                             <div class="counter-label">Surat Bulan Ini</div>
                         </div>
                         <div class="counter-card">
+                            <div class="counter-icon">🔢</div>
                             <div class="counter-value" id="counter-next">046</div>
                             <div class="counter-label">Nomor Berikutnya</div>
                         </div>
@@ -334,22 +433,71 @@
             
             <!-- Save Button -->
             <div style="text-align:right;padding:20px 0;">
-                <button class="btn btn-primary btn-lg" id="save-settings-btn">
-                    <i class="fas fa-save"></i> Simpan Pengaturan
+                <button class="btn btn-outline" id="reset-settings-btn" type="button" style="margin-right:8px;">
+                    <i class="fas fa-undo" aria-hidden="true"></i> Reset ke Default
+                </button>
+                <button class="btn btn-primary btn-lg" id="save-settings-btn" type="button">
+                    <i class="fas fa-save" aria-hidden="true"></i> Simpan Pengaturan
                 </button>
             </div>
         </div>
     </main>
     
-    <script type="module">
-        import authService from '/js/auth.js';
-        import apiService from '/js/api.js';
-        import notifications from '/js/notifications.js';
-        import logger from '/js/logger.js';
+    <!-- Scripts -->
+    <script>
+        // Base path resolver
+        (function() {
+            const pathname = window.location.pathname || '/';
+            const segments = pathname.split('/').filter(Boolean);
+            if (segments.length === 0) { window.APP_BASE_PATH = '/'; return; }
+            
+            const knownRoutes = ['dashboard', 'surat-masuk', 'surat-keluar', 'pengaturan', 'notifikasi', 'laporan', 'manajemen-user'];
+            window.APP_BASE_PATH = (!knownRoutes.includes(segments[0]) && segments.length >= 2)
+                ? '/' + segments[0] + '/'
+                : '/';
+        })();
         
-        // Check auth
-        if (!authService.isAuthenticated) window.location.href = '/login.html';
-        if (!authService.hasRole(['super_admin', 'admin'])) window.location.href = '/403.html';
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
+    
+    <script type="module">
+        // Lazy load modules
+        const loadModule = async (path) => {
+            try {
+                const mod = await import(path);
+                return mod.default || mod;
+            } catch (e) { console.warn(`Module not found: ${path}`); return null; }
+        };
+        
+        const [authService, apiService, notifications] = await Promise.all([
+            loadModule('/js/auth.js'),
+            loadModule('/js/api.js'),
+            loadModule('/js/notifications.js')
+        ]);
+        
+        // Auth guard
+        if (authService && !authService.isAuthenticated) {
+            window.location.href = (window.APP_BASE_PATH || '/') + 'login.html';
+        }
+        if (authService && !authService.hasRole?.(['super_admin', 'admin'])) {
+            window.location.href = (window.APP_BASE_PATH || '/') + '403.html';
+        }
+        
+        // State
+        let unitCodes = [];
+        const defaultUnits = [
+            { id: 'dekanat', name: 'Dekanat', code: 'UN.01' },
+            { id: 'prodi_ti', name: 'Prodi Teknik Informatika', code: 'UN.02' },
+            { id: 'prodi_si', name: 'Prodi Sistem Informasi', code: 'UN.03' },
+            { id: 'baak', name: 'BAAK', code: 'UN.04' },
+            { id: 'bauk', name: 'BAUK', code: 'UN.05' }
+        ];
+        
+        const defaultFormat = '{nomor}/{kode_unit}/{klasifikasi}/{bulan_romawi}/{tahun}';
+        const months = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
         
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -357,103 +505,329 @@
             initEventListeners();
             await loadSettings();
             updatePreview();
-            logger.info('Penomoran page loaded');
         });
         
         function initEventListeners() {
+            // Format input
             document.getElementById('format-string')?.addEventListener('input', updatePreview);
             document.getElementById('separator')?.addEventListener('change', updatePreview);
+            document.getElementById('padding-length')?.addEventListener('change', updatePreview);
+            
+            // Format components
+            document.querySelectorAll('.format-component').forEach(btn => {
+                btn.addEventListener('click', () => insertFormat(btn.dataset.code, btn));
+            });
+            
+            // Save
             document.getElementById('save-settings-btn')?.addEventListener('click', saveSettings);
+            
+            // Reset
+            document.getElementById('reset-settings-btn')?.addEventListener('click', resetToDefault);
+            document.getElementById('reset-counter-btn')?.addEventListener('click', resetCounter);
+            
+            // Add unit
+            document.getElementById('add-unit-btn')?.addEventListener('click', addUnit);
         }
         
-        function insertFormat(code) {
+        function insertFormat(code, button) {
             const input = document.getElementById('format-string');
+            if (!input) return;
+            
             const cursorPos = input.selectionStart;
             const textBefore = input.value.substring(0, cursorPos);
             const textAfter = input.value.substring(cursorPos);
             
             input.value = textBefore + code + textAfter;
             input.focus();
-            input.setSelectionRange(cursorPos + code.length, cursorPos + code.length);
+            
+            const newPos = cursorPos + code.length;
+            input.setSelectionRange(newPos, newPos);
+            
+            // Flash animation
+            if (button) {
+                button.classList.add('inserted');
+                setTimeout(() => button.classList.remove('inserted'), 600);
+            }
+            
+            // Show toast
+            showInsertToast(code);
             
             updatePreview();
         }
         
+        function showInsertToast(code) {
+            // Remove existing toast
+            const existing = document.querySelector('.toast-inserted');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast-inserted';
+            toast.textContent = `✓ ${code} ditambahkan`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
         function updatePreview() {
-            const format = document.getElementById('format-string').value;
-            const separator = document.getElementById('separator').value;
+            const format = document.getElementById('format-string')?.value || defaultFormat;
+            const separator = document.getElementById('separator')?.value || '/';
+            const padding = parseInt(document.getElementById('padding-length')?.value) || 3;
             
-            // Replace variables with sample values
-            let preview = format
-                .replace(/{nomor}/g, '001')
-                .replace(/{kode_unit}/g, 'UN.01')
-                .replace(/{klasifikasi}/g, 'UM')
-                .replace(/{bulan_romawi}/g, 'XI')
-                .replace(/{bulan}/g, '11')
-                .replace(/{tahun}/g, '2026')
-                .replace(/{tahun_pendek}/g, '26')
-                .replace(/{jenis}/g, 'SR')
-                .replace(/\//g, separator);
+            const now = new Date();
+            const sampleValues = {
+                '{nomor}': String(1).padStart(padding, '0'),
+                '{kode_unit}': unitCodes[0]?.code || 'UN.01',
+                '{klasifikasi}': 'UM',
+                '{bulan_romawi}': months[now.getMonth()],
+                '{bulan}': String(now.getMonth() + 1).padStart(2, '0'),
+                '{tahun}': String(now.getFullYear()),
+                '{tahun_pendek}': String(now.getFullYear()).slice(-2),
+                '{jenis}': 'SR'
+            };
             
-            document.getElementById('format-preview').textContent = preview;
+            let preview = format;
+            Object.entries(sampleValues).forEach(([key, value]) => {
+                preview = preview.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
+            });
+            
+            // Apply separator (only if not already part of format)
+            if (format.includes('/') && separator !== '/') {
+                preview = preview.replace(/\//g, separator);
+            }
+            
+            const previewEl = document.getElementById('format-preview');
+            if (previewEl) previewEl.textContent = preview;
         }
         
         async function loadSettings() {
             try {
-                const response = await apiService.get('/api/settings/penomoran');
-                const settings = response.data || {};
-                
-                if (settings.format) {
-                    document.getElementById('format-string').value = settings.format;
+                if (apiService) {
+                    const response = await apiService.get('/api/settings/penomoran');
+                    const settings = response?.data || response || {};
+                    
+                    if (settings.format) {
+                        document.getElementById('format-string').value = settings.format;
+                    }
+                    if (settings.separator) {
+                        document.getElementById('separator').value = settings.separator;
+                    }
+                    if (settings.resetPeriode) {
+                        document.getElementById('reset-periode').value = settings.resetPeriode;
+                    }
+                    if (settings.paddingLength) {
+                        document.getElementById('padding-length').value = settings.paddingLength;
+                    }
+                    if (settings.startNumber) {
+                        document.getElementById('start-number').value = settings.startNumber;
+                    }
+                    
+                    // Load unit codes
+                    if (settings.units && settings.units.length > 0) {
+                        unitCodes = settings.units;
+                    } else {
+                        unitCodes = [...defaultUnits];
+                    }
+                    
+                    // Update counters
+                    updateCounters(settings);
+                } else {
+                    unitCodes = [...defaultUnits];
+                    updateCounters({});
                 }
-                if (settings.separator) {
-                    document.getElementById('separator').value = settings.separator;
-                }
-                if (settings.resetPeriode) {
-                    document.getElementById('reset-periode').value = settings.resetPeriode;
-                }
                 
-                // Load counters
-                document.getElementById('counter-total').textContent = 
-                    (settings.totalTahun || 1245).toLocaleString('id-ID');
-                document.getElementById('counter-bulan').textContent = settings.totalBulan || 45;
-                document.getElementById('counter-next').textContent = 
-                    String(settings.nextNumber || 46).padStart(3, '0');
-                
+                renderUnits();
                 updatePreview();
                 
             } catch (error) {
-                logger.error('Failed to load settings', error);
+                console.warn('[Penomoran] Load settings failed:', error);
+                unitCodes = [...defaultUnits];
+                renderUnits();
+                updatePreview();
             }
+        }
+        
+        function updateCounters(settings) {
+            const totalTahun = settings.totalTahun || 1245;
+            const totalBulan = settings.totalBulan || 45;
+            const nextNumber = settings.nextNumber || 46;
+            const padding = parseInt(document.getElementById('padding-length')?.value) || 3;
+            
+            document.getElementById('counter-total').textContent = totalTahun.toLocaleString('id-ID');
+            document.getElementById('counter-bulan').textContent = totalBulan;
+            document.getElementById('counter-next').textContent = String(nextNumber).padStart(padding, '0');
+        }
+        
+        function renderUnits() {
+            const container = document.getElementById('unit-list');
+            if (!container) return;
+            
+            if (unitCodes.length === 0) {
+                container.innerHTML = '<li class="empty-state"><p>Belum ada kode unit</p></li>';
+                return;
+            }
+            
+            container.innerHTML = unitCodes.map((unit, index) => `
+                <li class="unit-item">
+                    <div class="unit-info">
+                        <span class="unit-name">${escapeHtml(unit.name)}</span>
+                        <span class="unit-code">${escapeHtml(unit.code)}</span>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm btn-outline" onclick="window.editUnit('${unit.id}')" 
+                            title="Edit unit" aria-label="Edit ${escapeHtml(unit.name)}">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="window.removeUnit('${unit.id}')" 
+                            title="Hapus unit" aria-label="Hapus ${escapeHtml(unit.name)}" style="color:#dc2626;">
+                            <i class="fas fa-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </li>
+            `).join('');
         }
         
         async function saveSettings() {
+            const format = document.getElementById('format-string')?.value?.trim();
+            
+            // Validate format
+            if (!format) {
+                if (notifications) notifications.warning('Format string tidak boleh kosong');
+                return;
+            }
+            
+            if (!format.includes('{nomor}')) {
+                if (notifications) notifications.warning('Format harus mengandung {nomor}');
+                return;
+            }
+            
+            const settings = {
+                format,
+                separator: document.getElementById('separator')?.value || '/',
+                resetPeriode: document.getElementById('reset-periode')?.value || 'tahun',
+                paddingLength: parseInt(document.getElementById('padding-length')?.value) || 3,
+                startNumber: parseInt(document.getElementById('start-number')?.value) || 1,
+                units: unitCodes
+            };
+            
+            const btn = document.getElementById('save-settings-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+            
             try {
-                const settings = {
-                    format: document.getElementById('format-string').value,
-                    separator: document.getElementById('separator').value,
-                    resetPeriode: document.getElementById('reset-periode').value
-                };
+                if (apiService) {
+                    await apiService.put('/api/settings/penomoran', settings);
+                }
                 
-                await apiService.put('/api/settings/penomoran', settings);
-                notifications.success('Pengaturan penomoran berhasil disimpan');
+                // Save locally
+                try {
+                    localStorage.setItem('penomoran_settings', JSON.stringify(settings));
+                } catch {}
                 
+                if (notifications) notifications.success('Pengaturan penomoran berhasil disimpan');
             } catch (error) {
-                notifications.error('Gagal menyimpan pengaturan');
+                // Save locally as fallback
+                try {
+                    localStorage.setItem('penomoran_settings', JSON.stringify(settings));
+                } catch {}
+                
+                if (notifications) notifications.success('Pengaturan disimpan secara lokal');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
         
-        function editUnit(code) {
-            const newCode = prompt('Masukkan kode unit baru:', code);
-            if (newCode && newCode !== code) {
-                notifications.success('Kode unit berhasil diubah');
-                // In production: save to API
+        function resetToDefault() {
+            document.getElementById('format-string').value = defaultFormat;
+            document.getElementById('separator').value = '/';
+            document.getElementById('reset-periode').value = 'tahun';
+            document.getElementById('padding-length').value = '3';
+            document.getElementById('start-number').value = '1';
+            unitCodes = [...defaultUnits];
+            
+            renderUnits();
+            updatePreview();
+            
+            if (notifications) notifications.info('Pengaturan dikembalikan ke default');
+        }
+        
+        async function resetCounter() {
+            const confirmed = notifications && typeof notifications.showModal === 'function'
+                ? await notifications.showModal('Reset Nomor', 'Apakah Anda yakin ingin mereset nomor urut? Nomor akan dimulai dari 1.', { confirmText: 'Reset', cancelText: 'Batal', type: 'warning' })
+                : confirm('Reset nomor urut ke 1?');
+            
+            if (!confirmed) return;
+            
+            try {
+                if (apiService) {
+                    await apiService.post('/api/settings/penomoran/reset-counter');
+                }
+                
+                document.getElementById('counter-total').textContent = '0';
+                document.getElementById('counter-bulan').textContent = '0';
+                
+                const padding = parseInt(document.getElementById('padding-length')?.value) || 3;
+                document.getElementById('counter-next').textContent = String(1).padStart(padding, '0');
+                
+                if (notifications) notifications.success('Nomor urut berhasil direset');
+            } catch (error) {
+                if (notifications) notifications.error('Gagal mereset nomor');
             }
+        }
+        
+        function editUnit(unitId) {
+            const unit = unitCodes.find(u => u.id === unitId);
+            if (!unit) return;
+            
+            // Create inline edit
+            const newName = prompt('Nama unit:', unit.name);
+            if (newName === null) return; // Cancelled
+            
+            const newCode = prompt('Kode unit:', unit.code);
+            if (newCode === null) return;
+            
+            if (newName) unit.name = newName.trim();
+            if (newCode) unit.code = newCode.trim().toUpperCase();
+            
+            renderUnits();
+            updatePreview();
+        }
+        
+        function removeUnit(unitId) {
+            unitCodes = unitCodes.filter(u => u.id !== unitId);
+            renderUnits();
+            updatePreview();
+        }
+        
+        function addUnit() {
+            const id = 'unit_' + Date.now();
+            const name = prompt('Nama unit baru:');
+            if (!name) return;
+            
+            const code = prompt('Kode unit (contoh: UN.06):');
+            if (!code) return;
+            
+            unitCodes.push({
+                id,
+                name: name.trim(),
+                code: code.trim().toUpperCase()
+            });
+            
+            renderUnits();
+            updatePreview();
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
         
         // Global functions
-        window.insertFormat = insertFormat;
         window.editUnit = editUnit;
+        window.removeUnit = removeUnit;
     </script>
 </body>
 </html>

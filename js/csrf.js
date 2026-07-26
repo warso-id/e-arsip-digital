@@ -1,230 +1,401 @@
-// FILE: js/csrf.js
-// ============================================
-// CSRF PROTECTION - E-ARSIP DIGITAL
-// ============================================
+// js/csrf.js - CSRF Protection 2026 (NON-INVASIVE)
+/**
+ * E-Arsip Digital - CSRF Protection
+ * Version: 2026.1.0
+ * 
+ * Features:
+ * - Token generation (crypto API)
+ * - Token storage (sessionStorage + fallback)
+ * - Form auto-injection
+ * - Non-invasive (TIDAK override fetch/XHR!)
+ * - PWA mobile compatible
+ */
 
-class CSRFProtection {
-    constructor() {
-        this.tokenKey = 'csrf_token';
-        this.headerName = 'X-CSRF-Token';
-        this.token = null;
-        
-        this.init();
-    }
+var CSRFProtection = (function() {
+    'use strict';
+    
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    var config = {
+        cookieName: 'XSRF-TOKEN',
+        headerName: 'X-CSRF-Token',
+        formFieldName: '_csrf_token',
+        tokenLength: 32,
+        tokenExpiry: 3600000,    // 1 jam - auto refresh
+        storageKey: 'csrf_token',
+        renewOnUse: true
+    };
+    
+    // ============================================
+    // PRIVATE STATE
+    // ============================================
+    var _currentToken = null;
+    var _tokenExpiry = null;
+    
+    // ============================================
+    // TOKEN GENERATION
+    // ============================================
     
     /**
-     * Initialize CSRF protection
+     * Generate random token (IE compatible)
      */
-    init() {
-        // Generate token if not exists
-        this.token = this.getToken();
-        if (!this.token) {
-            this.token = this.generateToken();
-            this.setToken(this.token);
+    function generateToken() {
+        var length = config.tokenLength;
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var result = '';
+        
+        // Gunakan crypto API jika tersedia
+        if (window.crypto && window.crypto.getRandomValues) {
+            var array = new Uint8Array(length);
+            window.crypto.getRandomValues(array);
+            
+            for (var i = 0; i < array.length; i++) {
+                result += chars.charAt(array[i] % chars.length);
+            }
+        } else {
+            // Fallback: Math.random
+            for (var j = 0; j < length; j++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
         }
         
-        // Add token to all AJAX requests
-        this.interceptFetch();
-        this.interceptXHR();
+        return result;
+    }
+    
+    // ============================================
+    // TOKEN STORAGE
+    // ============================================
+    
+    function getStoredToken() {
+        try {
+            var token = sessionStorage.getItem(config.storageKey);
+            if (token) return token;
+            
+            // Fallback ke localStorage
+            token = localStorage.getItem(config.storageKey);
+            if (token) {
+                // Pindahkan ke sessionStorage
+                sessionStorage.setItem(config.storageKey, token);
+                return token;
+            }
+        } catch(e) {}
         
-        // Add token to all forms
-        this.addTokenToForms();
+        return null;
+    }
+    
+    function storeToken(token) {
+        _currentToken = token;
+        _tokenExpiry = Date.now() + config.tokenExpiry;
         
-        // Validate token on page load
-        this.validateToken();
+        try {
+            sessionStorage.setItem(config.storageKey, token);
+            // Backup ke localStorage
+            localStorage.setItem(config.storageKey, token);
+        } catch(e) {
+            console.warn('[CSRF] Failed to store token');
+        }
     }
     
-    /**
-     * Generate CSRF token
-     */
-    generateToken() {
-        const array = new Uint8Array(32);
-        crypto.getRandomValues(array);
-        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    function clearToken() {
+        _currentToken = null;
+        _tokenExpiry = null;
+        
+        try {
+            sessionStorage.removeItem(config.storageKey);
+            localStorage.removeItem(config.storageKey);
+        } catch(e) {}
     }
     
-    /**
-     * Get token from storage
-     */
-    getToken() {
-        return sessionStorage.getItem(this.tokenKey);
+    // ============================================
+    // TOKEN MANAGEMENT
+    // ============================================
+    
+    function getToken() {
+        // Cek expiry
+        if (_tokenExpiry && Date.now() > _tokenExpiry) {
+            refreshToken();
+        }
+        
+        return _currentToken;
     }
     
-    /**
-     * Set token to storage
-     */
-    setToken(token) {
-        sessionStorage.setItem(this.tokenKey, token);
-        this.token = token;
-    }
-    
-    /**
-     * Refresh token
-     */
-    refreshToken() {
-        const newToken = this.generateToken();
-        this.setToken(newToken);
-        this.addTokenToForms();
+    function refreshToken() {
+        var newToken = generateToken();
+        storeToken(newToken);
+        updateAllFormTokens();
         return newToken;
     }
     
+    function isValidToken(token) {
+        if (!token || !_currentToken) return false;
+        
+        // Constant-time comparison (cegah timing attack)
+        var a = token;
+        var b = _currentToken;
+        
+        if (a.length !== b.length) return false;
+        
+        var result = 0;
+        for (var i = 0; i < a.length; i++) {
+            result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+        }
+        
+        return result === 0;
+    }
+    
+    // ============================================
+    // FORM INJECTION (Non-invasive)
+    // ============================================
+    
     /**
-     * Validate token
+     * Inject CSRF token ke satu form
      */
-    validateToken() {
-        // Token validation is typically done server-side
-        // This is client-side check
-        if (!this.token) {
-            console.warn('CSRF token not found. Generating new token.');
-            this.refreshToken();
+    function injectFormToken(form) {
+        if (!form || !form.tagName) return;
+        
+        // Cek apakah form sudah punya token
+        var existingInput = form.querySelector('input[name="' + config.formFieldName + '"]');
+        if (existingInput) {
+            existingInput.value = getToken() || '';
+            return;
+        }
+        
+        // Buat input baru
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = config.formFieldName;
+        input.value = getToken() || '';
+        form.appendChild(input);
+    }
+    
+    /**
+     * Update token di semua form
+     */
+    function updateAllFormTokens() {
+        var forms = document.getElementsByTagName('form');
+        for (var i = 0; i < forms.length; i++) {
+            var input = forms[i].querySelector('input[name="' + config.formFieldName + '"]');
+            if (input) {
+                input.value = _currentToken || '';
+            }
         }
     }
     
     /**
-     * Intercept fetch requests
+     * Inject token ke semua form yang ada
      */
-    interceptFetch() {
-        const originalFetch = window.fetch;
-        const self = this;
+    function injectAllForms() {
+        var forms = document.getElementsByTagName('form');
+        for (var i = 0; i < forms.length; i++) {
+            injectFormToken(forms[i]);
+        }
+    }
+    
+    /**
+     * Setup MutationObserver untuk form dinamis
+     */
+    function setupFormObserver() {
+        if (!window.MutationObserver) return;
         
-        window.fetch = function(url, options = {}) {
-            // Only add token to same-origin requests
-            if (self.isSameOrigin(url)) {
-                options.headers = options.headers || {};
+        var observer = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                var mutation = mutations[i];
                 
-                if (options.headers instanceof Headers) {
-                    options.headers.append(self.headerName, self.token);
-                } else {
-                    options.headers[self.headerName] = self.token;
+                // Cek node yang ditambahkan
+                for (var j = 0; j < mutation.addedNodes.length; j++) {
+                    var node = mutation.addedNodes[j];
+                    
+                    // Jika form ditambahkan
+                    if (node.tagName === 'FORM') {
+                        injectFormToken(node);
+                    }
+                    
+                    // Jika node mengandung form
+                    if (node.querySelectorAll) {
+                        var forms = node.querySelectorAll('form');
+                        for (var k = 0; k < forms.length; k++) {
+                            injectFormToken(forms[k]);
+                        }
+                    }
                 }
             }
-            
-            return originalFetch.call(this, url, options);
-        };
-    }
-    
-    /**
-     * Intercept XMLHttpRequest
-     */
-    interceptXHR() {
-        const originalOpen = XMLHttpRequest.prototype.open;
-        const self = this;
+        });
         
-        XMLHttpRequest.prototype.open = function() {
-            const url = arguments[1];
-            
-            // Store URL for later use
-            this._url = url;
-            
-            return originalOpen.apply(this, arguments);
-        };
-        
-        const originalSend = XMLHttpRequest.prototype.send;
-        
-        XMLHttpRequest.prototype.send = function() {
-            // Add CSRF token header
-            if (self.isSameOrigin(this._url)) {
-                this.setRequestHeader(self.headerName, self.token);
-            }
-            
-            return originalSend.apply(this, arguments);
-        };
-    }
-    
-    /**
-     * Add CSRF token to all forms
-     */
-    addTokenToForms() {
-        // Remove existing CSRF inputs
-        document.querySelectorAll('input[name="csrf_token"]').forEach(el => el.remove());
-        
-        // Add to all forms
-        document.querySelectorAll('form').forEach(form => {
-            // Skip forms with external action
-            const action = form.getAttribute('action');
-            if (action && !this.isSameOrigin(action)) return;
-            
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'csrf_token';
-            input.value = this.token;
-            form.appendChild(input);
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
         });
     }
     
+    // ============================================
+    // REQUEST HEADERS (Helper)
+    // ============================================
+    
     /**
-     * Add CSRF token to specific form
+     * Get CSRF header object untuk fetch/XHR
      */
-    addTokenToForm(formElement) {
-        const existing = formElement.querySelector('input[name="csrf_token"]');
-        if (existing) existing.remove();
-        
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'csrf_token';
-        input.value = this.token;
-        formElement.appendChild(input);
+    function getRequestHeaders() {
+        var headers = {};
+        headers[config.headerName] = getToken() || '';
+        return headers;
     }
     
     /**
-     * Check if URL is same origin
+     * Attach token ke FormData
      */
-    isSameOrigin(url) {
-        try {
-            const parsed = new URL(url, window.location.origin);
-            return parsed.origin === window.location.origin;
-        } catch (e) {
-            // Relative URL
-            return true;
+    function attachToFormData(formData) {
+        if (formData && typeof formData.append === 'function') {
+            formData.append(config.formFieldName, getToken() || '');
         }
-    }
-    
-    /**
-     * Get CSRF token for API calls
-     */
-    getCSRFToken() {
-        return this.token;
-    }
-    
-    /**
-     * Get CSRF header name
-     */
-    getHeaderName() {
-        return this.headerName;
-    }
-    
-    /**
-     * Create CSRF-protected form data
-     */
-    createFormData(data) {
-        const formData = new FormData();
-        
-        // Add CSRF token
-        formData.append('csrf_token', this.token);
-        
-        // Add data
-        for (const [key, value] of Object.entries(data)) {
-            formData.append(key, value);
-        }
-        
         return formData;
     }
     
     /**
-     * Create CSRF-protected request headers
+     * Attach token ke request body object
      */
-    getHeaders() {
-        return {
-            [this.headerName]: this.token,
-            'Content-Type': 'application/json'
-        };
+    function attachToBody(body) {
+        if (body && typeof body === 'object' && !Array.isArray(body)) {
+            body[config.formFieldName] = getToken() || '';
+        }
+        return body;
     }
-}
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    function init(options) {
+        if (options) {
+            for (var key in options) {
+                if (options.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                    config[key] = options[key];
+                }
+            }
+        }
+        
+        // Load or generate token
+        var storedToken = getStoredToken();
+        if (storedToken) {
+            _currentToken = storedToken;
+        } else {
+            _currentToken = generateToken();
+            storeToken(_currentToken);
+        }
+        
+        // Inject ke semua form
+        injectAllForms();
+        
+        // Setup observer untuk form dinamis
+        setupFormObserver();
+        
+        // Schedule token refresh
+        if (config.tokenExpiry > 0) {
+            setInterval(function() {
+                if (_tokenExpiry && Date.now() > _tokenExpiry - 60000) {
+                    refreshToken();
+                }
+            }, 60000);
+        }
+        
+        console.info('[CSRF] Initialized (token: ' + _currentToken.substring(0, 8) + '...)');
+        
+        return _currentToken;
+    }
+    
+    // ============================================
+    // PUBLIC API
+    // ============================================
+    
+    // Auto-init saat DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { init(); });
+    } else {
+        setTimeout(init, 50);
+    }
+    
+    return {
+        init: init,
+        
+        /**
+         * Get current CSRF token
+         */
+        getToken: getToken,
+        
+        /**
+         * Refresh token
+         */
+        refreshToken: refreshToken,
+        
+        /**
+         * Check if token is valid
+         */
+        isValid: isValidToken,
+        
+        /**
+         * Get headers for fetch/XHR
+         */
+        getHeaders: getRequestHeaders,
+        
+        /**
+         * Attach token ke FormData
+         */
+        attachToFormData: attachToFormData,
+        
+        /**
+         * Attach token ke body object
+         */
+        attachToBody: attachToBody,
+        
+        /**
+         * Inject token ke form tertentu
+         */
+        injectForm: injectFormToken,
+        
+        /**
+         * Inject token ke semua form
+         */
+        injectAllForms: injectAllForms,
+        
+        /**
+         * Get header name
+         */
+        getHeaderName: function() {
+            return config.headerName;
+        },
+        
+        /**
+         * Get form field name
+         */
+        getFieldName: function() {
+            return config.formFieldName;
+        },
+        
+        /**
+         * Clear token
+         */
+        destroy: function() {
+            clearToken();
+        }
+    };
+})();
 
-// Create global instance
-const csrfProtection = new CSRFProtection();
-
-// Export
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CSRFProtection;
-}
+// ============================================
+// USAGE:
+// ============================================
+// // Get token
+// var token = CSRFProtection.getToken();
+// 
+// // Get headers for fetch
+// fetch('/api/data', {
+//     headers: CSRFProtection.getHeaders()
+// });
+// 
+// // Attach to FormData
+// var fd = new FormData(form);
+// CSRFProtection.attachToFormData(fd);
+// 
+// // Attach to body
+// var data = { name: 'test' };
+// CSRFProtection.attachToBody(data);
+// ============================================

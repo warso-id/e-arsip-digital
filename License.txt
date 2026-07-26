@@ -1,7 +1,3 @@
-
-## 69. LICENSE (MIT) - 2026
-
-```text
 MIT License
 
 Copyright (c) 2024-2026 E-Arsip Digital Team
@@ -23,3 +19,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Project: E-Arsip Digital
+Version: 2026.1.0
+Description: Sistem Manajemen Arsip Digital Modern - Enterprise Document Management System
+Website: https://github.com/username/e-arsip-digital
+Contact: dev@e-arsip.example.com
+
+Copyright (c) 2024-2026 E-Arsip Digital Team
+All rights reserved.

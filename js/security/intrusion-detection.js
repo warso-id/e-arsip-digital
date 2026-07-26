@@ -1,498 +1,505 @@
-// js/security/intrusion-detection.js - Intrusion Detection System 2026
+// js/security/intrusion-detection.js - IDS 2026 (SECURE)
 /**
  * E-Arsip Digital - Intrusion Detection System
  * Version: 2026.1.0
- * Features: Anomaly detection, behavior analysis, threat scoring,
- *           automated response, pattern matching
+ * 
+ * Features:
+ * - Threat scoring per session
+ * - Brute force detection
+ * - Anomaly detection
+ * - Non-invasive (event-based, no fetch override)
+ * - PWA mobile compatible
  */
 
-import { Logger } from '../logger.js';
-import auditTrail from './audit.js';
-
-class IntrusionDetectionSystem {
-    constructor() {
-        this.logger = new Logger('IDS');
-        
-        // Detection rules
-        this.rules = [];
-        
-        // Behavior profiles
-        this.profiles = new Map();
-        
-        // Threat scores per IP/session
-        this.threatScores = new Map();
-        
-        // Detection history
-        this.detections = [];
-        this.maxDetections = 200;
-        
-        // Thresholds
-        this.thresholds = {
-            high: 70,
-            medium: 40,
-            low: 20
-        };
-        
-        // Response actions
-        this.autoBlockThreshold = 80;
-        this.alertThreshold = 50;
-        
-        this.init();
-    }
-    
-    init() {
-        this.loadDefaultRules();
-        this.startMonitoring();
-        
-        this.logger.info('Intrusion Detection System initialized', {
-            rules: this.rules.length
-        });
-    }
+var IntrusionDetection = (function() {
+    'use strict';
     
     // ============================================
-    // DETECTION RULES
+    // CONFIGURATION
     // ============================================
-    
-    loadDefaultRules() {
-        // Brute force detection
-        this.addRule({
-            id: 'BRUTE_FORCE',
-            name: 'Brute Force Attack',
-            severity: 'high',
-            score: 30,
-            patterns: [
-                { field: 'eventType', value: 'auth.failed', count: 5, window: 300000 }
-            ],
-            response: 'block_temp'
-        });
-        
-        // Rapid requests
-        this.addRule({
-            id: 'RAPID_REQUESTS',
-            name: 'Rapid Fire Requests',
-            severity: 'medium',
-            score: 20,
-            patterns: [
-                { field: 'requestRate', threshold: 50, window: 10000 }
-            ],
-            response: 'rate_limit'
-        });
-        
-        // XSS injection attempts
-        this.addRule({
-            id: 'XSS_INJECTION',
-            name: 'XSS Injection Attempt',
-            severity: 'high',
-            score: 40,
-            patterns: [
-                { field: 'eventType', value: 'security.xss', count: 3, window: 60000 }
-            ],
-            response: 'block_temp'
-        });
-        
-        // SQL injection attempts
-        this.addRule({
-            id: 'SQL_INJECTION',
-            name: 'SQL Injection Attempt',
-            severity: 'critical',
-            score: 50,
-            patterns: [
-                { field: 'eventType', value: 'security.sqli', count: 1, window: 60000 }
-            ],
-            response: 'block_permanent'
-        });
-        
-        // Session hijacking detection
-        this.addRule({
-            id: 'SESSION_HIJACK',
-            name: 'Session Hijacking',
-            severity: 'critical',
-            score: 60,
-            patterns: [
-                { field: 'fingerprint', change: true },
-                { field: 'userAgent', change: true },
-                { field: 'ipAddress', change: true }
-            ],
-            response: 'terminate_session'
-        });
-        
-        // Unusual access pattern
-        this.addRule({
-            id: 'UNUSUAL_ACCESS',
-            name: 'Unusual Access Pattern',
-            severity: 'medium',
-            score: 25,
-            patterns: [
-                { field: 'accessHour', range: [0, 5] },
-                { field: 'requestRate', threshold: 20, window: 60000 }
-            ],
-            response: 'log_and_monitor'
-        });
-        
-        // Data exfiltration
-        this.addRule({
-            id: 'DATA_EXFILTRATION',
-            name: 'Potential Data Exfiltration',
-            severity: 'high',
-            score: 35,
-            patterns: [
-                { field: 'eventType', value: 'data.export', count: 5, window: 300000 }
-            ],
-            response: 'block_temp'
-        });
-        
-        // CSRF attacks
-        this.addRule({
-            id: 'CSRF_ATTACK',
-            name: 'CSRF Attack Pattern',
-            severity: 'high',
-            score: 30,
-            patterns: [
-                { field: 'eventType', value: 'security.csrf', count: 3, window: 60000 }
-            ],
-            response: 'block_temp'
-        });
-        
-        // Path traversal
-        this.addRule({
-            id: 'PATH_TRAVERSAL',
-            name: 'Path Traversal Attempt',
-            severity: 'high',
-            score: 35,
-            patterns: [
-                { field: 'url', contains: '../', count: 3, window: 60000 },
-                { field: 'url', contains: '..\\', count: 3, window: 60000 }
-            ],
-            response: 'block_temp'
-        });
-    }
-    
-    addRule(rule) {
-        this.rules.push(rule);
-    }
+    var config = {
+        enabled: true,
+        maxFailedLogins: 5,          // Max failed login sebelum alert
+        failedLoginWindow: 300000,   // 5 menit
+        rapidRequestThreshold: 50,   // Request per 10 detik
+        rapidRequestWindow: 10000,   // 10 detik
+        threatScoreDecayMs: 3600000, // 1 jam
+        autoAlertThreshold: 50,      // Score untuk alert
+        autoBlockThreshold: 80,      // Score untuk block
+        maxDetections: 200
+    };
     
     // ============================================
-    // MONITORING & DETECTION
+    // PRIVATE STATE
     // ============================================
+    var _threatScores = {};          // { sessionId: score }
+    var _failedLogins = {};          // { sessionId: [{time, username}] }
+    var _requestCounts = {};         // { sessionId: { count, firstRequest, resetTime } }
+    var _detections = [];            // Array of detection objects
+    var _decayTimers = {};           // { sessionId: timerId }
     
-    startMonitoring() {
-        // Listen for security events
-        window.addEventListener('security:xss_detected', (e) => {
-            this.analyzeEvent('XSS_INJECTION', e.detail);
-        });
-        
-        window.addEventListener('security:csrf_violation', (e) => {
-            this.analyzeEvent('CSRF_ATTACK', e.detail);
-        });
-        
-        window.addEventListener('firewall:blocked', (e) => {
-            this.analyzeEvent('FIREWALL_BLOCK', e.detail);
-        });
-        
-        // Monitor network requests
-        this.monitorNetworkRequests();
-        
-        // Periodic behavior analysis
-        this.analysisInterval = setInterval(() => {
-            this.analyzeAllProfiles();
-        }, 60000);
+    // ============================================
+    // SESSION HELPERS
+    // ============================================
+    function getSessionId() {
+        // Coba dapatkan dari localStorage/sessionStorage
+        var id = sessionStorage.getItem('ids_session_id');
+        if (!id) {
+            id = localStorage.getItem('ids_session_id');
+        }
+        if (!id) {
+            id = 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+            sessionStorage.setItem('ids_session_id', id);
+        }
+        return id;
     }
     
-    monitorNetworkRequests() {
-        const originalFetch = window.fetch;
-        const self = this;
-        
-        window.fetch = function(...args) {
-            const startTime = performance.now();
-            const [url] = args;
-            
-            // Track request for rate analysis
-            self.trackRequest(url);
-            
-            return originalFetch.apply(this, args);
-        };
-    }
-    
-    trackRequest(url) {
-        const sessionId = this.getSessionId();
-        const profile = this.getOrCreateProfile(sessionId);
-        
-        profile.requestCount++;
-        profile.lastRequest = Date.now();
-        
-        // Check rapid requests
-        if (profile.requestCount > 30) {
-            const elapsed = Date.now() - (profile.firstRequest || Date.now());
-            if (elapsed < 10000) {
-                this.analyzeEvent('RAPID_REQUESTS', {
-                    sessionId,
-                    requestCount: profile.requestCount,
-                    elapsed
-                });
+    function getCurrentUser() {
+        try {
+            var session = localStorage.getItem('auth_session') || sessionStorage.getItem('auth_session');
+            if (session) {
+                var data = JSON.parse(session);
+                return data.user ? data.user.username : 'anonymous';
             }
-        }
-        
-        // Reset counter periodically
-        if (Date.now() - (profile.resetTime || 0) > 60000) {
-            profile.requestCount = 0;
-            profile.firstRequest = Date.now();
-            profile.resetTime = Date.now();
-        }
-        
-        // Check for path traversal
-        if (url.includes('../') || url.includes('..\\')) {
-            this.analyzeEvent('PATH_TRAVERSAL', { url, sessionId });
-        }
-    }
-    
-    analyzeEvent(ruleId, eventData) {
-        const rule = this.rules.find(r => r.id === ruleId);
-        if (!rule) return;
-        
-        const sessionId = eventData.sessionId || this.getSessionId();
-        
-        // Update threat score
-        this.increaseThreatScore(sessionId, rule.score);
-        
-        // Record detection
-        const detection = {
-            id: this.generateDetectionId(),
-            ruleId,
-            ruleName: rule.name,
-            severity: rule.severity,
-            score: rule.score,
-            sessionId,
-            timestamp: Date.now(),
-            eventData
-        };
-        
-        this.detections.push(detection);
-        
-        if (this.detections.length > this.maxDetections) {
-            this.detections = this.detections.slice(-this.maxDetections);
-        }
-        
-        // Log to audit trail
-        auditTrail.logSecurity('INTRUSION_DETECTED', {
-            ruleId,
-            severity: rule.severity,
-            sessionId
-        });
-        
-        this.logger.warn('Intrusion detected', {
-            rule: ruleId,
-            severity: rule.severity,
-            sessionId
-        });
-        
-        // Execute response
-        this.executeResponse(rule.response, sessionId);
-        
-        // Check auto-block threshold
-        const threatScore = this.getThreatScore(sessionId);
-        if (threatScore >= this.autoBlockThreshold) {
-            this.executeResponse('block_permanent', sessionId);
-        } else if (threatScore >= this.alertThreshold) {
-            this.dispatchAlert(detection);
-        }
-        
-        // Dispatch event
-        window.dispatchEvent(new CustomEvent('security:intrusion_detected', {
-            detail: detection
-        }));
+        } catch(e) {}
+        return 'anonymous';
     }
     
     // ============================================
     // THREAT SCORING
     // ============================================
     
-    increaseThreatScore(sessionId, score) {
-        const current = this.threatScores.get(sessionId) || 0;
-        const newScore = current + score;
+    /**
+     * Tambah threat score untuk session
+     */
+    function increaseThreatScore(sessionId, score, reason) {
+        if (!sessionId) sessionId = getSessionId();
         
-        this.threatScores.set(sessionId, newScore);
+        var current = _threatScores[sessionId] || 0;
+        _threatScores[sessionId] = current + score;
         
-        // Decay score over time
-        setTimeout(() => {
-            const decayed = (this.threatScores.get(sessionId) || 0) - score;
-            if (decayed <= 0) {
-                this.threatScores.delete(sessionId);
-            } else {
-                this.threatScores.set(sessionId, decayed);
+        // Schedule decay
+        scheduleDecay(sessionId, score);
+        
+        // Log detection
+        var detection = {
+            id: 'IDS-' + Date.now().toString(36).toUpperCase(),
+            sessionId: sessionId,
+            score: score,
+            totalScore: _threatScores[sessionId],
+            reason: reason,
+            timestamp: new Date().toISOString(),
+            user: getCurrentUser()
+        };
+        
+        _detections.push(detection);
+        
+        // Trim jika terlalu banyak
+        if (_detections.length > config.maxDetections) {
+            _detections = _detections.slice(-config.maxDetections);
+        }
+        
+        // Check thresholds
+        var totalScore = _threatScores[sessionId];
+        
+        if (totalScore >= config.autoAlertThreshold) {
+            console.warn('[IDS] Alert: ' + reason + ' (score: ' + totalScore + ')');
+            triggerAlert(detection);
+        }
+        
+        if (totalScore >= config.autoBlockThreshold) {
+            console.error('[IDS] BLOCK: ' + reason + ' (score: ' + totalScore + ')');
+            triggerBlock(sessionId, detection);
+        }
+        
+        return detection;
+    }
+    
+    /**
+     * Schedule threat score decay
+     */
+    function scheduleDecay(sessionId, score) {
+        // Clear existing timer
+        if (_decayTimers[sessionId]) {
+            clearTimeout(_decayTimers[sessionId]);
+        }
+        
+        // Set new decay timer
+        _decayTimers[sessionId] = setTimeout(function() {
+            if (_threatScores[sessionId]) {
+                _threatScores[sessionId] = Math.max(0, (_threatScores[sessionId] || 0) - score);
+                
+                if (_threatScores[sessionId] <= 0) {
+                    delete _threatScores[sessionId];
+                }
             }
-        }, 3600000); // Decay after 1 hour
+            delete _decayTimers[sessionId];
+        }, config.threatScoreDecayMs);
     }
     
-    getThreatScore(sessionId) {
-        return this.threatScores.get(sessionId) || 0;
+    function getThreatScore(sessionId) {
+        return _threatScores[sessionId || getSessionId()] || 0;
     }
     
-    getThreatLevel(score) {
-        if (score >= this.thresholds.high) return 'high';
-        if (score >= this.thresholds.medium) return 'medium';
-        if (score >= this.thresholds.low) return 'low';
+    function getThreatLevel(score) {
+        if (score >= config.autoBlockThreshold) return 'critical';
+        if (score >= config.autoAlertThreshold) return 'high';
+        if (score >= 25) return 'medium';
+        if (score >= 10) return 'low';
         return 'none';
     }
     
     // ============================================
-    // BEHAVIOR PROFILES
+    // DETECTION RULES
     // ============================================
     
-    getOrCreateProfile(sessionId) {
-        if (!this.profiles.has(sessionId)) {
-            this.profiles.set(sessionId, {
-                sessionId,
-                createdAt: Date.now(),
-                requestCount: 0,
-                firstRequest: Date.now(),
-                lastRequest: Date.now(),
-                resetTime: Date.now(),
-                userAgent: navigator.userAgent,
-                events: []
+    /**
+     * Deteksi brute force login
+     */
+    function detectBruteForce(username) {
+        var sessionId = getSessionId();
+        
+        if (!_failedLogins[sessionId]) {
+            _failedLogins[sessionId] = [];
+        }
+        
+        var now = Date.now();
+        
+        // Tambahkan failed attempt
+        _failedLogins[sessionId].push({
+            time: now,
+            username: username
+        });
+        
+        // Hapus yang expired
+        _failedLogins[sessionId] = _failedLogins[sessionId].filter(function(attempt) {
+            return now - attempt.time < config.failedLoginWindow;
+        });
+        
+        // Cek threshold
+        if (_failedLogins[sessionId].length >= config.maxFailedLogins) {
+            increaseThreatScore(sessionId, 30, 
+                'Brute force: ' + _failedLogins[sessionId].length + ' failed logins');
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Reset failed login counter (setelah sukses)
+     */
+    function resetFailedLogins() {
+        var sessionId = getSessionId();
+        delete _failedLogins[sessionId];
+    }
+    
+    /**
+     * Deteksi rapid requests
+     */
+    function detectRapidRequests() {
+        var sessionId = getSessionId();
+        var now = Date.now();
+        
+        if (!_requestCounts[sessionId]) {
+            _requestCounts[sessionId] = {
+                count: 1,
+                firstRequest: now,
+                resetTime: now + config.rapidRequestWindow
+            };
+            return false;
+        }
+        
+        var counter = _requestCounts[sessionId];
+        
+        // Reset jika window expired
+        if (now > counter.resetTime) {
+            counter.count = 1;
+            counter.firstRequest = now;
+            counter.resetTime = now + config.rapidRequestWindow;
+            return false;
+        }
+        
+        counter.count++;
+        
+        // Cek threshold
+        if (counter.count >= config.rapidRequestThreshold) {
+            increaseThreatScore(sessionId, 20,
+                'Rapid requests: ' + counter.count + ' in ' + 
+                Math.round((now - counter.firstRequest) / 1000) + 's');
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Deteksi XSS attempt
+     */
+    function detectXSS(payload) {
+        var sessionId = getSessionId();
+        increaseThreatScore(sessionId, 40,
+            'XSS attempt: ' + (payload ? payload.substring(0, 50) : ''));
+    }
+    
+    /**
+     * Deteksi SQL injection attempt
+     */
+    function detectSQLi(payload) {
+        var sessionId = getSessionId();
+        increaseThreatScore(sessionId, 50,
+            'SQLi attempt: ' + (payload ? payload.substring(0, 50) : ''));
+    }
+    
+    /**
+     * Deteksi path traversal
+     */
+    function detectPathTraversal(url) {
+        var sessionId = getSessionId();
+        increaseThreatScore(sessionId, 35,
+            'Path traversal: ' + (url ? url.substring(0, 100) : ''));
+    }
+    
+    /**
+     * Deteksi CSRF violation
+     */
+    function detectCSRFViolation() {
+        var sessionId = getSessionId();
+        increaseThreatScore(sessionId, 25, 'CSRF violation');
+    }
+    
+    // ============================================
+    // ALERT & BLOCK
+    // ============================================
+    
+    function triggerAlert(detection) {
+        // Dispatch custom event
+        try {
+            var event = new CustomEvent('ids:alert', {
+                detail: {
+                    detection: detection,
+                    threatLevel: getThreatLevel(detection.totalScore),
+                    message: '[IDS] ' + detection.reason
+                }
+            });
+            window.dispatchEvent(event);
+        } catch(e) {}
+        
+        // Log ke audit trail jika tersedia
+        if (window.AuditTrail && typeof window.AuditTrail.logSecurity === 'function') {
+            window.AuditTrail.logSecurity('INTRUSION_DETECTED', {
+                reason: detection.reason,
+                score: detection.totalScore
             });
         }
+    }
+    
+    function triggerBlock(sessionId, detection) {
+        // Dispatch block event
+        try {
+            var event = new CustomEvent('ids:block', {
+                detail: {
+                    sessionId: sessionId,
+                    detection: detection,
+                    permanent: detection.totalScore >= 100
+                }
+            });
+            window.dispatchEvent(event);
+        } catch(e) {}
         
-        return this.profiles.get(sessionId);
-    }
-    
-    analyzeAllProfiles() {
-        const now = Date.now();
-        
-        this.profiles.forEach((profile, sessionId) => {
-            // Check for anomalies
-            const idleTime = now - profile.lastRequest;
-            
-            if (idleTime > 3600000) {
-                // Profile idle for too long, remove
-                this.profiles.delete(sessionId);
-            }
-        });
-    }
-    
-    // ============================================
-    // RESPONSE ACTIONS
-    // ============================================
-    
-    executeResponse(response, sessionId) {
-        switch (response) {
-            case 'block_temp':
-                this.logger.info('Temporary block', { sessionId });
-                window.dispatchEvent(new CustomEvent('ids:block_temp', {
-                    detail: { sessionId, duration: 300000 }
-                }));
-                break;
-                
-            case 'block_permanent':
-                this.logger.info('Permanent block', { sessionId });
-                window.dispatchEvent(new CustomEvent('ids:block_permanent', {
-                    detail: { sessionId }
-                }));
-                break;
-                
-            case 'rate_limit':
-                this.logger.info('Rate limiting', { sessionId });
-                window.dispatchEvent(new CustomEvent('ids:rate_limit', {
-                    detail: { sessionId }
-                }));
-                break;
-                
-            case 'terminate_session':
-                this.logger.info('Terminating session', { sessionId });
-                window.dispatchEvent(new CustomEvent('ids:terminate_session', {
-                    detail: { sessionId }
-                }));
-                break;
-                
-            case 'log_and_monitor':
-                this.logger.info('Logging and monitoring', { sessionId });
-                break;
-                
-            default:
-                this.logger.warn('Unknown response action', { response });
-        }
-    }
-    
-    dispatchAlert(detection) {
-        window.dispatchEvent(new CustomEvent('ids:alert', {
-            detail: {
-                ...detection,
-                threatLevel: this.getThreatLevel(detection.score),
-                message: `[${detection.severity.toUpperCase()}] ${detection.ruleName} detected`
-            }
-        }));
-    }
-    
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-    
-    generateDetectionId() {
-        return `IDS-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 6)}`.toUpperCase();
-    }
-    
-    getSessionId() {
-        return sessionStorage.getItem('session_id') || 'unknown';
+        console.error('[IDS] Session blocked: ' + sessionId);
     }
     
     // ============================================
     // PUBLIC API
     // ============================================
     
-    getDetections(options = {}) {
-        let results = [...this.detections].reverse();
+    return {
+        /**
+         * Record failed login attempt
+         */
+        recordFailedLogin: function(username) {
+            return detectBruteForce(username || 'unknown');
+        },
         
-        if (options.severity) {
-            results = results.filter(d => d.severity === options.severity);
-        }
+        /**
+         * Record successful login (reset counter)
+         */
+        recordSuccessfulLogin: function() {
+            resetFailedLogins();
+        },
         
-        if (options.limit) {
-            results = results.slice(0, options.limit);
-        }
+        /**
+         * Record API request (for rate limiting)
+         */
+        recordRequest: function() {
+            return detectRapidRequests();
+        },
         
-        return results;
-    }
-    
-    getThreatScores() {
-        const scores = [];
+        /**
+         * Record XSS detection
+         */
+        recordXSS: function(payload) {
+            detectXSS(payload);
+        },
         
-        this.threatScores.forEach((score, sessionId) => {
-            scores.push({
-                sessionId,
-                score,
-                level: this.getThreatLevel(score)
-            });
-        });
+        /**
+         * Record SQLi detection
+         */
+        recordSQLi: function(payload) {
+            detectSQLi(payload);
+        },
         
-        return scores.sort((a, b) => b.score - a.score);
-    }
-    
-    getStats() {
-        return {
-            totalDetections: this.detections.length,
-            activeThreats: this.threatScores.size,
-            highThreats: Array.from(this.threatScores.values())
-                .filter(s => s >= this.thresholds.high).length,
-            rules: this.rules.length,
-            profiles: this.profiles.size
-        };
-    }
-    
-    reset() {
-        this.detections = [];
-        this.threatScores.clear();
-        this.profiles.clear();
-        this.logger.info('IDS reset');
-    }
-    
-    destroy() {
-        if (this.analysisInterval) clearInterval(this.analysisInterval);
-        this.profiles.clear();
-        this.logger.info('IDS destroyed');
-    }
-}
+        /**
+         * Record path traversal detection
+         */
+        recordPathTraversal: function(url) {
+            detectPathTraversal(url);
+        },
+        
+        /**
+         * Record CSRF violation
+         */
+        recordCSRFViolation: function() {
+            detectCSRFViolation();
+        },
+        
+        /**
+         * Get threat score for session
+         */
+        getThreatScore: function(sessionId) {
+            return getThreatScore(sessionId);
+        },
+        
+        /**
+         * Get threat level
+         */
+        getThreatLevel: function(sessionId) {
+            return getThreatLevel(getThreatScore(sessionId));
+        },
+        
+        /**
+         * Get all threat scores
+         */
+        getAllThreatScores: function() {
+            var scores = [];
+            for (var id in _threatScores) {
+                if (_threatScores.hasOwnProperty(id)) {
+                    scores.push({
+                        sessionId: id,
+                        score: _threatScores[id],
+                        level: getThreatLevel(_threatScores[id])
+                    });
+                }
+            }
+            scores.sort(function(a, b) { return b.score - a.score; });
+            return scores;
+        },
+        
+        /**
+         * Get recent detections
+         */
+        getDetections: function(limit) {
+            var result = _detections.slice().reverse();
+            if (limit) result = result.slice(0, limit);
+            return result;
+        },
+        
+        /**
+         * Get statistics
+         */
+        getStats: function() {
+            var activeThreats = 0;
+            var highThreats = 0;
+            
+            for (var id in _threatScores) {
+                if (_threatScores.hasOwnProperty(id) && _threatScores[id] > 0) {
+                    activeThreats++;
+                    if (_threatScores[id] >= config.autoAlertThreshold) {
+                        highThreats++;
+                    }
+                }
+            }
+            
+            return {
+                totalDetections: _detections.length,
+                activeThreats: activeThreats,
+                highThreats: highThreats,
+                totalSessions: Object.keys(_threatScores).length
+            };
+        },
+        
+        /**
+         * Reset all data
+         */
+        reset: function() {
+            _threatScores = {};
+            _failedLogins = {};
+            _requestCounts = {};
+            _detections = [];
+            
+            // Clear decay timers
+            for (var id in _decayTimers) {
+                if (_decayTimers.hasOwnProperty(id)) {
+                    clearTimeout(_decayTimers[id]);
+                }
+            }
+            _decayTimers = {};
+        },
+        
+        /**
+         * Update config
+         */
+        configure: function(newConfig) {
+            if (newConfig) {
+                for (var key in newConfig) {
+                    if (newConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+                        config[key] = newConfig[key];
+                    }
+                }
+            }
+        },
+        
+        /**
+         * Get session ID
+         */
+        getSessionId: getSessionId
+    };
+})();
 
-// Create singleton
-const intrusionDetection = new IntrusionDetectionSystem();
+// ============================================
+// AUTO-INTEGRATE dengan modul lain jika tersedia
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen untuk event dari firewall
+    window.addEventListener('firewall:blocked', function(e) {
+        if (e.detail && e.detail.type === 'sqli') {
+            IntrusionDetection.recordSQLi(e.detail.input);
+        } else if (e.detail && e.detail.type === 'xss') {
+            IntrusionDetection.recordXSS(e.detail.input);
+        }
+    });
+    
+    // Listen untuk event dari CSRF
+    window.addEventListener('security:csrf_violation', function() {
+        IntrusionDetection.recordCSRFViolation();
+    });
+});
 
-export default intrusionDetection;
-export { IntrusionDetectionSystem };
+// ============================================
+// USAGE:
+// ============================================
+// // Login failed
+// IntrusionDetection.recordFailedLogin('admin');
+// 
+// // Login success
+// IntrusionDetection.recordSuccessfulLogin();
+// 
+// // API request
+// IntrusionDetection.recordRequest();
+// 
+// // Check threat
+// var score = IntrusionDetection.getThreatScore();
+// var level = IntrusionDetection.getThreatLevel();
+// var stats = IntrusionDetection.getStats();
+// ============================================

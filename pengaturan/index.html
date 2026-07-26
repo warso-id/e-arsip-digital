@@ -1,331 +1,605 @@
-<!-- FILE: pengaturan/index.html (FINAL - GABUNGAN LENGKAP) -->
+<!-- pengaturan/index.html - Settings Dashboard 2026 -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Pengaturan sistem E-Arsip Digital">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" id="csrf-token" content="">
+    
+    <!-- PWA Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
     <title>Pengaturan - E-Arsip Digital</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <style>
-        body {
-            background: #f5f6fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .container {
+        /* Critical CSS - No Bootstrap dependency */
+        .settings-container {
             max-width: 900px;
-            margin: 30px auto;
-            padding: 0 20px;
+            margin: 0 auto;
         }
         
         .settings-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: var(--color-card, white);
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             margin-bottom: 20px;
         }
         
         .settings-header {
-            border-bottom: 2px solid #1a237e;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            border-bottom: 2px solid var(--color-border, #e2e8f0);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .settings-header h4 {
+            margin: 0 0 4px;
+            font-size: 20px;
+            color: var(--color-text, #1e293b);
+        }
+        
+        .sub-nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
         }
         
         .sub-card {
-            background: white;
+            background: var(--color-card, white);
             border-radius: 12px;
-            padding: 25px;
+            padding: 28px 24px;
             text-align: center;
             transition: all 0.3s ease;
-            border: 2px solid transparent;
+            border: 2px solid var(--color-border, #e2e8f0);
             cursor: pointer;
-            height: 100%;
-            display: block;
             text-decoration: none;
             color: inherit;
+            display: block;
         }
         
         .sub-card:hover {
-            border-color: #667eea;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-color: #2563eb;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+        
+        .sub-card:focus-visible {
+            outline: 3px solid #2563eb;
+            outline-offset: 2px;
         }
         
         .sub-card i {
-            transition: all 0.3s ease;
+            font-size: 40px;
+            margin-bottom: 16px;
+            display: block;
+            transition: transform 0.3s ease;
         }
         
         .sub-card:hover i {
             transform: scale(1.1);
         }
         
-        .btn-back {
-            margin-bottom: 20px;
+        .sub-card h6 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--color-text, #1e293b);
+        }
+        
+        .sub-card p {
+            font-size: 13px;
+            color: var(--color-text-muted, #64748b);
+            line-height: 1.5;
+            margin: 0;
         }
         
         .form-section {
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
         
-        .form-section h6 {
-            background: #f0f4ff;
+        .form-section-title {
+            background: #eff6ff;
             padding: 12px 20px;
             border-radius: 10px;
             margin-bottom: 20px;
-            color: #1a237e;
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .action-row .btn {
+            flex: 1;
+            min-width: 180px;
+            justify-content: center;
+        }
+        
+        .readonly-input {
+            background: var(--color-bg-secondary, #f8fafc);
+            cursor: not-allowed;
+            color: var(--color-text-muted, #64748b);
+        }
+        
+        .integration-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-configured {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-not-configured {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border, #e2e8f0);
+            background: var(--color-card, white);
+            color: var(--color-text, #1e293b);
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+        
+        .btn-back:hover {
+            background: var(--color-bg-secondary, #f8fafc);
+            border-color: #cbd5e1;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .sub-nav-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-row .btn {
+                min-width: auto;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .settings-card {
+                padding: 20px 16px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- BACK BUTTON -->
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-back">
-            <i class="fas fa-arrow-left me-2"></i>Kembali
-        </a>
-
-        <!-- MAIN SETTINGS -->
-        <div class="settings-card">
-            <div class="settings-header">
-                <h4><i class="fas fa-cog me-2"></i>Pengaturan Sistem</h4>
-                <p class="text-muted mb-0">Konfigurasi sistem E-Arsip Digital</p>
+    <!-- Skip Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen" aria-hidden="true">
+        <div class="spinner" role="status" aria-label="Memuat halaman"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-brand">
+            <i class="fas fa-archive" aria-hidden="true"></i>
+            <span>E-Arsip Digital</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item"><i class="fas fa-home" aria-hidden="true"></i> Dashboard</a>
+            <a href="/surat-keluar/list.html" class="nav-item"><i class="fas fa-paper-plane" aria-hidden="true"></i> Surat Keluar</a>
+            <a href="/surat-masuk/list.html" class="nav-item"><i class="fas fa-inbox" aria-hidden="true"></i> Surat Masuk</a>
+            <a href="/pengaturan/" class="nav-item active" aria-current="page"><i class="fas fa-cog" aria-hidden="true"></i> Pengaturan</a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <div class="settings-container">
+            <!-- Back Button -->
+            <a href="javascript:history.back()" class="btn-back" aria-label="Kembali ke halaman sebelumnya">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali
+            </a>
+            
+            <!-- Main Settings Form -->
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h4><i class="fas fa-cog me-2" aria-hidden="true"></i> Pengaturan Sistem</h4>
+                    <p style="color:#64748b;font-size:14px;margin:0;">Konfigurasi sistem E-Arsip Digital</p>
+                </div>
+                
+                <form id="settings-form" novalidate autocomplete="off">
+                    <!-- Instansi -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-university" aria-hidden="true"></i> Informasi Instansi
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="namaInstansi">Nama Instansi</label>
+                                <input type="text" class="form-input" id="namaInstansi" maxlength="100">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="singkatanInstansi">Singkatan</label>
+                                <input type="text" class="form-input" id="singkatanInstansi" maxlength="20">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row full">
+                            <div class="form-group">
+                                <label class="form-label" for="alamatInstansi">Alamat</label>
+                                <textarea class="form-input" id="alamatInstansi" rows="2" maxlength="200"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="teleponInstansi">Telepon</label>
+                                <input type="tel" class="form-input" id="teleponInstansi" maxlength="20">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="emailInstansi">Email</label>
+                                <input type="email" class="form-input" id="emailInstansi" maxlength="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Google Integration -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-cloud" aria-hidden="true"></i> Integrasi Google
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="gasUrl">Google Apps Script URL</label>
+                                <input type="text" class="form-input readonly-input" id="gasUrl" readonly tabindex="-1">
+                                <div class="form-help" id="gas-status"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="driveFolderId">Google Drive Folder ID</label>
+                                <input type="text" class="form-input readonly-input" id="driveFolderId" readonly tabindex="-1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Backup Actions -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-database" aria-hidden="true"></i> Backup & Data
+                        </div>
+                        
+                        <div class="action-row">
+                            <button type="button" class="btn btn-primary" id="backup-btn">
+                                <i class="fas fa-download" aria-hidden="true"></i> Backup Data
+                            </button>
+                            <button type="button" class="btn btn-outline" id="restore-btn">
+                                <i class="fas fa-upload" aria-hidden="true"></i> Restore Data
+                            </button>
+                            <button type="button" class="btn btn-outline" id="clear-cache-btn">
+                                <i class="fas fa-broom" aria-hidden="true"></i> Bersihkan Cache
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <button type="submit" class="btn btn-primary btn-lg" id="save-settings-btn">
+                        <i class="fas fa-save" aria-hidden="true"></i> Simpan Pengaturan
+                    </button>
+                </form>
             </div>
             
-            <form id="settingsForm">
-                <!-- Instansi -->
-                <div class="form-section">
-                    <h6><i class="fas fa-university me-2"></i>Informasi Instansi</h6>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nama Instansi</label>
-                            <input type="text" class="form-control" id="namaInstansi" 
-                                   value="Fakultas Ilmu Komputer">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Singkatan</label>
-                            <input type="text" class="form-control" id="singkatanInstansi" 
-                                   value="FIKOM">
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Alamat</label>
-                        <textarea class="form-control" id="alamatInstansi" rows="2">Jl. Contoh No. 123, Jakarta</textarea>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Telepon</label>
-                            <input type="text" class="form-control" id="teleponInstansi" 
-                                   value="(021) 12345678">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" id="emailInstansi" 
-                                   value="admin@fikom.ac.id">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Google Integration -->
-                <div class="form-section">
-                    <h6><i class="fas fa-cloud me-2"></i>Integrasi Google</h6>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Google Apps Script URL</label>
-                        <input type="text" class="form-control" id="gasUrl" readonly>
-                        <small class="text-muted">URL ini dikonfigurasi di config.js</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Google Drive Folder ID</label>
-                        <input type="text" class="form-control" id="driveFolderId" readonly>
-                    </div>
-                </div>
-                
-                <!-- Backup -->
-                <div class="form-section">
-                    <h6><i class="fas fa-database me-2"></i>Backup & Restore</h6>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <button type="button" class="btn btn-primary w-100" onclick="backupData()">
-                                <i class="fas fa-download me-2"></i>Backup Data
-                            </button>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <button type="button" class="btn btn-warning w-100" onclick="restoreData()">
-                                <i class="fas fa-upload me-2"></i>Restore Data
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-save me-2"></i>Simpan Pengaturan
-                </button>
-            </form>
-        </div>
-
-        <!-- SUB PENGATURAN -->
-        <div class="row mt-2">
-            <div class="col-md-4 mb-3">
-                <a href="penomoran.html" class="sub-card">
-                    <i class="fas fa-sort-numeric-up fa-3x mb-3" style="color: #667eea;"></i>
+            <!-- Sub Settings Navigation -->
+            <div class="sub-nav-grid" role="list" aria-label="Menu pengaturan lainnya">
+                <a href="penomoran.html" class="sub-card" role="listitem">
+                    <i class="fas fa-sort-numeric-up" style="color:#667eea;" aria-hidden="true"></i>
                     <h6>Penomoran Surat</h6>
-                    <p class="text-muted small mb-0">Konfigurasi format penomoran surat keluar dan masuk</p>
+                    <p>Konfigurasi format penomoran surat keluar dan masuk</p>
                 </a>
-            </div>
-            <div class="col-md-4 mb-3">
-                <a href="tanda-tangan.html" class="sub-card">
-                    <i class="fas fa-signature fa-3x mb-3" style="color: #28a745;"></i>
+                
+                <a href="tanda-tangan.html" class="sub-card" role="listitem">
+                    <i class="fas fa-signature" style="color:#16a34a;" aria-hidden="true"></i>
                     <h6>Tanda Tangan Digital</h6>
-                    <p class="text-muted small mb-0">Upload dan kelola tanda tangan pejabat</p>
+                    <p>Upload dan kelola tanda tangan pejabat</p>
                 </a>
-            </div>
-            <div class="col-md-4 mb-3">
-                <a href="backup.html" class="sub-card">
-                    <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: #ffc107;"></i>
+                
+                <a href="backup.html" class="sub-card" role="listitem">
+                    <i class="fas fa-cloud-upload-alt" style="color:#d97706;" aria-hidden="true"></i>
                     <h6>Backup & Restore</h6>
-                    <p class="text-muted small mb-0">Backup data sistem dan restore jika diperlukan</p>
+                    <p>Backup data sistem dan restore jika diperlukan</p>
                 </a>
             </div>
         </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../config/config.js"></script>
-    <script src="../js/api.js"></script>
-    <script src="../js/auth.js"></script>
-    <script src="../js/utils.js"></script>
+    </main>
     
+    <!-- Scripts -->
     <script>
-        // Check authentication
-        if (!auth.requireAuth()) {
-            window.location.href = '../login.html';
+        // Base path resolver
+        (function() {
+            const pathname = window.location.pathname || '/';
+            const segments = pathname.split('/').filter(Boolean);
+            if (segments.length === 0) { window.APP_BASE_PATH = '/'; return; }
+            
+            const knownRoutes = ['dashboard', 'surat-masuk', 'surat-keluar', 'pengaturan', 'notifikasi', 'laporan', 'manajemen-user'];
+            window.APP_BASE_PATH = (!knownRoutes.includes(segments[0]) && segments.length >= 2)
+                ? '/' + segments[0] + '/'
+                : '/';
+        })();
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
+    
+    <script type="module">
+        // Lazy load modules
+        const loadModule = async (path) => {
+            try {
+                const mod = await import(path);
+                return mod.default || mod;
+            } catch (e) { console.warn(`Module not found: ${path}`); return null; }
+        };
+        
+        const [
+            authService,
+            apiService,
+            notifications,
+            APP_CONFIG
+        ] = await Promise.all([
+            loadModule('/js/auth.js'),
+            loadModule('/js/api.js'),
+            loadModule('/js/notifications.js'),
+            loadModule('/config/config.js')
+        ]);
+        
+        // Auth guard
+        if (authService && !authService.isAuthenticated) {
+            window.location.href = (window.APP_BASE_PATH || '/') + 'login.html';
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set Google integration URLs
-            document.getElementById('gasUrl').value = CONFIG.GOOGLE_SCRIPT_URL || 'Tidak dikonfigurasi';
-            document.getElementById('driveFolderId').value = CONFIG.DRIVE_FOLDER_ID || 'Tidak dikonfigurasi';
-            
-            // Handle settings form submission
-            document.getElementById('settingsForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveSettings();
-            });
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+            initEventListeners();
+            await loadSettings();
+            setupIntegrationInfo();
         });
         
-        /**
-         * Save settings to server
-         */
-        async function saveSettings() {
-            const settings = {
-                instansi: {
-                    nama: document.getElementById('namaInstansi').value,
-                    singkatan: document.getElementById('singkatanInstansi').value,
-                    alamat: document.getElementById('alamatInstansi').value,
-                    telepon: document.getElementById('teleponInstansi').value,
-                    email: document.getElementById('emailInstansi').value
-                }
-            };
+        function initEventListeners() {
+            // Form submit
+            document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveSettings();
+            });
             
-            // Show loading state
-            const submitBtn = document.querySelector('#settingsForm button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
-            submitBtn.disabled = true;
+            // Backup
+            document.getElementById('backup-btn')?.addEventListener('click', backupData);
             
-            try {
-                const result = await api.updateSettings(settings);
-                
-                if (result.success) {
-                    // Update CONFIG locally
-                    if (typeof CONFIG !== 'undefined') {
-                        CONFIG.INSTANSI = settings.instansi;
-                    }
-                    
-                    // Show success
-                    alert('✅ Pengaturan berhasil disimpan');
+            // Restore
+            document.getElementById('restore-btn')?.addEventListener('click', () => {
+                window.location.href = 'backup.html';
+            });
+            
+            // Clear cache
+            document.getElementById('clear-cache-btn')?.addEventListener('click', clearCache);
+        }
+        
+        function setupIntegrationInfo() {
+            const gasUrl = APP_CONFIG?.api?.gasUrl || APP_CONFIG?.GOOGLE_SCRIPT_URL || '';
+            const driveFolderId = APP_CONFIG?.api?.driveFolderId || APP_CONFIG?.DRIVE_FOLDER_ID || '';
+            
+            document.getElementById('gasUrl').value = gasUrl || 'Tidak dikonfigurasi';
+            document.getElementById('driveFolderId').value = driveFolderId || 'Tidak dikonfigurasi';
+            
+            // Status badge
+            const statusEl = document.getElementById('gas-status');
+            if (statusEl) {
+                if (gasUrl) {
+                    statusEl.innerHTML = '<span class="integration-status status-configured"><i class="fas fa-check-circle"></i> Terkonfigurasi</span>';
                 } else {
-                    alert('❌ Gagal: ' + (result.message || 'Terjadi kesalahan'));
+                    statusEl.innerHTML = '<span class="integration-status status-not-configured"><i class="fas fa-exclamation-circle"></i> Belum dikonfigurasi</span>';
                 }
-            } catch (error) {
-                alert('❌ Error: ' + error.message);
-            } finally {
-                // Restore button
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
             }
         }
         
-        /**
-         * Backup data
-         */
-        async function backupData() {
-            if (!confirm('Backup semua data sistem?')) return;
+        async function loadSettings() {
+            try {
+                if (apiService) {
+                    const response = await apiService.get('/api/settings');
+                    const settings = response?.data || response || {};
+                    
+                    if (settings.instansi) {
+                        document.getElementById('namaInstansi').value = settings.instansi.nama || '';
+                        document.getElementById('singkatanInstansi').value = settings.instansi.singkatan || '';
+                        document.getElementById('alamatInstansi').value = settings.instansi.alamat || '';
+                        document.getElementById('teleponInstansi').value = settings.instansi.telepon || '';
+                        document.getElementById('emailInstansi').value = settings.instansi.email || '';
+                    }
+                }
+            } catch {
+                // Load from localStorage fallback
+                try {
+                    const stored = localStorage.getItem('app_settings');
+                    if (stored) {
+                        const settings = JSON.parse(stored);
+                        if (settings.instansi) {
+                            document.getElementById('namaInstansi').value = settings.instansi.nama || '';
+                            document.getElementById('singkatanInstansi').value = settings.instansi.singkatan || '';
+                            document.getElementById('alamatInstansi').value = settings.instansi.alamat || '';
+                            document.getElementById('teleponInstansi').value = settings.instansi.telepon || '';
+                            document.getElementById('emailInstansi').value = settings.instansi.email || '';
+                        }
+                    }
+                } catch {}
+            }
+        }
+        
+        async function saveSettings() {
+            const settings = {
+                instansi: {
+                    nama: document.getElementById('namaInstansi')?.value?.trim() || '',
+                    singkatan: document.getElementById('singkatanInstansi')?.value?.trim() || '',
+                    alamat: document.getElementById('alamatInstansi')?.value?.trim() || '',
+                    telepon: document.getElementById('teleponInstansi')?.value?.trim() || '',
+                    email: document.getElementById('emailInstansi')?.value?.trim() || ''
+                }
+            };
+            
+            const btn = document.getElementById('save-settings-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
             
             try {
-                const result = await api.sendRequest({
-                    action: 'backupData',
-                    type: 'all'
-                });
-                
-                if (result && result.success) {
-                    // Download as JSON file
-                    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `backup-e-arsip-${new Date().toISOString().split('T')[0]}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    alert('✅ Backup berhasil diunduh');
-                } else {
-                    alert('ℹ️ Backup data lokal. Untuk backup lengkap, gunakan halaman Backup & Restore.');
-                    window.location.href = 'backup.html';
+                if (apiService) {
+                    await apiService.put('/api/settings', settings);
                 }
+                
+                // Also save to localStorage as fallback
+                try {
+                    const stored = JSON.parse(localStorage.getItem('app_settings') || '{}');
+                    stored.instansi = settings.instansi;
+                    localStorage.setItem('app_settings', JSON.stringify(stored));
+                } catch {}
+                
+                if (notifications) notifications.success('Pengaturan berhasil disimpan');
+                
             } catch (error) {
-                // Fallback: backup localStorage only
+                // Save locally anyway
+                try {
+                    const stored = JSON.parse(localStorage.getItem('app_settings') || '{}');
+                    stored.instansi = settings.instansi;
+                    localStorage.setItem('app_settings', JSON.stringify(stored));
+                } catch {}
+                
+                if (notifications) notifications.warning('Pengaturan disimpan secara lokal');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+        
+        async function backupData() {
+            if (notifications) notifications.info('Mempersiapkan backup...');
+            
+            try {
+                // Try API backup first
+                if (apiService) {
+                    try {
+                        const response = await apiService.post('/api/backup/create', { type: 'settings' });
+                        if (response?.data?.id) {
+                            if (notifications) notifications.success('Backup berhasil dibuat di server');
+                            return;
+                        }
+                    } catch {}
+                }
+                
+                // Fallback: Download settings as JSON
                 const data = {
-                    localStorage: { ...localStorage },
-                    sessionStorage: { ...sessionStorage },
-                    timestamp: new Date().toISOString()
+                    app_settings: localStorage.getItem('app_settings'),
+                    applied_migrations: localStorage.getItem('applied_migrations'),
+                    timestamp: new Date().toISOString(),
+                    version: APP_CONFIG?.app?.version || '2026.1.0'
                 };
                 
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `backup-local-${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `pengaturan-${new Date().toISOString().split('T')[0]}.json`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 
-                alert('✅ Backup lokal berhasil diunduh (data browser saja)');
+                if (notifications) notifications.success('Pengaturan berhasil didownload');
+                
+            } catch (error) {
+                if (notifications) notifications.error('Gagal membackup data');
             }
         }
         
-        /**
-         * Restore data
-         */
-        function restoreData() {
-            // Redirect to dedicated backup/restore page
-            window.location.href = 'backup.html';
+        async function clearCache() {
+            const confirmed = notifications && typeof notifications.showModal === 'function'
+                ? await notifications.showModal('Bersihkan Cache', 'Apakah Anda yakin ingin membersihkan cache aplikasi? Data utama tidak akan terpengaruh.', { confirmText: 'Bersihkan', cancelText: 'Batal' })
+                : confirm('Bersihkan cache aplikasi?');
+            
+            if (!confirmed) return;
+            
+            try {
+                // Clear cache keys
+                const cachePrefixes = ['cache_', 'api-cache_', 'cache_app_'];
+                
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (cachePrefixes.some(prefix => key?.startsWith(prefix))) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                
+                // Clear service worker caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames
+                            .filter(name => name.includes('cache') || name.includes('temp'))
+                            .map(name => caches.delete(name))
+                    );
+                }
+                
+                if (notifications) notifications.success('Cache berhasil dibersihkan');
+            } catch (error) {
+                if (notifications) notifications.error('Gagal membersihkan cache');
+            }
         }
-        
-        // Make functions globally available
-        window.backupData = backupData;
-        window.restoreData = restoreData;
     </script>
 </body>
 </html>
